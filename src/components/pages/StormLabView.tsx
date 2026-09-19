@@ -102,7 +102,12 @@ export const StormLabView: React.FC<StormLabViewProps> = ({
           <ScenarioComparison
             scenarios={scenarios}
             isLoading={isLoadingScenarios}
-            onApplyPreset={(intensity) => onConfigChange({ rainfallIntensity: intensity })}
+            onApplyScenario={(scenario) =>
+              onConfigChange({
+                rainfallIntensity: scenario.rainfallIntensity,
+                drainageEfficiency: scenario.drainageEfficiency,
+              })
+            }
           />
 
           {/* Hydrograph Charts */}
