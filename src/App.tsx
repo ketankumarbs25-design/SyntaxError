@@ -33,6 +33,7 @@ import { Charts } from './components/charts/Charts';
 import { ScenarioComparison } from './components/scenarios/ScenarioComparison';
 import { DemoNarrative } from './components/demo/DemoNarrative';
 import { CellDetailModal } from './components/grid/CellDetailModal';
+import { LiveFloodMap } from './components/map/LiveFloodMap';
 import { AIChatbot } from './components/chatbot/AIChatbot';
 import type { ChatAction } from './components/chatbot/AIChatbot';
 import { SocialButton } from './components/kokonutui/social-button';
@@ -74,6 +75,10 @@ export const AppContent: React.FC = () => {
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
   const [activeTab, setActiveTab] = useState<'monitor' | 'scenarios' | 'weather'>('monitor');
+  const [focusedMapZone, setFocusedMapZone] = useState<string | null>(null);
+
+  // ─── Single Unified Location State (Shared across Map & Weather) ───────────
+  const [sharedLocation, setSharedLocation] = useState<string>('Koramangala, Bengaluru');
 
   // ─── Web Worker Instance ──────────────────────────────────────────────────
   const workerRef = useRef<Worker | null>(null);
@@ -298,6 +303,42 @@ export const AppContent: React.FC = () => {
     play();
   }, [setStep, play]);
 
+  const handleExitDemoMode = useCallback(() => {
+    setIsDemoMode(false);
+  }, []);
+
+  // ─── Location Weather → Apply Rainfall ────────────────────────────────────
+  const handleApplyRealRainfall = useCallback(
+    (intensity: number) => {
+      handleConfigChange({ rainfallIntensity: Math.min(200, Math.max(0, intensity)) });
+    },
+    [handleConfigChange]
+  );
+
+  // ─── Unified Single-Location Change Handler (Syncs Map & Weather) ─────────
+  const handleSharedLocationChange = useCallback((newLocation: string) => {
+    setSharedLocation((prev) => (prev === newLocation ? prev : newLocation));
+  }, []);
+
+  // ─── View on Map Navigation ───────────────────────────────────────────────
+  const handleViewOnMap = useCallback((zoneId: string) => {
+    setSelectedCellId(zoneId);
+    setFocusedMapZone(zoneId);
+    setTimeout(() => {
+      const mapSection = document.getElementById('live-flood-risk-map');
+      if (mapSection) {
+        mapSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 60);
+  }, []);
+
+  // ─── Run Simulation Trigger from Map / Actions ────────────────────────────
+  const handleRunSimulation = useCallback(() => {
+    runSimulationWithConfig(config);
+    setStep(0);
+    play();
+  }, [config, runSimulationWithConfig, setStep, play]);
+
   // ─── AI Chatbot Action Dispatcher ─────────────────────────────────────────
   const handleChatAction = useCallback(
     (action: ChatAction) => {
@@ -337,7 +378,9 @@ export const AppContent: React.FC = () => {
           const zoneRow = zone.charCodeAt(0) - 65;
           const zoneCol = parseInt(zone.slice(1), 10) - 1;
           if (zoneRow >= 0 && zoneRow < config.rows && zoneCol >= 0 && zoneCol < config.cols) {
-            setSelectedCellId(`r${zoneRow}c${zoneCol}`);
+            const cellId = `r${zoneRow}c${zoneCol}`;
+            setSelectedCellId(cellId);
+            handleViewOnMap(cellId);
           }
           break;
         }
@@ -347,7 +390,7 @@ export const AppContent: React.FC = () => {
         }
       }
     },
-    [handleConfigChange, handleStartDemoMode, play, pause, reset, config.rows, config.cols, openAuthModal]
+    [handleConfigChange, handleStartDemoMode, play, pause, reset, config.rows, config.cols, openAuthModal, handleViewOnMap]
   );
 
   const chatContext = useMemo(
@@ -469,7 +512,7 @@ export const AppContent: React.FC = () => {
             rainfallDuration={config.rainfallDuration}
             criticalCount={currentState.stats.criticalCells}
             warningCount={currentState.stats.warningCells}
-            onExit={() => setIsDemoMode(false)}
+            onExit={handleExitDemoMode}
           />
         )}
 
@@ -481,6 +524,7 @@ export const AppContent: React.FC = () => {
               isLoading={isLoadingScenarios}
               onApplyScenario={handleApplyScenarioFromMatrix}
             />
+
             <Charts
               timeline={timeline}
               currentStep={currentStep}
@@ -493,10 +537,9 @@ export const AppContent: React.FC = () => {
           /* Live Weather View */
           <div className="max-w-2xl mx-auto w-full py-4">
             <LocationWeather
-              onApplyRainfall={(intensity) => {
-                handleConfigChange({ rainfallIntensity: Math.min(200, Math.max(0, intensity)) });
-                setActiveTab('monitor');
-              }}
+              externalQuery={sharedLocation}
+              onApplyRainfall={handleApplyRealRainfall}
+              onCityChange={(city) => setSharedLocation(city)}
             />
           </div>
         ) : (
@@ -514,15 +557,15 @@ export const AppContent: React.FC = () => {
                 isSimulating={isSimulating}
                 onStartDemoMode={handleStartDemoMode}
                 isDemoMode={isDemoMode}
-                onRunSimulation={() => runSimulationWithConfig(config)}
+                onRunSimulation={handleRunSimulation}
                 onSelectPresetScenario={handleSelectPresetScenario}
               />
 
               <div className="hidden lg:block">
                 <LocationWeather
-                  onApplyRainfall={(intensity) =>
-                    handleConfigChange({ rainfallIntensity: Math.min(200, Math.max(0, intensity)) })
-                  }
+                  externalQuery={sharedLocation}
+                  hideSearchBar={true}
+                  onApplyRainfall={handleApplyRealRainfall}
                 />
               </div>
             </div>
@@ -622,6 +665,15 @@ export const AppContent: React.FC = () => {
                 onApplyScenario={handleApplyScenarioFromMatrix}
               />
             </div>
+
+            {/* 📍 Live Flood Risk Map (OpenStreetMap + Leaflet) */}
+            <div className="lg:col-span-12 w-full pt-4">
+              <LiveFloodMap
+                focusedZoneId={focusedMapZone}
+                externalLocation={sharedLocation}
+                onLocationChange={handleSharedLocationChange}
+              />
+            </div>
           </div>
         )}
       </main>
@@ -634,6 +686,7 @@ export const AppContent: React.FC = () => {
             isBlocked={blockedCells.has(selectedCell.id)}
             onToggleBlock={handleToggleBlockChannel}
             onClose={() => setSelectedCellId(null)}
+            onViewOnMap={handleViewOnMap}
           />
         )}
       </AnimatePresence>

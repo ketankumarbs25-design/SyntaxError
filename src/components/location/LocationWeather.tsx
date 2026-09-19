@@ -26,6 +26,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Search,
+  MapPin,
 } from 'lucide-react';
 import { API_KEYS, API_ENDPOINTS } from '../../config/api';
 import type {
@@ -39,6 +40,8 @@ import type {
 interface LocationWeatherProps {
   onApplyRainfall: (intensity: number) => void;
   externalQuery?: string | null;
+  hideSearchBar?: boolean;
+  onCityChange?: (cityName: string) => void;
 }
 
 const PRESET_CITIES = [
@@ -166,7 +169,12 @@ function createDefaultBangaloreData(): EnvironmentalData {
   };
 }
 
-export const LocationWeather: React.FC<LocationWeatherProps> = ({ onApplyRainfall, externalQuery }) => {
+export const LocationWeather: React.FC<LocationWeatherProps> = ({
+  onApplyRainfall,
+  externalQuery,
+  hideSearchBar = false,
+  onCityChange,
+}) => {
   // Units state with persistence
   const [tempUnit, setTempUnit] = useState<TemperatureUnit>(() => {
     try {
@@ -410,9 +418,15 @@ export const LocationWeather: React.FC<LocationWeatherProps> = ({ onApplyRainfal
     }
   }, []);
 
+  const lastFetchedCityRef = useRef<string>('');
   // Sync external search trigger from chatbot or parent
   useEffect(() => {
-    if (externalQuery) {
+    if (
+      externalQuery &&
+      externalQuery.trim() &&
+      externalQuery.toLowerCase() !== lastFetchedCityRef.current.toLowerCase()
+    ) {
+      lastFetchedCityRef.current = externalQuery;
       setQuery(externalQuery);
       fetchLocationData(externalQuery);
     }
@@ -536,51 +550,76 @@ export const LocationWeather: React.FC<LocationWeatherProps> = ({ onApplyRainfal
         </div>
       )}
 
-      {/* ─── Search & BBC Presets Bar ─────────────────────────────────────────── */}
-      <div className="p-4 space-y-2.5 border-b border-slate-800/60 bg-slate-900/40">
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchLocationData(query)}
-              placeholder="Search world city (e.g. Bangalore, London, New York)..."
-              className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/50 transition-all"
-            />
+      {/* ─── Search & BBC Presets Bar OR Unified Sync Banner ─────────────────────────── */}
+      {hideSearchBar ? (
+        <div className="px-4 py-3 border-b border-slate-800/60 bg-slate-900/50 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <MapPin className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+            <span className="text-xs text-slate-300 truncate">
+              Area Telemetry: <strong className="text-white">{data.city || externalQuery || 'Bangalore'}</strong>
+            </span>
           </div>
-          <button
-            onClick={() => fetchLocationData(query)}
-            disabled={isLoading || !query.trim()}
-            className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer"
-          >
-            {isLoading ? 'Loading...' : 'Check'}
-          </button>
+          <span className="text-[10px] text-cyan-400 font-mono bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30 shrink-0">
+            Linked to Map
+          </span>
         </div>
+      ) : (
+        <div className="p-4 space-y-2.5 border-b border-slate-800/60 bg-slate-900/40">
+          <div className="flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    fetchLocationData(query);
+                    onCityChange?.(query);
+                  }
+                }}
+                placeholder="Search world city (e.g. Bangalore, London, New York)..."
+                className="w-full pl-9 pr-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/60 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/50 transition-all"
+              />
+            </div>
+            <button
+              onClick={() => {
+                fetchLocationData(query);
+                onCityChange?.(query);
+              }}
+              disabled={isLoading || !query.trim()}
+              className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 text-xs font-semibold transition-all disabled:opacity-40 cursor-pointer"
+            >
+              {isLoading ? 'Loading...' : 'Check'}
+            </button>
+          </div>
 
-        {/* Quick Presets Pills */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
-          <span className="text-slate-500 font-medium shrink-0">Popular:</span>
-          {PRESET_CITIES.map((city) => {
-            const isActive = activeCityId === city.id || data.city.toLowerCase() === city.name.toLowerCase();
-            return (
-              <button
-                key={city.id}
-                onClick={() => handlePresetSelect(city)}
-                className={`px-2.5 py-1 rounded-lg border transition-all shrink-0 cursor-pointer ${
-                  isActive
-                    ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-semibold'
-                    : 'bg-slate-800/60 border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700/60'
-                }`}
-              >
-                {city.label}
-              </button>
-            );
-          })}
+          {/* Quick Presets Pills */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+            <span className="text-slate-500 font-medium shrink-0">Popular:</span>
+            {PRESET_CITIES.map((city) => {
+              const isActive = activeCityId === city.id || data.city.toLowerCase() === city.name.toLowerCase();
+              return (
+                <button
+                  key={city.id}
+                  onClick={() => {
+                    handlePresetSelect(city);
+                    onCityChange?.(city.name);
+                  }}
+                  className={`px-2.5 py-1 rounded-lg border transition-all shrink-0 cursor-pointer ${
+                    isActive
+                      ? 'bg-cyan-500/20 border-cyan-500/50 text-cyan-300 font-semibold'
+                      : 'bg-slate-800/60 border-slate-700/50 text-slate-400 hover:text-white hover:bg-slate-700/60'
+                  }`}
+                >
+                  {city.label}
+                </button>
+              );
+            })}
+          </div>
+          {error && <p className="text-xs text-red-400 px-1">{error}</p>}
         </div>
-        {error && <p className="text-xs text-red-400 px-1">{error}</p>}
-      </div>
+      )}
 
       {/* ─── Hero Observation Card ───────────────────────────────────────────── */}
       <div className="p-4 border-b border-slate-800/60 bg-gradient-to-b from-slate-900/60 to-slate-950/80">
