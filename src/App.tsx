@@ -49,7 +49,7 @@ import { HistoricalDisasterModal } from './components/historical/HistoricalDisas
 export const AppContent: React.FC = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
   const [isHistoricalOpen, setIsHistoricalOpen] = useState(false);
-  const [historicalCity, setHistoricalCity] = useState<string | null>(null);
+  const [historicalCity] = useState<string | null>(null);
 
   // ─── Theme ────────────────────────────────────────────────────────────────
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
