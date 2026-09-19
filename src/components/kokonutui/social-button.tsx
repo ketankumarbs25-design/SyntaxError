@@ -13,8 +13,8 @@
 import { Link, Check } from "lucide-react";
 import { motion } from "motion/react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+import { Button } from "../ui/button";
+import { cn } from "../../lib/utils";
 
 type IconComponent = React.ComponentType<{ className?: string }>;
 
