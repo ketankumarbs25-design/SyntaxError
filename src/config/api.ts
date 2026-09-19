@@ -13,6 +13,8 @@ export const API_KEYS = {
     (import.meta.env.VITE_GEMINI_API_KEY as string) ||
     (import.meta.env.LLM_API_KEY as string) ||
     '',
+  HISTORICAL_DISASTERS:
+    (import.meta.env.VITE_HISTORICAL_DISASTER_API_KEY as string) || '',
 } as const;
 
 export const API_ENDPOINTS = {
@@ -22,4 +24,6 @@ export const API_ENDPOINTS = {
   OWM_ICON: 'https://openweathermap.org/img/wn',
   GEMINI: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
   BACKEND_BASE: 'http://localhost:8000',
+  HISTORICAL_DISASTERS:
+    (import.meta.env.VITE_HISTORICAL_DISASTER_API_ENDPOINT as string) || '',
 } as const;

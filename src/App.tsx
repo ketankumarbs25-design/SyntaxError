@@ -44,9 +44,12 @@ import { LocationWeather } from './components/location/LocationWeather';
 import { ThemeSwitcher } from './components/theme/ThemeSwitcher';
 import { MinimalDashboard } from './components/minimal/MinimalDashboard';
 import { FlowShieldAuthScreen } from './components/auth/FlowShieldAuthScreen';
+import { HistoricalDisasterModal } from './components/historical/HistoricalDisasterModal';
 
 export const AppContent: React.FC = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
+  const [isHistoricalOpen, setIsHistoricalOpen] = useState(false);
+  const [historicalCity, setHistoricalCity] = useState<string | null>(null);
 
   // ─── Theme ────────────────────────────────────────────────────────────────
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
@@ -623,6 +626,13 @@ export const AppContent: React.FC = () => {
 
       {/* ─── Authentication Modal (Google & Email) ─────────────────────────── */}
       <AuthModal />
+
+      {/* ─── Historical Disaster Intelligence Modal ──────────────────────────── */}
+      <HistoricalDisasterModal
+        isOpen={isHistoricalOpen}
+        onClose={() => setIsHistoricalOpen(false)}
+        initialCity={historicalCity}
+      />
         </motion.div>
       )}
     </AnimatePresence>

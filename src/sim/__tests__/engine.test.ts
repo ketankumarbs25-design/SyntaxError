@@ -273,16 +273,23 @@ describe('Cross-Validation (TS vs Python)', () => {
     const { execSync } = await import('child_process');
     let output = '';
     try {
-      // Try py -3.14 or python
+      // Try py -3.14, python3, or python
       output = execSync('py -3.14 validation/validate.py', {
         encoding: 'utf-8',
         cwd: process.cwd(),
       });
     } catch {
-      output = execSync('python validation/validate.py', {
-        encoding: 'utf-8',
-        cwd: process.cwd(),
-      });
+      try {
+        output = execSync('python3 validation/validate.py', {
+          encoding: 'utf-8',
+          cwd: process.cwd(),
+        });
+      } catch {
+        output = execSync('python validation/validate.py', {
+          encoding: 'utf-8',
+          cwd: process.cwd(),
+        });
+      }
     }
     expect(output).toContain('ALL TESTS PASSED');
     expect(output).toContain('OVERALL MAX DIVERGENCE: 0.00e+00');

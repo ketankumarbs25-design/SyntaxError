@@ -100,13 +100,13 @@ def main():
         config_json = json.dumps(cfg)
         cmd = ["npx", "tsx", "src/sim/cli.ts", "--config", config_json]
         
-        # On Windows, need shell=True for npx
+        # On Windows, need shell=True for npx; on Unix/macOS shell=False passes args array cleanly
         proc = subprocess.run(
             cmd,
             cwd=project_root,
             capture_output=True,
             text=True,
-            shell=True,
+            shell=(sys.platform == "win32"),
         )
 
         if proc.returncode != 0:

@@ -3,6 +3,8 @@
 interface ImportMetaEnv {
   readonly VITE_OPENWEATHERMAP_API_KEY: string;
   readonly VITE_GEMINI_API_KEY: string;
+  readonly VITE_HISTORICAL_DISASTER_API_KEY?: string;
+  readonly VITE_HISTORICAL_DISASTER_API_ENDPOINT?: string;
 }
 
 interface ImportMeta {
