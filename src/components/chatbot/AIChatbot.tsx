@@ -30,7 +30,8 @@ export interface ChatAction {
     | 'PAUSE'
     | 'RESET'
     | 'SEARCH_LOCATION'
-    | 'SELECT_ZONE';
+    | 'SELECT_ZONE'
+    | 'OPEN_AUTH';
   payload?: any;
   description?: string;
 }
@@ -165,6 +166,16 @@ const GEMINI_TOOLS = [
             zone: { type: 'string', description: 'Zone name like A1, B3, H8' },
           },
           required: ['zone'],
+        },
+      },
+      {
+        name: 'open_auth',
+        description: 'Open the authentication sign in / sign up dialog for users to login with Google or email.',
+        parameters: {
+          type: 'object',
+          properties: {
+            mode: { type: 'string', description: 'Mode to open: "signin" for existing users or "signup" for new users' },
+          },
         },
       },
     ],
@@ -323,6 +334,11 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
           return {
             result: `Selected zone ${args.zone}.`,
             action: { type: 'SELECT_ZONE', payload: args.zone },
+          };
+        case 'open_auth':
+          return {
+            result: 'Opening authentication dialog...',
+            action: { type: 'OPEN_AUTH', payload: args.mode === 'signup' ? 'signup' : 'signin' },
           };
         default:
           return { result: `Unknown function: ${name}` };

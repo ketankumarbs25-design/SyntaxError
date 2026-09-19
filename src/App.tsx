@@ -34,6 +34,9 @@ import { CellDetailModal } from './components/grid/CellDetailModal';
 import { AIChatbot } from './components/chatbot/AIChatbot';
 import type { ChatAction } from './components/chatbot/AIChatbot';
 import { SocialButton } from './components/kokonutui/social-button';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthModal } from './components/auth/AuthModal';
+import { UserMenu } from './components/auth/UserMenu';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -52,7 +55,9 @@ const panelVariants = {
   },
 };
 
-export const App: React.FC = () => {
+export const AppContent: React.FC = () => {
+  const { openAuthModal } = useAuth();
+
   // ─── Simulation Configuration ─────────────────────────────────────────────
   const [config, setConfig] = useState<SimConfig>({
     ...DEFAULT_CONFIG,
@@ -318,9 +323,13 @@ export const App: React.FC = () => {
           }
           break;
         }
+        case 'OPEN_AUTH': {
+          openAuthModal(action.payload === 'signup' ? 'signup' : 'signin');
+          break;
+        }
       }
     },
-    [handleConfigChange, handleStartDemoMode, play, pause, reset, config.rows, config.cols]
+    [handleConfigChange, handleStartDemoMode, play, pause, reset, config.rows, config.cols, openAuthModal]
   );
 
   // ─── Chatbot Context ─────────────────────────────────────────────────────
@@ -368,6 +377,7 @@ export const App: React.FC = () => {
               <span>Seed: <strong className="text-cyan-300">{config.seed}</strong></span>
             </div>
             <SocialButton label="Share Sim" />
+            <UserMenu />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/40 text-slate-300 text-sm"
@@ -492,7 +502,18 @@ export const App: React.FC = () => {
         context={chatContext}
         onAction={handleChatAction}
       />
+
+      {/* ─── Authentication Modal (Google & Email) ─────────────────────────── */}
+      <AuthModal />
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 };
 
