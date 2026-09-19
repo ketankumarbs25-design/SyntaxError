@@ -423,6 +423,7 @@ export const AppContent: React.FC = () => {
         mapComponent={
           <div className="w-full">
             <LiveFloodMap
+              cleanMapOnly={true}
               focusedZoneId={focusedMapZone}
               externalLocation={sharedLocation}
               onLocationChange={handleSharedLocationChange}

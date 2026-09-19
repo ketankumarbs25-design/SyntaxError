@@ -56,6 +56,8 @@ export interface LiveFloodMapProps {
   realFloodGeoJson?: GeoJSON.GeoJsonObject | null;
   externalLocation?: string | null;
   onLocationChange?: (locationName: string, lat: number, lon: number, rainfall?: number) => void;
+  cleanMapOnly?: boolean;
+  onTelemetryUpdate?: (telemetry: AreaTelemetry, risk: RiskAssessment, loc: GeocodedLocation) => void;
 }
 
 const POPULAR_PRESETS: { label: string; query: string }[] = [
@@ -71,6 +73,8 @@ const POPULAR_PRESETS: { label: string; query: string }[] = [
 export const LiveFloodMap: React.FC<LiveFloodMapProps> = ({
   externalLocation,
   onLocationChange,
+  cleanMapOnly,
+  onTelemetryUpdate,
 }) => {
   const [searchInput, setSearchInput] = useState('');
   const [currentLocation, setCurrentLocation] = useState<GeocodedLocation>(DEFAULT_LOCATION);
@@ -96,6 +100,11 @@ export const LiveFloodMap: React.FC<LiveFloodMapProps> = ({
     onLocationChangeRef.current = onLocationChange;
   });
 
+  const onTelemetryUpdateRef = useRef(onTelemetryUpdate);
+  useEffect(() => {
+    onTelemetryUpdateRef.current = onTelemetryUpdate;
+  });
+
   const lastFetchedCoordsRef = useRef<{ lat: number; lon: number } | null>(null);
 
   // ─── Fetch Real Weather & Risk for Current Location ───────────────────────
@@ -115,13 +124,19 @@ export const LiveFloodMap: React.FC<LiveFloodMapProps> = ({
       const data = await fetchAreaWeatherTelemetry(lat, lon);
       setTelemetry(data.telemetry);
       setRisk(data.risk);
+      onTelemetryUpdateRef.current?.(data.telemetry, data.risk, {
+        name: currentLocation.name,
+        displayName: currentLocation.displayName,
+        lat,
+        lon,
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to retrieve real-time weather telemetry.';
       setWeatherError(msg);
     } finally {
       setIsLoadingWeather(false);
     }
-  }, []);
+  }, [currentLocation.displayName, currentLocation.name]);
 
   // Fetch telemetry whenever location coordinates change
   useEffect(() => {
@@ -329,6 +344,14 @@ export const LiveFloodMap: React.FC<LiveFloodMapProps> = ({
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [isFullscreen]);
+
+  if (cleanMapOnly) {
+    return (
+      <div className="w-full h-full relative rounded-2xl overflow-hidden border border-slate-200/80 bg-slate-100" style={{ minHeight: '440px', height: '440px' }}>
+        <div ref={mapContainerRef} className="w-full h-full" style={{ height: '440px', minHeight: '440px' }} />
+      </div>
+    );
+  }
 
   return (
     <section id="live-flood-risk-map" className="w-full max-w-[840px] mx-auto space-y-3.5">
