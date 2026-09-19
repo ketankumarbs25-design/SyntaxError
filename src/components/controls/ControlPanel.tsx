@@ -7,6 +7,7 @@
 
 import React from 'react';
 import type { SimConfig } from '../../sim/types';
+import { SlideTextButton } from '../kokonutui/slide-text-button';
 
 interface ControlPanelProps {
   config: SimConfig;
@@ -228,16 +229,19 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
         </button>
 
         {/* Demo Mode */}
-        <button
-          onClick={onStartDemoMode}
-          className={`w-full mt-1 py-3 px-4 rounded-xl text-center text-sm font-bold border transition-all ${
-            isDemoMode
-              ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 animate-pulse'
-              : 'bg-gradient-to-r from-cyan-600/20 to-blue-600/20 hover:from-cyan-500/25 hover:to-blue-500/25 border-cyan-500/30 text-cyan-300'
-          }`}
-        >
-          {isDemoMode ? '🎬 Demo Playing...' : '▶ Watch Demo (90 seconds)'}
-        </button>
+        <div className="w-full mt-1">
+          <SlideTextButton
+            variant="cyan"
+            text={isDemoMode ? '🎬 Demo Playing...' : '▶ Watch Demo (90 seconds)'}
+            hoverText={isDemoMode ? '⏹ Click to Exit Demo' : '🎬 Launch Narrated Sim'}
+            onClick={onStartDemoMode}
+            className={
+              isDemoMode
+                ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 animate-pulse'
+                : undefined
+            }
+          />
+        </div>
       </div>
     </div>
   );
