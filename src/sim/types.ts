@@ -145,8 +145,8 @@ export interface SimConfig {
 
 /** Sensible default configuration */
 export const DEFAULT_CONFIG: SimConfig = {
-  rows: 8,
-  cols: 8,
+  rows: 1,
+  cols: 1,
   seed: 42,
   rainfallIntensity: 80,   // Heavy preset
   rainfallDuration: 90,    // 90 minutes

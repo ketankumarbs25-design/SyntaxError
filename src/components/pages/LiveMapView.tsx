@@ -2,7 +2,7 @@ import React from 'react';
 import { motion } from 'motion/react';
 import { ShieldCheck, AlertTriangle, ArrowRight, CloudSun, FlaskConical, LifeBuoy } from 'lucide-react';
 import type { SimConfig, SimState, CellState } from '../../sim/types';
-import { LiveStats } from '../stats/LiveStats';
+import { LiveStats } from '@/components/stats/LiveStats';
 import { FloodGrid } from '../grid/FloodGrid';
 import { TimelineControls } from '../playback/TimelineControls';
 import { DemoNarrative } from '../demo/DemoNarrative';
