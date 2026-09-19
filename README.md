@@ -209,7 +209,34 @@ npm run preview
 
 ---
 
-## 8. Honest Limitations & Physical Assumptions
+## 8. Real-Time Telemetry & AI Assistant
+
+### 🤖 FlowShield AI Chatbot (Gemini 3.6 Flash)
+- **Conversational Flood Intelligence**: Ask natural-language questions about current flood depths, safe zones, critical sectors, drainage efficiency, and disaster preparedness.
+- **Bidirectional Simulation Control**: Control the entire platform using function calling:
+  - `"Set rainfall to 120 mm/hr"`
+  - `"Simulate extreme storm"`
+  - `"Pause/Play simulation"`
+  - `"Search weather in Mumbai"`
+  - `"Inspect zone A1"`
+- **Thought Signature Support**: Full compatibility with Google Gemini 3.6 Flash function calling.
+
+### 🌦️ Real-Time Weather & Air Quality (OpenWeatherMap)
+- **Live Meteorological Ingestion**: Real-time temperature, humidity, wind velocity/direction, barometric pressure, cloud cover, and live rainfall rate.
+- **Air Quality Index (AQI 1–5)**: Live pollutant breakdown for PM2.5, PM10, O₃, NO₂, SO₂, and CO.
+- **3-Hour Forecast**: Upcoming precipitation predictions.
+- **"Simulate This Weather"**: One-click ingestion of live rainfall data directly into the hydrodynamic simulation engine.
+
+### 🔑 Environment Variables Setup
+Copy `.env.example` to `.env` and provide your API keys:
+```env
+VITE_OPENWEATHERMAP_API_KEY=your_openweathermap_key
+VITE_GEMINI_API_KEY=your_gemini_api_key
+```
+
+---
+
+## 9. Honest Limitations & Physical Assumptions
 
 While FLOWSHIELD provides high-performance deterministic simulations and instant scrubbing, users and researchers should be aware of several deliberate simplifications:
 
@@ -220,6 +247,6 @@ While FLOWSHIELD provides high-performance deterministic simulations and instant
 
 ---
 
-## 9. License
+## 10. License
 
 MIT License — free for educational, research, and production simulation use.
