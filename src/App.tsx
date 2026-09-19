@@ -42,6 +42,7 @@ import { AuthModal } from './components/auth/AuthModal';
 import { UserMenu } from './components/auth/UserMenu';
 import { LocationWeather } from './components/location/LocationWeather';
 import { ThemeSwitcher } from './components/theme/ThemeSwitcher';
+import { MinimalDashboard } from './components/minimal/MinimalDashboard';
 
 export const AppContent: React.FC = () => {
   const { openAuthModal } = useAuth();
@@ -74,7 +75,7 @@ export const AppContent: React.FC = () => {
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [activeTab, setActiveTab] = useState<'monitor' | 'scenarios' | 'weather'>('monitor');
+  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'sim' | 'weather' | 'scenarios' | 'monitor'>('overview');
   const [focusedMapZone, setFocusedMapZone] = useState<string | null>(null);
 
   // ─── Single Unified Location State (Shared across Map & Weather) ───────────
@@ -409,234 +410,138 @@ export const AppContent: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen w-full command-grid-bg flex flex-col antialiased select-none overflow-x-hidden" style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
-      {/* ─── 1. Top Tactical Status Bar ────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 w-full border-b backdrop-blur-xl px-4 py-2.5 shadow-xl" style={{ backgroundColor: 'var(--header-bg)', borderColor: 'var(--header-border)' }}>
-        <div className="w-full max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-3">
-          {/* Logo & Operational Title */}
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center text-lg shadow-lg shadow-cyan-500/20">
-              🌊
-            </div>
-            <div>
+    <div className="min-h-screen w-full bg-[#f4f5f8] text-slate-900 antialiased select-none">
+      <MinimalDashboard
+        config={config}
+        currentState={currentState}
+        onConfigChange={handleConfigChange}
+        onRunSimulation={handleRunSimulation}
+        onNavigateToTab={(tab) => setActiveTab(tab)}
+        activeTab={activeTab === 'overview' || activeTab === 'map' || activeTab === 'sim' || activeTab === 'weather' ? activeTab : 'overview'}
+        sharedLocation={sharedLocation}
+        onLocationChange={handleSharedLocationChange}
+        mapComponent={
+          <div className="w-full">
+            <LiveFloodMap
+              focusedZoneId={focusedMapZone}
+              externalLocation={sharedLocation}
+              onLocationChange={handleSharedLocationChange}
+            />
+          </div>
+        }
+        simulationComponent={
+          <div className="space-y-6">
+            {/* Header with Active Scenario & Operational Tools */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
               <div className="flex items-center gap-2">
-                <h1 className="font-display font-bold text-base sm:text-lg text-white tracking-wide flex items-center gap-2">
-                  FLOWSHIELD
-                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 uppercase">
-                    v2.5 Tactical Command
-                  </span>
-                </h1>
+                <span className="text-sm font-bold text-slate-800">Active Scenario:</span>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-900 border border-amber-200">
+                  {activeScenarioName}
+                </span>
+                <span className="text-xs text-slate-400 font-mono">
+                  Euler Worker Engine · 60 FPS
+                </span>
               </div>
-              <p className="text-[10px] font-mono text-slate-400 hidden sm:block">
-                Hydrodynamic Cellular Inundation &amp; Early Warning System
-              </p>
-            </div>
-          </div>
-
-          {/* Operational Badges & Telemetry */}
-          <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono">
-            <SocialButton label="Share Sim" />
-            <UserMenu />
-
-            {/* Mandatory Synthetic Terrain Disclosure */}
-            <span
-              className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold tracking-tight"
-              title="All terrain, elevation, and drainage metrics are generated via deterministic PRNG Mulberry32 lattice"
-            >
-              SYNTHETIC TERRAIN
-            </span>
-
-            {/* Active Scenario Indicator */}
-            <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold hidden md:inline-flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-              {activeScenarioName}
-            </span>
-
-            {/* Runtime Engine Status */}
-            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold hidden lg:inline-flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-              Web Worker Euler Engine (60 FPS)
-            </span>
-
-            {/* Hackathon Badge */}
-            <span className="px-2.5 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 font-bold hidden xl:inline-flex items-center gap-1">
-              🏆 Pentagram × BMSCE IEEE
-            </span>
-
-            {/* View Switcher Tabs (Desktop / Mobile) */}
-            <div className="flex items-center p-1 rounded-xl border" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}>
-              <button
-                onClick={() => setActiveTab('monitor')}
-                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                  activeTab === 'monitor'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Dashboard
-              </button>
-              <button
-                onClick={() => setActiveTab('scenarios')}
-                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                  activeTab === 'scenarios'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Scenarios
-              </button>
-              <button
-                onClick={() => setActiveTab('weather')}
-                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
-                  activeTab === 'weather'
-                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                    : 'text-slate-400 hover:text-white'
-                }`}
-              >
-                Live Weather
-              </button>
+              <div className="flex items-center gap-2">
+                <SocialButton label="Share Sim" />
+                <ThemeSwitcher mode={themeMode} onSetMode={setThemeMode} />
+                <UserMenu />
+              </div>
             </div>
 
-            {/* Theme Switcher */}
-            <ThemeSwitcher mode={themeMode} onSetMode={setThemeMode} />
-          </div>
-        </div>
-      </header>
-
-      {/* ─── 2. Main Command Center Viewport ──────────────────────────────── */}
-      <main className="w-full max-w-[1720px] mx-auto p-3 sm:p-4 flex-1 flex flex-col gap-4">
-        {/* Narrated Demo Banner if active */}
-        {isDemoMode && (
-          <DemoNarrative
-            time={currentState.time}
-            rainfallDuration={config.rainfallDuration}
-            criticalCount={currentState.stats.criticalCells}
-            warningCount={currentState.stats.warningCells}
-            onExit={handleExitDemoMode}
-          />
-        )}
-
-        {activeTab === 'scenarios' ? (
-          /* Full Scenarios Comparison View */
-          <div className="space-y-4">
-            <ScenarioComparison
-              scenarios={scenarios}
-              isLoading={isLoadingScenarios}
-              onApplyScenario={handleApplyScenarioFromMatrix}
-            />
-
-            <Charts
-              timeline={timeline}
-              currentStep={currentStep}
-              rainfallIntensity={config.rainfallIntensity}
-              rainfallDuration={config.rainfallDuration}
-              onSeek={setStep}
-            />
-          </div>
-        ) : activeTab === 'weather' ? (
-          /* Live Weather View */
-          <div className="max-w-2xl mx-auto w-full py-4">
-            <LocationWeather
-              externalQuery={sharedLocation}
-              onApplyRainfall={handleApplyRealRainfall}
-              onCityChange={(city) => setSharedLocation(city)}
-            />
-          </div>
-        ) : (
-          /* Primary 3-Column Command Center Dashboard */
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-            {/* ══════ LEFT COLUMN: Controls & Presets (3 cols) ══════ */}
-            <div className="lg:col-span-3 space-y-4">
-              <ControlPanel
-                config={config}
-                onConfigChange={handleConfigChange}
-                emergencyMode={emergencyMode}
-                onToggleEmergencyMode={() => setEmergencyMode((prev) => !prev)}
-                blockedCellsCount={blockedCells.size}
-                onResetBlockedChannels={handleResetBlockedChannels}
-                isSimulating={isSimulating}
-                onStartDemoMode={handleStartDemoMode}
-                isDemoMode={isDemoMode}
-                onRunSimulation={handleRunSimulation}
-                onSelectPresetScenario={handleSelectPresetScenario}
+            {/* Narrated Demo Banner if active */}
+            {isDemoMode && (
+              <DemoNarrative
+                time={currentState.time}
+                rainfallDuration={config.rainfallDuration}
+                criticalCount={currentState.stats.criticalCells}
+                warningCount={currentState.stats.warningCells}
+                onExit={handleExitDemoMode}
               />
+            )}
 
-              <div className="hidden lg:block">
-                <LocationWeather
-                  externalQuery={sharedLocation}
-                  hideSearchBar={true}
-                  onApplyRainfall={handleApplyRealRainfall}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              {/* Left Control Panel */}
+              <div className="lg:col-span-4 space-y-4">
+                <ControlPanel
+                  config={config}
+                  onConfigChange={handleConfigChange}
+                  emergencyMode={emergencyMode}
+                  onToggleEmergencyMode={() => setEmergencyMode((prev) => !prev)}
+                  blockedCellsCount={blockedCells.size}
+                  onResetBlockedChannels={handleResetBlockedChannels}
+                  isSimulating={isSimulating}
+                  onStartDemoMode={handleStartDemoMode}
+                  isDemoMode={isDemoMode}
+                  onRunSimulation={handleRunSimulation}
+                  onSelectPresetScenario={handleSelectPresetScenario}
                 />
               </div>
-            </div>
 
-            {/* ══════ CENTER HERO: Heatmap + Tide Gauge + Timeline + Charts (5 cols) ══════ */}
-            <div className="lg:col-span-5 space-y-3.5 flex flex-col items-center">
-              {/* Tactical Live HUD Metrics */}
-              <LiveStats
-                stats={currentState.stats}
-                totalCells={config.rows * config.cols}
-              />
+              {/* Center Simulation Canvas & Gauge */}
+              <div className="lg:col-span-8 space-y-4 flex flex-col items-center">
+                <LiveStats
+                  stats={currentState.stats}
+                  totalCells={config.rows * config.cols}
+                />
 
-              {/* Heatmap Canvas paired with Vertical Tide Gauge */}
-              <div className="w-full flex items-stretch justify-center gap-2.5">
-                <div className="flex-1 max-w-[560px]">
-                  <HeatmapCanvas
-                    cells={currentState.cells}
-                    rows={config.rows}
-                    cols={config.cols}
-                    blockedCells={blockedCells}
-                    selectedCellId={selectedCellId}
-                    emergencyMode={emergencyMode}
-                    onCellClick={(cell) => setSelectedCellId(cell.id)}
-                  />
+                <div className="w-full flex items-stretch justify-center gap-3">
+                  <div className="flex-1 max-w-[580px]">
+                    <HeatmapCanvas
+                      cells={currentState.cells}
+                      rows={config.rows}
+                      cols={config.cols}
+                      blockedCells={blockedCells}
+                      selectedCellId={selectedCellId}
+                      emergencyMode={emergencyMode}
+                      onCellClick={(cell) => setSelectedCellId(cell.id)}
+                    />
 
-                  {/* Standardized Risk & Hydrology Legend */}
-                  <div className="mt-2 px-3 py-1.5 flex flex-wrap items-center justify-between text-[11px] font-mono bg-[#0a101f]/70 border border-[#17243b] rounded-xl text-slate-400">
-                    <div className="flex items-center gap-3">
-                      <span className="flex items-center gap-1.5 text-emerald-400">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/40 border border-emerald-500" />
-                        Safe (&lt;0.15m)
-                      </span>
-                      <span className="flex items-center gap-1.5 text-amber-400">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/40 border border-amber-500" />
-                        Warning (0.15-0.30m)
-                      </span>
-                      <span className="flex items-center gap-1.5 text-red-400">
-                        <span className="w-2.5 h-2.5 rounded-sm bg-red-500/50 border border-red-500" />
-                        Critical (&ge;0.30m)
-                      </span>
+                    <div className="mt-2.5 px-3.5 py-2 flex flex-wrap items-center justify-between text-xs bg-slate-50 border border-slate-200 rounded-2xl text-slate-600">
+                      <div className="flex items-center gap-3 font-medium">
+                        <span className="flex items-center gap-1.5 text-emerald-600">
+                          <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                          Safe (&lt;0.15m)
+                        </span>
+                        <span className="flex items-center gap-1.5 text-amber-600">
+                          <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                          Warning (0.15-0.30m)
+                        </span>
+                        <span className="flex items-center gap-1.5 text-red-600">
+                          <span className="w-2.5 h-2.5 rounded-full bg-red-400" />
+                          Critical (&ge;0.30m)
+                        </span>
+                      </div>
+                      <span className="text-slate-400 text-[11px]">Click sector to inspect</span>
                     </div>
-                    <span className="text-slate-500 text-[10px]">Click sector to inspect</span>
                   </div>
+
+                  <TideStaffGauge
+                    maxWater={currentState.stats.maxWater}
+                    criticalThreshold={0.30}
+                    warningThreshold={0.15}
+                    maxScale={1.20}
+                  />
                 </div>
 
-                {/* Tactical Vertical Tide-Staff Gauge */}
-                <TideStaffGauge
-                  maxWater={currentState.stats.maxWater}
-                  criticalThreshold={0.30}
-                  warningThreshold={0.15}
-                  maxScale={1.20}
+                <TimelineControls
+                  currentStep={currentStep}
+                  totalSteps={timeline.length}
+                  currentTime={currentState.time}
+                  rainfallDuration={config.rainfallDuration}
+                  isPlaying={isPlaying}
+                  playbackSpeed={playbackSpeed}
+                  onTogglePlay={togglePlay}
+                  onReset={reset}
+                  onSeek={setStep}
+                  onSpeedChange={setPlaybackSpeed}
+                  currentState={currentState}
                 />
               </div>
+            </div>
 
-              {/* Large Horizontal Timeline Scrub Bar */}
-              <TimelineControls
-                currentStep={currentStep}
-                totalSteps={timeline.length}
-                currentTime={currentState.time}
-                rainfallDuration={config.rainfallDuration}
-                isPlaying={isPlaying}
-                playbackSpeed={playbackSpeed}
-                onTogglePlay={togglePlay}
-                onReset={reset}
-                onSeek={setStep}
-                onSpeedChange={setPlaybackSpeed}
-                currentState={currentState}
-              />
-
-              {/* Analytics & Hydrodynamic Progression Charts */}
-              <div className="w-full">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+              <div className="lg:col-span-8">
                 <Charts
                   timeline={timeline}
                   currentStep={currentStep}
@@ -645,40 +550,40 @@ export const AppContent: React.FC = () => {
                   onSeek={setStep}
                 />
               </div>
+              <div className="lg:col-span-4">
+                <EarlyWarnings
+                  cells={currentState.cells}
+                  config={config}
+                  stats={currentState.stats}
+                  currentTime={currentState.time}
+                  selectedCellId={selectedCellId}
+                  onSelectCell={(cellId) => setSelectedCellId(cellId)}
+                />
+              </div>
             </div>
 
-            {/* ══════ RIGHT COLUMN: Early Warnings & Real AI Engine (4 cols) ══════ */}
-            <div className="lg:col-span-4 space-y-4">
-              <EarlyWarnings
-                cells={currentState.cells}
-                config={config}
-                stats={currentState.stats}
-                currentTime={currentState.time}
-                selectedCellId={selectedCellId}
-                onSelectCell={(cellId) => setSelectedCellId(cellId)}
-              />
-
-              {/* Collapsible Quick Comparative Matrix */}
+            {/* 4-Scenario Comparative Matrix */}
+            <div className="w-full pt-4 border-t border-slate-100">
               <ScenarioComparison
                 scenarios={scenarios}
                 isLoading={isLoadingScenarios}
                 onApplyScenario={handleApplyScenarioFromMatrix}
               />
             </div>
-
-            {/* 📍 Live Flood Risk Map (OpenStreetMap + Leaflet) */}
-            <div className="lg:col-span-12 w-full pt-4">
-              <LiveFloodMap
-                focusedZoneId={focusedMapZone}
-                externalLocation={sharedLocation}
-                onLocationChange={handleSharedLocationChange}
-              />
-            </div>
           </div>
-        )}
-      </main>
+        }
+        weatherComponent={
+          <div className="max-w-2xl mx-auto w-full py-4">
+            <LocationWeather
+              externalQuery={sharedLocation}
+              onApplyRainfall={handleApplyRealRainfall}
+              onCityChange={(city) => setSharedLocation(city)}
+            />
+          </div>
+        }
+      />
 
-      {/* ─── 3. Sector Detail Slide-In Inspector ─────────────────────────── */}
+      {/* ─── Sector Detail Slide-In Inspector ─────────────────────────── */}
       <AnimatePresence>
         {selectedCell && (
           <CellDetailModal
@@ -691,7 +596,7 @@ export const AppContent: React.FC = () => {
         )}
       </AnimatePresence>
 
-      {/* ─── 4. Floating Tactical AI Chatbot ──────────────────────────────── */}
+      {/* ─── Floating Tactical AI Chatbot ──────────────────────────────── */}
       <AIChatbot context={chatContext} onAction={handleChatAction} />
 
       {/* ─── Authentication Modal (Google & Email) ─────────────────────────── */}
