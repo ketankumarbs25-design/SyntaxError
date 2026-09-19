@@ -71,24 +71,33 @@ export const EarlyWarnings: React.FC<EarlyWarningsProps> = ({
   return (
     <div className="w-full flex flex-col gap-3.5">
       {/* ─── 1. Early Warning Status Card ──────────────────────────────────── */}
-      <div className="w-full bg-[#0a101f]/90 border border-[#17243b] rounded-2xl overflow-hidden shadow-xl backdrop-blur-md flex flex-col">
+      <div
+        className="w-full rounded-2xl overflow-hidden shadow-sm flex flex-col"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+      >
         {/* Banner Header */}
         <div
-          className={`px-4 py-3 border-b flex items-center justify-between transition-colors ${
-            hasCritical
-              ? 'bg-red-500/15 border-red-500/30'
+          className="px-4 py-3 flex items-center justify-between transition-colors"
+          style={{
+            background: hasCritical
+              ? 'var(--status-crit-subtle)'
               : stats.warningCells > 0
-              ? 'bg-amber-500/10 border-amber-500/25'
-              : 'bg-slate-900/60 border-slate-800'
-          }`}
+              ? 'var(--status-warn-subtle)'
+              : 'var(--bg-elevated)',
+            borderBottom: `1px solid ${hasCritical
+              ? 'var(--status-crit-border)'
+              : stats.warningCells > 0
+              ? 'var(--status-warn-border)'
+              : 'var(--border-strong)'}`,
+          }}
         >
           <div className="flex items-center gap-2">
-            <span className="text-base">{hasCritical ? '🚨' : stats.warningCells > 0 ? '⚠️' : '🛡️'}</span>
+            <span className="text-base">{hasCritical ? '\ud83d\udea8' : stats.warningCells > 0 ? '\u26a0\ufe0f' : '\ud83d\udee1\ufe0f'}</span>
             <div>
-              <h3 className="font-mono font-bold text-xs text-white uppercase tracking-wider">
+              <h3 className="font-mono font-bold text-xs uppercase tracking-wider" style={{ color: 'var(--text-primary)' }}>
                 Early Warning Engine
               </h3>
-              <div className="text-[10px] text-slate-400 font-mono">
+              <div className="text-[10px] font-mono" style={{ color: 'var(--text-muted)' }}>
                 {hasCritical
                   ? `FLASH INUNDATION BREACH: ${stats.criticalCells} SECTOR(S)`
                   : stats.warningCells > 0
@@ -99,13 +108,24 @@ export const EarlyWarnings: React.FC<EarlyWarningsProps> = ({
           </div>
 
           <span
-            className={`text-xs px-2.5 py-1 rounded-full font-mono font-bold border ${
-              hasCritical
-                ? 'bg-red-500/20 text-red-300 border-red-500/40 animate-pulse'
+            className="text-xs px-2.5 py-1 rounded-full font-mono font-bold"
+            style={{
+              background: hasCritical
+                ? 'var(--status-crit-subtle)'
                 : stats.warningCells > 0
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
-                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
-            }`}
+                ? 'var(--status-warn-subtle)'
+                : 'var(--status-safe-subtle)',
+              color: hasCritical
+                ? 'var(--status-crit)'
+                : stats.warningCells > 0
+                ? 'var(--status-warn)'
+                : 'var(--status-safe)',
+              border: `1px solid ${hasCritical
+                ? 'var(--status-crit-border)'
+                : stats.warningCells > 0
+                ? 'var(--status-warn-border)'
+                : 'var(--status-safe-border)'}`,
+            }}
           >
             {prioritizedWarnings.length} Active Alerts
           </span>
@@ -134,39 +154,60 @@ export const EarlyWarnings: React.FC<EarlyWarningsProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, scale: 0.96 }}
                     onClick={() => onSelectCell?.(cell.id)}
-                    className={`p-2 rounded-xl text-xs font-mono cursor-pointer border transition-all flex items-center justify-between select-none ${
-                      isSelected
-                        ? 'ring-2 ring-cyan-400 border-cyan-400 bg-cyan-500/10'
+                    className="p-2 rounded-xl text-xs font-mono cursor-pointer transition-all flex items-center justify-between select-none"
+                    style={{
+                      background: isSelected
+                        ? 'var(--accent-subtle)'
                         : isCrit
-                        ? 'bg-red-950/40 border-red-500/40 text-red-200 hover:bg-red-900/30'
+                        ? 'var(--status-crit-subtle)'
                         : isWarn
-                        ? 'bg-amber-950/30 border-amber-500/30 text-amber-200 hover:bg-amber-900/20'
-                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/50'
-                    }`}
+                        ? 'var(--status-warn-subtle)'
+                        : 'var(--bg-elevated)',
+                      border: `1px solid ${isSelected
+                        ? 'var(--accent-border)'
+                        : isCrit
+                        ? 'var(--status-crit-border)'
+                        : isWarn
+                        ? 'var(--status-warn-border)'
+                        : 'var(--border-strong)'}`,
+                      color: isCrit
+                        ? 'var(--status-crit)'
+                        : isWarn
+                        ? 'var(--status-warn)'
+                        : 'var(--text-secondary)',
+                      outline: isSelected ? '2px solid var(--accent)' : 'none',
+                    }}
                   >
                     <div className="flex items-center gap-2">
                       <span
-                        className={`w-2 h-2 rounded-full ${
-                          isCrit ? 'bg-red-400 animate-ping' : isWarn ? 'bg-amber-400' : 'bg-cyan-400'
-                        }`}
+                        className={`w-2 h-2 rounded-full ${isCrit ? 'animate-ping' : ''}`}
+                        style={{
+                          background: isCrit ? 'var(--status-crit)' : isWarn ? 'var(--status-warn)' : 'var(--accent)',
+                        }}
                       />
-                      <span className="font-bold text-white">Sector {zone}</span>
-                      <span className="text-[10px] text-slate-400">
+                      <span className="font-bold" style={{ color: 'var(--text-primary)' }}>Sector {zone}</span>
+                      <span className="text-[10px]" style={{ color: 'var(--text-muted)' }}>
                         ({cell.water.toFixed(2)}m / {cell.criticalDepth.toFixed(2)}m)
                       </span>
                     </div>
 
                     <div className="text-right">
                       {isCrit ? (
-                        <span className="text-[10px] font-bold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded border border-red-500/30">
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          style={{ color: 'var(--status-crit)', background: 'var(--status-crit-subtle)', border: '1px solid var(--status-crit-border)' }}
+                        >
                           CRITICAL INUNDATION
                         </span>
                       ) : cell.eta !== null && cell.eta > 0 ? (
-                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                        <span
+                          className="text-[10px] font-bold px-1.5 py-0.5 rounded"
+                          style={{ color: 'var(--status-warn)', background: 'var(--status-warn-subtle)', border: '1px solid var(--status-warn-border)' }}
+                        >
                           ETA: ~{cell.eta.toFixed(0)} min
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-500">Approaching Limit</span>
+                        <span className="text-[10px]" style={{ color: 'var(--text-faint)' }}>Approaching Limit</span>
                       )}
                     </div>
                   </motion.div>

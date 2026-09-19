@@ -14,6 +14,22 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import type { CellState } from '../../sim/types';
 
+/* ── Design token constants for Canvas 2D (cannot use CSS vars directly) ──── */
+/* These MUST stay in sync with src/index.css custom properties.              */
+const C = {
+  textMuted:    '#5C6485',  // --text-muted
+  bgElevated:   '#1F2135',  // --bg-elevated (grid border between cells)
+  borderStrong: '#292D48',  // --border-strong
+  accent:       '#627AEB',  // --accent
+  safe:         '#38B27A',  // --status-safe
+  warn:         '#CB8C35',  // --status-warn
+  warnLight:    '#E8B84B',  // warm amber for text on dark fill
+  crit:         '#D64F4F',  // --status-crit
+  critLight:    '#F28080',  // lighter red for text readability
+  textPrimary:  '#EDF0F8',  // --text-primary
+  textSecondary:'#9DA5C2',  // --text-secondary
+};
+
 interface HeatmapCanvasProps {
   cells: CellState[];
   rows: number;
@@ -77,7 +93,7 @@ export const HeatmapCanvas: React.FC<HeatmapCanvasProps> = ({
     ctx.font = '10px "JetBrains Mono", monospace';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillStyle = '#64748b'; // slate-500
+    ctx.fillStyle = C.textMuted;
 
     // Column numbers (1..cols)
     for (let c = 0; c < cols; c++) {
@@ -128,17 +144,17 @@ export const HeatmapCanvas: React.FC<HeatmapCanvasProps> = ({
       ctx.roundRect(innerX, innerY, innerW, innerH, radius);
 
       if (isCritical) {
-        // Critical inundation: intense crimson with alpha based on severity
+        // Critical inundation — functional: severity data encoding
         const critAlpha = Math.min(0.9, 0.45 + (waterDepth / 0.6) * 0.4);
-        ctx.fillStyle = `rgba(239, 68, 68, ${critAlpha})`;
+        ctx.fillStyle = `rgba(214, 79, 79, ${critAlpha})`;  // C.crit
       } else if (isWarning) {
-        // Warning: amber/orange glow
+        // Warning — functional: severity data encoding
         const warnAlpha = Math.min(0.8, 0.35 + (waterDepth / 0.3) * 0.35);
-        ctx.fillStyle = `rgba(245, 158, 11, ${warnAlpha})`;
+        ctx.fillStyle = `rgba(203, 140, 53, ${warnAlpha})`;  // C.warn
       } else if (hasWater) {
-        // Safe standing water: clean cyan-blue gradient
+        // Safe standing water — functional: water depth encoding
         const blueAlpha = Math.min(0.75, 0.2 + waterNorm * 0.55);
-        ctx.fillStyle = `rgba(6, 182, 212, ${blueAlpha})`;
+        ctx.fillStyle = `rgba(98, 122, 235, ${blueAlpha})`;  // C.accent
       } else {
         // Dry terrain
         ctx.fillStyle = `rgb(${baseR}, ${baseG}, ${baseB})`;
@@ -147,23 +163,23 @@ export const HeatmapCanvas: React.FC<HeatmapCanvasProps> = ({
 
       // Border outline
       if (isSelected) {
-        ctx.strokeStyle = '#00e5ff'; // Cyan selection ring
+        ctx.strokeStyle = C.accent;  // selection ring
         ctx.lineWidth = 2.5;
-        ctx.shadowColor = '#00e5ff';
+        ctx.shadowColor = C.accent;
         ctx.shadowBlur = 10;
         ctx.stroke();
       } else if (isCritical) {
-        ctx.strokeStyle = '#f87171'; // Red outline
+        ctx.strokeStyle = C.critLight;  // red outline
         ctx.lineWidth = 2;
-        ctx.shadowColor = 'rgba(239, 68, 68, 0.6)';
+        ctx.shadowColor = 'rgba(214, 79, 79, 0.6)';
         ctx.shadowBlur = 8;
         ctx.stroke();
       } else if (isWarning) {
-        ctx.strokeStyle = '#fbbf24'; // Amber outline
+        ctx.strokeStyle = C.warnLight;  // amber outline
         ctx.lineWidth = 1.5;
         ctx.stroke();
       } else {
-        ctx.strokeStyle = 'rgba(23, 36, 59, 0.8)';
+        ctx.strokeStyle = C.borderStrong;
         ctx.lineWidth = 1;
         ctx.stroke();
       }
@@ -182,7 +198,7 @@ export const HeatmapCanvas: React.FC<HeatmapCanvasProps> = ({
       // Blocked Channel Hazard Indicator (Hazard cross)
       if (isBlocked) {
         ctx.save();
-        ctx.strokeStyle = '#f43f5e';
+      ctx.strokeStyle = C.crit;  // blocked channel hazard X
         ctx.lineWidth = 2.5;
         ctx.beginPath();
         ctx.moveTo(innerX + 6, innerY + 6);
@@ -199,14 +215,14 @@ export const HeatmapCanvas: React.FC<HeatmapCanvasProps> = ({
       ctx.font = '9px "JetBrains Mono", monospace';
       ctx.textAlign = 'left';
       ctx.textBaseline = 'top';
-      ctx.fillStyle = isCritical ? '#fee2e2' : isWarning ? '#fef3c7' : '#94a3b8';
+      ctx.fillStyle = isCritical ? C.critLight : isWarning ? C.warnLight : C.textMuted;
       ctx.fillText(zoneName, innerX + 4, innerY + 4);
 
       if (hasWater) {
         ctx.font = 'bold 10px "JetBrains Mono", monospace';
         ctx.textAlign = 'right';
         ctx.textBaseline = 'bottom';
-        ctx.fillStyle = isCritical ? '#ffffff' : '#e0f2fe';
+        ctx.fillStyle = isCritical ? C.textPrimary : C.textSecondary;
         ctx.fillText(`${waterDepth.toFixed(2)}m`, innerX + innerW - 4, innerY + innerH - 4);
       }
       ctx.restore();
@@ -247,8 +263,8 @@ export const HeatmapCanvas: React.FC<HeatmapCanvasProps> = ({
           const endY = y_i + (y_j - y_i) * 0.42;
 
           ctx.save();
-          ctx.strokeStyle = 'rgba(0, 229, 255, 0.45)';
-          ctx.fillStyle = 'rgba(0, 229, 255, 0.65)';
+          ctx.strokeStyle = `rgba(98, 122, 235, 0.45)`;  // C.accent flow arrows
+          ctx.fillStyle = `rgba(98, 122, 235, 0.65)`;
           ctx.lineWidth = 1.5;
 
           // Arrow line
@@ -354,9 +370,10 @@ export const HeatmapCanvas: React.FC<HeatmapCanvasProps> = ({
   return (
     <div
       ref={containerRef}
-      className={`relative w-full aspect-square max-w-[620px] mx-auto rounded-2xl bg-[#0a101f]/80 border border-[#17243b] p-2 shadow-2xl backdrop-blur-md overflow-hidden ${
+      className={`relative w-full aspect-square max-w-[620px] mx-auto rounded-2xl p-2 shadow-lg overflow-hidden ${
         emergencyMode ? 'ring-2 ring-red-500/50 shadow-red-500/20' : ''
       }`}
+      style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
     >
       <canvas
         ref={canvasRef}

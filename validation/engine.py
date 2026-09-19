@@ -43,8 +43,8 @@ def smoothstep(t: float) -> float:
 
 
 def sample_noise(x: float, y: float, lattice: np.ndarray) -> float:
-    ix = int(math.floor(x))
-    iy = int(math.floor(y))
+    ix = math.floor(x)
+    iy = math.floor(y)
     fx = smoothstep(x - ix)
     fy = smoothstep(y - iy)
 
@@ -223,7 +223,7 @@ def step(
     return new_water, water_delta
 
 
-def run_simulation(config: Dict[str, Any] = None) -> Dict[str, Any]:
+def run_simulation(config: Dict[str, Any] | None = None) -> Dict[str, Any]:
     """Run full simulation and return water array across all timesteps."""
     if config is None:
         config = {}
