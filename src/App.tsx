@@ -33,6 +33,7 @@ import { DemoNarrative } from './components/demo/DemoNarrative';
 import { CellDetailModal } from './components/grid/CellDetailModal';
 import { AIChatbot } from './components/chatbot/AIChatbot';
 import type { ChatAction } from './components/chatbot/AIChatbot';
+import { SocialButton } from './components/kokonutui/social-button';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -361,11 +362,12 @@ export const App: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
+            <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
               <span>Grid: <strong className="text-white">{config.rows}×{config.cols}</strong></span>
               <span className="text-slate-700">•</span>
               <span>Seed: <strong className="text-cyan-300">{config.seed}</strong></span>
             </div>
+            <SocialButton label="Share Sim" />
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/40 text-slate-300 text-sm"
