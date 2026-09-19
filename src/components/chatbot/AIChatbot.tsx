@@ -225,7 +225,7 @@ FlowShield is a flood simulation that models rainfall, water flow between terrai
 
 export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
+  const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: 'welcome',
       role: 'assistant',

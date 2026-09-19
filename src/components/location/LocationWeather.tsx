@@ -109,7 +109,7 @@ export const LocationWeather: React.FC<LocationWeatherProps> = ({ onApplyRainfal
 
       if (!weatherRes.ok) {
         if (weatherRes.status === 404) {
-          setError(`City "${query}" not found. Try another name.`);
+          setError(`City "${trimmed}" not found. Try another name.`);
         } else {
           setError('Weather service error. Try again.');
         }

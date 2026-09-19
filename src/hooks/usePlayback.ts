@@ -28,16 +28,16 @@ export function usePlayback({
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1); // 1x, 2x, 4x
 
   const currentStepRef = useRef(currentStep);
-  currentStepRef.current = currentStep;
-
   const isPlayingRef = useRef(isPlaying);
-  isPlayingRef.current = isPlaying;
-
   const totalStepsRef = useRef(totalSteps);
-  totalStepsRef.current = totalSteps;
-
   const speedRef = useRef(playbackSpeed);
-  speedRef.current = playbackSpeed;
+
+  useEffect(() => {
+    currentStepRef.current = currentStep;
+    isPlayingRef.current = isPlaying;
+    totalStepsRef.current = totalSteps;
+    speedRef.current = playbackSpeed;
+  });
 
   // Step duration in ms: 10 steps/sec -> 100ms base
   const baseStepInterval = 1000 / targetStepsPerSec;
