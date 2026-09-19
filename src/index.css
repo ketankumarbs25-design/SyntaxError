@@ -9,114 +9,124 @@
 /* ─── Dark Theme (default) ──────────────────────────────────────────────────── */
 :root,
 [data-theme="dark"] {
-  /* Backgrounds */
-  --bg-base:              #050811;
-  --bg-surface:           #0a101f;
-  --bg-surface-elevated:  #10192e;
-  --bg-surface-hover:     #141e35;
-  --bg-glass:             rgba(10, 16, 31, 0.85);
+  /* ── Backgrounds — warm-neutral dark (slight purple-gray shift, not cold blue) */
+  --bg-base:              #0D0E15;
+  --bg-surface:           #171924;
+  --bg-elevated:          #1F2135;
+  --bg-hover:             #272A42;
+  --bg-glass:             rgba(23, 25, 36, 0.88);
 
-  /* Borders */
-  --border-subtle:        #17243b;
-  --border-strong:        #223758;
+  /* ── Borders */
+  --border-subtle:        #1F2135;   /* nearly flush with bg-elevated */
+  --border-strong:        #292D48;
 
-  /* Foreground / text */
-  --text-primary:         #e2e8f0;
-  --text-secondary:       #94a3b8;
-  --text-muted:           #64748b;
-  --text-faint:           #475569;
+  /* ── Foreground / text */
+  --text-primary:         #EDF0F8;
+  --text-secondary:       #98A0BA;
+  --text-muted:           #5C6485;
+  --text-faint:           #3B3F5A;
 
-  /* Brand / accent — unchanged across themes */
-  --color-cyan:           #00e5ff;
-  --color-cyan-glow:      rgba(0, 229, 255, 0.15);
-  --color-safe:           #10b981;
-  --color-safe-glow:      rgba(16, 185, 129, 0.2);
-  --color-warning:        #f59e0b;
-  --color-warning-glow:   rgba(245, 158, 11, 0.25);
-  --color-critical:       #ef4444;
-  --color-critical-glow:  rgba(239, 68, 68, 0.35);
+  /* ── Brand accent — custom indigo-blue, not a Tailwind-preset value */
+  --accent:               #627AEB;
+  --accent-subtle:        rgba(98, 122, 235, 0.10);
+  --accent-border:        rgba(98, 122, 235, 0.28);
 
-  /* Header */
-  --header-bg:            rgba(5, 8, 17, 0.90);
-  --header-border:        #17243b;
+  /* ── Semantic status — tuned, slightly desaturated. "Serious," not "traffic light" */
+  --status-safe:          #38B27A;   /* muted sage-green, not vivid green-500 */
+  --status-safe-subtle:   rgba(56, 178, 122, 0.08);
+  --status-safe-border:   rgba(56, 178, 122, 0.25);
 
-  /* Scrollbar */
-  --scrollbar-track:      rgba(5, 8, 17, 0.7);
-  --scrollbar-thumb:      #17243b;
-  --scrollbar-thumb-hover:#223758;
+  --status-warn:          #CB8C35;   /* warm amber-brown, not fluorescent */
+  --status-warn-subtle:   rgba(203, 140, 53, 0.09);
+  --status-warn-border:   rgba(203, 140, 53, 0.28);
 
-  /* Grid texture opacity */
-  --grid-opacity:         0.25;
+  --status-crit:          #D64F4F;   /* desaturated red, not pure traffic-light red */
+  --status-crit-subtle:   rgba(214, 79, 79, 0.09);
+  --status-crit-border:   rgba(214, 79, 79, 0.28);
 
-  /* Theme-switcher dropdown */
-  --dropdown-bg:          #0a101f;
-  --dropdown-border:      #17243b;
-  --dropdown-shadow:      0 24px 64px -8px rgba(0,0,0,0.7);
-  --option-active-bg:     rgba(0, 229, 255, 0.12);
-  --option-active-text:   #67e8f9;
+  /* ── Header */
+  --header-bg:            rgba(13, 14, 21, 0.93);
+  --header-border:        #1F2135;
+
+  /* ── Scrollbar */
+  --scrollbar-track:      rgba(13, 14, 21, 0.7);
+  --scrollbar-thumb:      #1F2135;
+  --scrollbar-thumb-hover:#292D48;
+
+  /* ── Theme-switcher dropdown */
+  --dropdown-bg:          #171924;
+  --dropdown-border:      #1F2135;
+  --dropdown-shadow:      0 24px 64px -8px rgba(0, 0, 0, 0.72);
+  --option-active-bg:     rgba(98, 122, 235, 0.10);
+  --option-active-text:   #8FA0F5;
   --option-idle-bg:       transparent;
-  --option-idle-label:    #e2e8f0;
-  --option-idle-sub:      #64748b;
-  --option-hover-bg:      rgba(255,255,255,0.05);
-  --dropdown-footer-border: rgba(255,255,255,0.06);
+  --option-idle-label:    #EDF0F8;
+  --option-idle-sub:      #5C6485;
+  --option-hover-bg:      rgba(255, 255, 255, 0.04);
+  --dropdown-footer-border: rgba(255, 255, 255, 0.06);
   --btn-idle-bg:          transparent;
-  --btn-idle-text:        #94a3b8;
+  --btn-idle-text:        #98A0BA;
 }
 
 /* ─── Light Theme ────────────────────────────────────────────────────────────── */
 [data-theme="light"] {
-  /* Backgrounds */
-  --bg-base:              #f0f4f8;
-  --bg-surface:           #ffffff;
-  --bg-surface-elevated:  #f8fafc;
-  --bg-surface-hover:     #f1f5f9;
-  --bg-glass:             rgba(255, 255, 255, 0.88);
+  /* ── Backgrounds */
+  --bg-base:              #F3F4F9;   /* slightly cool off-white, not stark white */
+  --bg-surface:           #FFFFFF;
+  --bg-elevated:          #ECEEF5;
+  --bg-hover:             #E2E4EF;
+  --bg-glass:             rgba(255, 255, 255, 0.90);
 
-  /* Borders */
-  --border-subtle:        #e2e8f0;
-  --border-strong:        #cbd5e1;
+  /* ── Borders */
+  --border-subtle:        #DDE0EE;
+  --border-strong:        #C8CCDE;
 
-  /* Foreground / text */
-  --text-primary:         #0f172a;
-  --text-secondary:       #334155;
-  --text-muted:           #64748b;
-  --text-faint:           #94a3b8;
+  /* ── Foreground / text */
+  --text-primary:         #0F1022;
+  --text-secondary:       #374162;
+  --text-muted:           #6B7291;
+  --text-faint:           #9BA2BF;
 
-  /* Brand accent — keep vivid for both themes */
-  --color-cyan:           #0284c7;
-  --color-cyan-glow:      rgba(2, 132, 199, 0.12);
-  --color-safe:           #059669;
-  --color-safe-glow:      rgba(5, 150, 105, 0.15);
-  --color-warning:        #d97706;
-  --color-warning-glow:   rgba(217, 119, 6, 0.18);
-  --color-critical:       #dc2626;
-  --color-critical-glow:  rgba(220, 38, 38, 0.25);
+  /* ── Accent (slightly deeper for light-mode contrast) */
+  --accent:               #4A68E0;
+  --accent-subtle:        rgba(74, 104, 224, 0.09);
+  --accent-border:        rgba(74, 104, 224, 0.25);
 
-  /* Header */
-  --header-bg:            rgba(240, 244, 248, 0.92);
-  --header-border:        #e2e8f0;
+  /* ── Semantic status */
+  --status-safe:          #1E9160;
+  --status-safe-subtle:   rgba(30, 145, 96, 0.08);
+  --status-safe-border:   rgba(30, 145, 96, 0.22);
 
-  /* Scrollbar */
-  --scrollbar-track:      #f1f5f9;
-  --scrollbar-thumb:      #cbd5e1;
-  --scrollbar-thumb-hover:#94a3b8;
+  --status-warn:          #AE6E15;
+  --status-warn-subtle:   rgba(174, 110, 21, 0.08);
+  --status-warn-border:   rgba(174, 110, 21, 0.22);
 
-  /* Grid texture opacity — lighter for readability */
-  --grid-opacity:         0.10;
+  --status-crit:          #C03939;
+  --status-crit-subtle:   rgba(192, 57, 57, 0.07);
+  --status-crit-border:   rgba(192, 57, 57, 0.20);
 
-  /* Theme-switcher dropdown */
-  --dropdown-bg:          #ffffff;
-  --dropdown-border:      #e2e8f0;
-  --dropdown-shadow:      0 24px 64px -8px rgba(15,23,42,0.20);
-  --option-active-bg:     rgba(2, 132, 199, 0.10);
-  --option-active-text:   #0369a1;
+  /* ── Header */
+  --header-bg:            rgba(243, 244, 249, 0.94);
+  --header-border:        #DDE0EE;
+
+  /* ── Scrollbar */
+  --scrollbar-track:      #ECEEF5;
+  --scrollbar-thumb:      #C8CCDE;
+  --scrollbar-thumb-hover:#9BA2BF;
+
+  /* ── Theme-switcher dropdown */
+  --dropdown-bg:          #FFFFFF;
+  --dropdown-border:      #DDE0EE;
+  --dropdown-shadow:      0 24px 64px -8px rgba(15, 16, 34, 0.18);
+  --option-active-bg:     rgba(74, 104, 224, 0.10);
+  --option-active-text:   #3A56C8;
   --option-idle-bg:       transparent;
-  --option-idle-label:    #0f172a;
-  --option-idle-sub:      #64748b;
-  --option-hover-bg:      rgba(0,0,0,0.04);
-  --dropdown-footer-border: rgba(0,0,0,0.08);
+  --option-idle-label:    #0F1022;
+  --option-idle-sub:      #6B7291;
+  --option-hover-bg:      rgba(0, 0, 0, 0.04);
+  --dropdown-footer-border: rgba(0, 0, 0, 0.08);
   --btn-idle-bg:          transparent;
-  --btn-idle-text:        #64748b;
+  --btn-idle-text:        #6B7291;
 }
 
 /* ─── Font Stacks ────────────────────────────────────────────────────────────── */
@@ -217,27 +227,25 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════════
-   COMMAND CENTER GRID BACKGROUND — theme-aware
+   COMMAND CENTER GRID BACKGROUND — very subtle, no radial glows
 ═══════════════════════════════════════════════════════════════════════════════ */
 .command-grid-bg {
   background-color: var(--bg-base);
   background-image:
-    radial-gradient(circle at 50% 10%, var(--color-cyan-glow) 0%, transparent 45%),
-    radial-gradient(circle at 90% 80%, var(--color-critical-glow) 0%, transparent 40%),
     linear-gradient(var(--border-subtle) 1px, transparent 1px),
     linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
+  background-size: 40px 40px;
 }
 
-/* ─── Critical Pulse ─────────────────────────────────────────────────────────── */
+/* ─── Critical Pulse — functional urgency animation ──────────────────────────── */
 @keyframes critical-tactical-pulse {
-  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6), inset 0 0 8px  rgba(239, 68, 68, 0.4); }
-  50%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0), inset 0 0 16px rgba(239, 68, 68, 0.7); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), inset 0 0 8px  rgba(239, 68, 68, 0.4); }
+  0%   { box-shadow: 0 0 0 0   rgba(214, 79, 79, 0.50), inset 0 0 6px  rgba(214, 79, 79, 0.28); }
+  50%  { box-shadow: 0 0 0 7px rgba(214, 79, 79, 0),    inset 0 0 12px rgba(214, 79, 79, 0.48); }
+  100% { box-shadow: 0 0 0 0   rgba(214, 79, 79, 0),    inset 0 0 6px  rgba(214, 79, 79, 0.28); }
 }
 
 .pulse-critical {
-  animation: critical-tactical-pulse 1.8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
+  animation: critical-tactical-pulse 2s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
 
 /* ─── Scrollbars ─────────────────────────────────────────────────────────────── */

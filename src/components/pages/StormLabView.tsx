@@ -49,22 +49,29 @@ export const StormLabView: React.FC<StormLabViewProps> = ({
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950/40 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        className="p-4 sm:p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
       >
         <div className="flex items-start sm:items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500/20 to-cyan-500/20 border border-blue-500/40 flex items-center justify-center text-2xl shrink-0 shadow-lg shadow-blue-500/10">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+            style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)' }}
+          >
             🔬
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 Storm Lab & Inundation Scenario Modeling
               </h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-300 border border-blue-500/30">
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                style={{ color: 'var(--accent)', background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)', fontSize: '10px' }}
+              >
                 Interactive Sandbox
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               Experiment with extreme cloudbursts, adjust municipal drainage efficiency, block stormwater channels, and observe dynamic hydraulic discharge curves in real time.
             </p>
           </div>
@@ -72,7 +79,8 @@ export const StormLabView: React.FC<StormLabViewProps> = ({
 
         <button
           onClick={() => onNavigateTab('map')}
-          className="px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer self-end md:self-auto shrink-0"
+          className="px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer self-end md:self-auto shrink-0"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)', color: 'var(--text-secondary)' }}
         >
           <span>View on Live Map</span>
           <ArrowRight className="w-3.5 h-3.5" />

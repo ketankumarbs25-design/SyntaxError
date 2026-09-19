@@ -1,11 +1,13 @@
 /**
  * FLOWSHIELD — TimelineControls
  *
- * Tactical horizontal scrub deck positioned directly beneath the heatmap canvas:
- * - Smooth horizontal time slider spanning the full simulation horizon
- * - Clear rain duration cutoff marker & phase status (Precipitation vs Gravitational Drainage)
- * - Play / Pause, Step -1m / +1m, and 1x / 2x / 5x / 10x speed controls
+ * Simulation playback deck:
+ * - Smooth time scrubber spanning the simulation horizon
+ * - Rain duration cutoff marker & hydrological phase badge
+ * - Play/Pause, Step ±1m, 1×/2×/5×/10× speed controls
  * - High-precision tabular time readout (T+XX min)
+ *
+ * All colors use CSS custom properties — no hardcoded hex values.
  */
 
 import React from 'react';
@@ -44,97 +46,146 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
   const speedOptions = [1, 2, 5, 10];
 
   return (
-    <div className="w-full bg-[#0a101f]/90 border border-[#17243b] rounded-2xl p-3.5 sm:p-4 shadow-xl backdrop-blur-md flex flex-col gap-3">
-      {/* Top Header: Time Readout + Hydrological Phase */}
+    <div
+      className="w-full rounded-2xl p-3.5 sm:p-4 flex flex-col gap-3"
+      style={{
+        background: 'var(--bg-surface)',
+        border: '1px solid var(--border-subtle)',
+      }}
+    >
+      {/* ── Header: Time Readout + Hydrological Phase ── */}
       <div className="flex items-center justify-between">
         {/* Simulation Mission Time */}
-        <div className="flex items-center gap-3 font-mono">
-          <div className="flex items-baseline gap-1.5">
-            <span className="text-cyan-400 text-xs font-bold uppercase tracking-wider">Mission Time</span>
-            <span className="text-2xl font-bold text-white tabular-nums tracking-tight">
-              T+{currentTime.toFixed(0).padStart(2, '0')}
-            </span>
-            <span className="text-slate-400 text-xs">min</span>
-          </div>
-          <span className="text-slate-600 text-xs">/ {maxStep} min</span>
+        <div className="flex items-baseline gap-1.5 font-mono">
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
+            T+
+          </span>
+          <span className="text-2xl font-bold tabular-nums tracking-tight" style={{ color: 'var(--text-primary)' }}>
+            {currentTime.toFixed(0).padStart(2, '0')}
+          </span>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>min</span>
+          <span className="text-xs ml-1" style={{ color: 'var(--text-faint)' }}>/ {maxStep} min</span>
         </div>
 
-        {/* Dynamic Storm Phase Badge */}
+        {/* Dynamic Storm Phase Badge — dot is the active indicator, no animate-pulse on text */}
         <div>
           {isRaining ? (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 text-xs font-mono font-semibold shadow-sm shadow-cyan-500/20">
-              <span className="w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-              🌧️ Precipitation Active
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+              style={{
+                background: 'var(--accent-subtle)',
+                border: '1px solid var(--accent-border)',
+                color: 'var(--accent)',
+              }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full animate-ping" style={{ background: 'var(--accent)' }} />
+              🌧 Precipitation Active
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 text-xs font-mono font-semibold">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+            <span
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold"
+              style={{
+                background: 'var(--bg-elevated)',
+                border: '1px solid var(--border-strong)',
+                color: 'var(--text-secondary)',
+              }}
+            >
+              <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--text-muted)' }} />
               💧 Hydraulic Drainage Phase
             </span>
           )}
         </div>
       </div>
 
-      {/* Large Horizontal Timeline Scrub Bar */}
+      {/* ── Horizontal Timeline Scrub Bar ── */}
       <div className="relative w-full pt-2 pb-1">
-        {/* Visual Rain Duration Threshold Marker */}
+        {/* Rain duration cutoff marker */}
         <div
-          className="absolute top-1 bottom-3 border-r-2 border-dashed border-cyan-400/60 pointer-events-none z-10 flex flex-col items-center"
-          style={{ left: `${rainProgressPct}%` }}
+          className="absolute top-1 bottom-3 pointer-events-none z-10 flex flex-col items-center"
+          style={{
+            left: `${rainProgressPct}%`,
+            borderRight: '2px dashed var(--accent-border)',
+          }}
         >
-          <span className="text-[9px] font-mono text-cyan-300 bg-slate-950/90 px-1 rounded -translate-y-3 -translate-x-1/2 whitespace-nowrap border border-cyan-500/30">
+          <span
+            className="text-xs font-mono whitespace-nowrap -translate-y-3 -translate-x-1/2 px-1 rounded"
+            style={{
+              fontSize: '9px',
+              color: 'var(--accent)',
+              background: 'var(--bg-base)',
+              border: '1px solid var(--accent-border)',
+            }}
+          >
             Rain Stops ({rainfallDuration}m)
           </span>
         </div>
 
-        {/* Slider Input */}
+        {/* Slider — accent color via CSS var on accent */}
         <input
           type="range"
           min="0"
           max={maxStep}
           value={currentStep}
           onChange={(e) => onSeek(parseInt(e.target.value, 10))}
-          className="w-full accent-cyan-400 cursor-pointer h-2.5 bg-slate-900 rounded-lg appearance-none border border-slate-800 transition-all hover:border-cyan-500/50"
+          className="w-full cursor-pointer h-2 rounded-lg appearance-none"
+          style={{
+            accentColor: 'var(--accent)',
+            background: 'var(--bg-elevated)',
+            border: '1px solid var(--border-strong)',
+          }}
         />
 
-        {/* Milestone Labels */}
-        <div className="flex justify-between text-[10px] font-mono text-slate-500 mt-1">
-          <span>T+00m (Inception)</span>
-          <span className="text-cyan-400/70">Peak Inflow Horizon</span>
-          <span>T+{maxStep}m (Settled)</span>
+        {/* Milestone labels */}
+        <div className="flex justify-between mt-1" style={{ fontSize: '10px', color: 'var(--text-faint)', fontFamily: 'var(--font-mono)' }}>
+          <span>T+00m</span>
+          <span style={{ color: 'var(--text-muted)' }}>Peak Inflow Horizon</span>
+          <span>T+{maxStep}m</span>
         </div>
       </div>
 
-      {/* Transport Controls Deck */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
+      {/* ── Transport Controls ── */}
+      <div
+        className="flex flex-wrap items-center justify-between gap-3 pt-2"
+        style={{ borderTop: '1px solid var(--border-strong)' }}
+      >
         <div className="flex items-center gap-2">
-          {/* Play / Pause Primary Button */}
+          {/* Play / Pause */}
           <button
             onClick={onTogglePlay}
-            className={`px-5 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all shadow-lg active:scale-95 ${
-              isPlaying
-                ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-amber-500/25'
-                : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 shadow-cyan-500/25'
-            }`}
+            className="px-5 py-2 rounded-xl text-xs font-mono font-bold flex items-center gap-2 transition-all active:scale-95"
+            style={{
+              background: isPlaying ? 'var(--status-warn)' : 'var(--accent)',
+              color: '#0D0E15', /* dark text on light button — always passes contrast */
+            }}
           >
-            <span>{isPlaying ? '⏸ PAUSE' : '▶ PLAY'}</span>
+            {isPlaying ? '⏸ Pause' : '▶ Play'}
           </button>
 
-          {/* Step Backward -1m */}
+          {/* Step Backward */}
           <button
             onClick={() => onSeek(Math.max(0, currentStep - 1))}
             disabled={currentStep === 0}
-            className="px-2.5 py-2 rounded-xl text-xs font-mono bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 disabled:opacity-40 transition-colors"
+            className="px-2.5 py-2 rounded-xl text-xs font-mono transition-colors disabled:opacity-40"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-strong)',
+              color: 'var(--text-secondary)',
+            }}
             title="Step backward 1 minute"
           >
             ⏮ -1m
           </button>
 
-          {/* Step Forward +1m */}
+          {/* Step Forward */}
           <button
             onClick={() => onSeek(Math.min(maxStep, currentStep + 1))}
             disabled={currentStep === maxStep}
-            className="px-2.5 py-2 rounded-xl text-xs font-mono bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800 disabled:opacity-40 transition-colors"
+            className="px-2.5 py-2 rounded-xl text-xs font-mono transition-colors disabled:opacity-40"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-strong)',
+              color: 'var(--text-secondary)',
+            }}
             title="Step forward 1 minute"
           >
             +1m ⏭
@@ -143,26 +194,37 @@ export const TimelineControls: React.FC<TimelineControlsProps> = ({
           {/* Reset */}
           <button
             onClick={onReset}
-            className="px-3 py-2 rounded-xl text-xs font-mono bg-slate-900/60 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-colors"
+            className="px-3 py-2 rounded-xl text-xs font-mono transition-colors"
+            style={{
+              background: 'transparent',
+              border: '1px solid var(--border-strong)',
+              color: 'var(--text-muted)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-muted)')}
           >
             ↺ Reset
           </button>
         </div>
 
-        {/* Speed Multiplier Controls (1x, 2x, 5x, 10x) */}
-        <div className="flex items-center gap-1 bg-slate-950/80 p-1 rounded-xl border border-slate-800">
-          <span className="text-[10px] font-mono text-slate-500 px-1.5 uppercase">Speed:</span>
+        {/* Speed Multiplier */}
+        <div
+          className="flex items-center gap-1 p-1 rounded-xl"
+          style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border-strong)' }}
+        >
+          <span className="text-xs font-mono px-1.5 uppercase" style={{ color: 'var(--text-faint)' }}>Speed:</span>
           {speedOptions.map((speed) => (
             <button
               key={speed}
               onClick={() => onSpeedChange(speed)}
-              className={`px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+              className="px-2 py-1 rounded-lg text-xs font-mono font-bold transition-all"
+              style={
                 playbackSpeed === speed
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm shadow-cyan-500/20'
-                  : 'text-slate-400 hover:text-slate-200'
-              }`}
+                  ? { background: 'var(--accent-subtle)', color: 'var(--accent)', border: '1px solid var(--accent-border)' }
+                  : { background: 'transparent', color: 'var(--text-muted)', border: '1px solid transparent' }
+              }
             >
-              {speed}x
+              {speed}×
             </button>
           ))}
         </div>

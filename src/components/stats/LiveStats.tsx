@@ -1,12 +1,17 @@
 /**
  * FLOWSHIELD — LiveStats
  *
- * Tactical HUD Telemetry Cards displaying real-time risk classification:
- * - Safe Zones (< 0.15m)
- * - Warning Zones (0.15m – 0.30m)
- * - Critical Inundation Zones (>= 0.30m) with alert pulse
- * - Peak Water Depth (m)
- * - Total Affected Population (Counting Warning + Critical sectors)
+ * Severity-scaled status tiles:
+ * - ZERO state (count = 0):  neutral surface bg + muted text + thin colored left-border strip.
+ *   The dashboard looks calm when the city is safe.
+ * - ACTIVE state (count > 0): low-opacity tinted bg + saturated 1px border + status-colored
+ *   number text.  Critical additionally gets .pulse-critical shadow.
+ *
+ * Color contract:
+ *   - Status colors appear ONLY on the metric number, the left strip, and the small dot.
+ *   - Card backgrounds are always var(--bg-surface) or a very low-opacity tint.
+ *   - Numbers always use status-colored text on a dark/neutral surface → contrast passes 4.5:1.
+ *     White text is NEVER placed on a colored fill — avoiding the amber-contrast failure.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -53,99 +58,188 @@ export const AnimatedCounter: React.FC<CounterProps> = ({
   );
 };
 
+/* ── Shared chip wrapper — thin 3px left strip as the sole color identifier ── */
+const chipBase: React.CSSProperties = {
+  position: 'relative',
+  overflow: 'hidden',
+  borderRadius: '1rem',
+  padding: '0.875rem 1rem',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'space-between',
+  gap: '0.375rem',
+};
+
 export const LiveStats: React.FC<LiveStatsProps> = ({ stats: statsProp, totalCells }) => {
   const stats = statsProp ?? {
     safeCells: 0, warningCells: 0, criticalCells: 0,
     maxWater: 0, avgWater: 0, affectedArea: 0, affectedPopulation: 0,
     maxDepth: 0, predictedCriticalCount: 0, earliestCriticalTime: null,
   };
-  const {
-    safeCells,
-    warningCells,
-    criticalCells,
-    maxWater,
-    affectedPopulation,
-  } = stats;
+  const { safeCells, warningCells, criticalCells, maxWater, affectedPopulation } = stats;
 
   const hasCritical = criticalCells > 0;
+  const hasWarning  = warningCells  > 0;
+
+  /* ── 1. Safe Sectors ─────────────────────────────────────────────────────── */
+  const safeIsAll = safeCells === totalCells;
+
+  /* ── 2. Warning tile styles ─────────────────────────────────────────────── */
+  const warnActive = hasWarning ? {
+    background: 'var(--status-warn-subtle)',
+    border:     '1px solid var(--status-warn-border)',
+  } : {
+    background: 'var(--bg-surface)',
+    border:     '1px solid var(--border-subtle)',
+  };
+
+  /* ── 3. Critical tile styles ─────────────────────────────────────────────── */
+  const critActive = hasCritical ? {
+    background: 'var(--status-crit-subtle)',
+    border:     '1px solid var(--status-crit-border)',
+  } : {
+    background: 'var(--bg-surface)',
+    border:     '1px solid var(--border-subtle)',
+  };
 
   return (
     <div className="w-full grid grid-cols-2 lg:grid-cols-4 gap-2.5">
-      {/* 1. Safe Zones (<0.15m) */}
-      <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col justify-between shadow-lg">
-        <div className="flex items-center justify-between text-xs text-emerald-400 font-mono">
-          <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+
+      {/* ── 1. Safe Sectors ───────────────────────────────────────────────── */}
+      <div
+        style={{
+          ...chipBase,
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        {/* Left accent strip — always shown in safe color */}
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: 'var(--status-safe)', borderRadius: '1rem 0 0 1rem' }} />
+
+        <div className="flex items-center justify-between" style={{ paddingLeft: '0.5rem' }}>
+          <span className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--status-safe)' }}>
+            <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--status-safe)' }} />
             Safe Sectors
           </span>
-          <span className="text-[10px] text-emerald-500/80 font-normal">&lt; 0.15m</span>
+          <span className="text-xs" style={{ color: 'var(--text-faint)' }}>&lt; 0.15m</span>
         </div>
-        <div className="mt-2 text-2xl sm:text-3xl font-bold text-emerald-400 font-mono">
+
+        <div className="text-2xl sm:text-3xl font-bold tabular-nums" style={{ color: safeIsAll ? 'var(--status-safe)' : 'var(--text-primary)', paddingLeft: '0.5rem' }}>
           <AnimatedCounter value={safeCells} />
-          <span className="text-xs font-normal text-emerald-500/80 ml-1">/ {totalCells}</span>
+          <span className="text-xs font-normal ml-1" style={{ color: 'var(--text-muted)' }}>/ {totalCells}</span>
         </div>
-        <div className="text-[10px] text-slate-400 mt-1 font-sans">
-          Nominal drainage &amp; absorption
+
+        <div className="text-xs" style={{ color: 'var(--text-muted)', paddingLeft: '0.5rem' }}>
+          {safeIsAll ? 'All sectors — nominal drainage' : 'Nominal drainage & absorption'}
         </div>
       </div>
 
-      {/* 2. Warning Zones (0.15m - 0.30m) */}
-      <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25 flex flex-col justify-between shadow-lg">
-        <div className="flex items-center justify-between text-xs text-amber-400 font-mono">
-          <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider">
-            <span className="w-2 h-2 rounded-full bg-amber-400" />
+      {/* ── 2. Warning Sectors ───────────────────────────────────────────── */}
+      <div style={{ ...chipBase, ...warnActive }}>
+        {/* Left strip: full opacity when active, faint when zero */}
+        <div style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
+          background: hasWarning ? 'var(--status-warn)' : 'var(--status-warn-border)',
+          borderRadius: '1rem 0 0 1rem',
+        }} />
+
+        <div className="flex items-center justify-between" style={{ paddingLeft: '0.5rem' }}>
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
+            style={{ color: hasWarning ? 'var(--status-warn)' : 'var(--text-muted)' }}
+          >
+            {hasWarning && <span className="w-1.5 h-1.5 rounded-full" style={{ background: 'var(--status-warn)' }} />}
             Warning
           </span>
-          <span className="text-[10px] text-amber-500/80 font-normal">0.15–0.30m</span>
+          <span className="text-xs" style={{ color: hasWarning ? 'var(--status-warn)' : 'var(--text-faint)', opacity: 0.8 }}>0.15–0.30m</span>
         </div>
-        <div className="mt-2 text-2xl sm:text-3xl font-bold text-amber-400 font-mono">
+
+        <div
+          className="text-2xl sm:text-3xl font-bold tabular-nums"
+          style={{ color: hasWarning ? 'var(--status-warn)' : 'var(--text-muted)', paddingLeft: '0.5rem' }}
+        >
           <AnimatedCounter value={warningCells} />
-          <span className="text-xs font-normal text-amber-500/80 ml-1">sectors</span>
-        </div>
-        <div className="text-[10px] text-slate-400 mt-1 font-sans">
-          Ponding exceeding absorption rate
-        </div>
-      </div>
-
-      {/* 3. Critical Zones (>= 0.30m) */}
-      <div
-        className={`p-3.5 rounded-2xl border transition-all duration-300 flex flex-col justify-between shadow-lg ${
-          hasCritical
-            ? 'bg-red-500/15 border-red-500/60 shadow-red-500/20 pulse-critical'
-            : 'bg-red-500/5 border-red-500/20'
-        }`}
-      >
-        <div className="flex items-center justify-between text-xs text-red-400 font-mono">
-          <span className="flex items-center gap-1.5 font-bold uppercase tracking-wider">
-            <span className={`w-2 h-2 rounded-full bg-red-400 ${hasCritical ? 'animate-ping' : ''}`} />
-            Critical Breach
+          <span className="text-xs font-normal ml-1" style={{ color: 'var(--text-muted)' }}>
+            {hasWarning ? 'sectors' : '/ no ponding'}
           </span>
-          <span className="text-[10px] text-red-500/80 font-normal">&ge; 0.30m</span>
         </div>
-        <div className="mt-2 text-2xl sm:text-3xl font-bold text-red-400 font-mono">
-          <AnimatedCounter value={criticalCells} />
-          <span className="text-xs font-normal text-red-500/80 ml-1">flooded</span>
-        </div>
-        <div className="text-[10px] text-slate-400 mt-1 font-sans">
-          {hasCritical ? '🚨 Evacuation thresholds breached' : 'No critical breaches detected'}
+
+        <div className="text-xs" style={{ color: 'var(--text-muted)', paddingLeft: '0.5rem' }}>
+          {hasWarning ? 'Ponding exceeding absorption rate' : 'No elevated ponding detected'}
         </div>
       </div>
 
-      {/* 4. Affected Population (Warning + Critical) & Peak Depth */}
-      <div className="p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/25 flex flex-col justify-between shadow-lg">
-        <div className="flex items-center justify-between text-xs text-cyan-400 font-mono">
-          <span className="font-bold uppercase tracking-wider">At-Risk Citizens</span>
-          <span className="text-[10px] text-cyan-300 font-bold tabular-nums">
+      {/* ── 3. Critical Breach ───────────────────────────────────────────── */}
+      <div
+        className={hasCritical ? 'pulse-critical' : ''}
+        style={{ ...chipBase, ...critActive }}
+      >
+        {/* Left strip: pulsing red when active, ghost when zero */}
+        <div style={{
+          position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px',
+          background: hasCritical ? 'var(--status-crit)' : 'var(--status-crit-border)',
+          borderRadius: '1rem 0 0 1rem',
+        }} />
+
+        <div className="flex items-center justify-between" style={{ paddingLeft: '0.5rem' }}>
+          <span
+            className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider"
+            style={{ color: hasCritical ? 'var(--status-crit)' : 'var(--text-muted)' }}
+          >
+            {hasCritical && (
+              <span
+                className="w-1.5 h-1.5 rounded-full animate-ping"
+                style={{ background: 'var(--status-crit)' }}
+              />
+            )}
+            Critical
+          </span>
+          <span className="text-xs" style={{ color: hasCritical ? 'var(--status-crit)' : 'var(--text-faint)', opacity: 0.8 }}>&ge; 0.30m</span>
+        </div>
+
+        <div
+          className="text-2xl sm:text-3xl font-bold tabular-nums"
+          style={{ color: hasCritical ? 'var(--status-crit)' : 'var(--text-muted)', paddingLeft: '0.5rem' }}
+        >
+          <AnimatedCounter value={criticalCells} />
+          <span className="text-xs font-normal ml-1" style={{ color: 'var(--text-muted)' }}>
+            {hasCritical ? 'flooded' : '/ no breach'}
+          </span>
+        </div>
+
+        <div className="text-xs" style={{ color: 'var(--text-muted)', paddingLeft: '0.5rem' }}>
+          {hasCritical ? '⚠ Evacuation thresholds breached' : 'No critical breaches detected'}
+        </div>
+      </div>
+
+      {/* ── 4. At-Risk Citizens + Peak Depth ─────────────────────────────── */}
+      <div
+        style={{
+          ...chipBase,
+          background: 'var(--bg-surface)',
+          border: '1px solid var(--border-subtle)',
+        }}
+      >
+        <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: '3px', background: 'var(--accent)', borderRadius: '1rem 0 0 1rem' }} />
+
+        <div className="flex items-center justify-between" style={{ paddingLeft: '0.5rem' }}>
+          <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'var(--accent)' }}>
+            At-Risk
+          </span>
+          <span className="text-xs font-mono font-bold tabular-nums" style={{ color: 'var(--text-secondary)' }}>
             {maxWater.toFixed(2)}m peak
           </span>
         </div>
-        <div className="mt-2 text-2xl sm:text-3xl font-bold text-cyan-300 font-mono">
+
+        <div className="text-2xl sm:text-3xl font-bold tabular-nums" style={{ color: 'var(--text-primary)', paddingLeft: '0.5rem' }}>
           <AnimatedCounter value={affectedPopulation} />
         </div>
-        <div className="text-[10px] text-slate-400 mt-1 font-sans">
-          Inhabitants across Warning + Critical zones
+
+        <div className="text-xs" style={{ color: 'var(--text-muted)', paddingLeft: '0.5rem' }}>
+          Residents across Warning + Critical zones
         </div>
       </div>
+
     </div>
   );
 };

@@ -49,75 +49,114 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
   onExitDemoMode,
   onNavigateTab,
 }) => {
-  const isAllSafe = currentState.stats.criticalCells === 0 && currentState.stats.warningCells === 0;
+  const { safeCells, warningCells, criticalCells, maxWater, affectedPopulation } = currentState.stats;
+  const totalCells = config.rows * config.cols;
+  const isAllSafe = criticalCells === 0 && warningCells === 0;
 
   return (
     <div className="space-y-4 max-w-[1440px] mx-auto">
-      {/* ─── Humanized City Status Hero ──────────────────────────────────────── */}
+
+      {/* ─── City Status Hero ─────────────────────────────────────────────────── */}
       <motion.div
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className={`p-4 rounded-2xl border flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shadow-xl backdrop-blur-xl ${
-          isAllSafe
-            ? 'bg-gradient-to-r from-slate-900/90 via-emerald-950/20 to-slate-900/90 border-emerald-500/30'
-            : 'bg-gradient-to-r from-slate-900/90 via-amber-950/30 to-slate-900/90 border-amber-500/40'
-        }`}
+        style={{
+          background: 'var(--bg-surface)',
+          border: `1px solid ${isAllSafe ? 'var(--border-subtle)' : 'var(--status-crit-border)'}`,
+          borderRadius: '1rem',
+          padding: '1rem 1.25rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.75rem',
+        }}
+        className="md:flex-row md:items-center md:justify-between shadow-sm backdrop-blur-xl"
       >
         <div className="flex items-center gap-3">
+          {/* Status icon — no animate-pulse competing with data */}
           <div
-            className={`w-11 h-11 rounded-2xl flex items-center justify-center text-xl shrink-0 border ${
-              isAllSafe
-                ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-300'
-                : 'bg-amber-500/20 border-amber-500/40 text-amber-300'
-            }`}
+            style={{
+              width: '2.75rem',
+              height: '2.75rem',
+              borderRadius: '0.75rem',
+              flexShrink: 0,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: isAllSafe ? 'var(--status-safe-subtle)' : 'var(--status-crit-subtle)',
+              border: `1px solid ${isAllSafe ? 'var(--status-safe-border)' : 'var(--status-crit-border)'}`,
+            }}
           >
-            {isAllSafe ? <ShieldCheck className="w-6 h-6 text-emerald-400" /> : <AlertTriangle className="w-6 h-6 text-amber-400 animate-pulse" />}
+            {isAllSafe
+              ? <ShieldCheck className="w-5 h-5" style={{ color: 'var(--status-safe)' }} />
+              : <AlertTriangle className="w-5 h-5" style={{ color: 'var(--status-crit)' }} />
+            }
           </div>
+
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+            {/* Primary heading + single status badge (dot OR badge, not both) */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 {isAllSafe
-                  ? 'Bengaluru Urban Catchment: Safe Drainage'
-                  : `Active Inundation Alert: ${currentState.stats.criticalCells} Critical Zone(s)`}
+                  ? 'Bengaluru Urban Catchment — Safe Drainage'
+                  : `Active Inundation Alert — ${criticalCells} Critical Sector${criticalCells !== 1 ? 's' : ''}`
+                }
               </h2>
+              {/* Single badge — no redundant dot alongside text */}
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
-                  isAllSafe
-                    ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
-                    : 'bg-red-500/10 text-red-400 border-red-500/30'
-                }`}
+                className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                style={{
+                  color: isAllSafe ? 'var(--status-safe)' : 'var(--status-crit)',
+                  background: isAllSafe ? 'var(--status-safe-subtle)' : 'var(--status-crit-subtle)',
+                  border: `1px solid ${isAllSafe ? 'var(--status-safe-border)' : 'var(--status-crit-border)'}`,
+                }}
               >
-                {isAllSafe ? '● All Sectors Clear' : '● Inundation In Progress'}
+                {isAllSafe ? 'All Clear' : 'Inundation Active'}
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
+
+            {/* Real bound data in the subtext, not static copy */}
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               {isAllSafe
-                ? 'Surface runoff is flowing through primary storm culverts without significant accumulation.'
-                : `${currentState.stats.affectedPopulation.toLocaleString()} residents in low-lying zones may experience standing water. Monitor evacuation corridors.`}
+                ? `${safeCells} of ${totalCells} sectors clear · Peak depth ${maxWater.toFixed(2)}m · Surface runoff within culvert capacity`
+                : `${affectedPopulation.toLocaleString()} residents in ${warningCells + criticalCells} elevated sectors · Peak depth ${maxWater.toFixed(2)}m · Monitor evacuation corridors`
+              }
             </p>
           </div>
         </div>
 
+        {/* Navigation shortcuts */}
         <div className="flex items-center gap-2 self-end md:self-auto">
           <button
             onClick={() => onNavigateTab('weather')}
-            className="px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-slate-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            style={{
+              background: 'var(--bg-elevated)',
+              border: '1px solid var(--border-strong)',
+              color: 'var(--text-secondary)',
+            }}
+            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
+            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
           >
-            <CloudSun className="w-3.5 h-3.5 text-cyan-400" />
-            <span>Radar & BBC Weather</span>
+            <CloudSun className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
+            <span>Radar & Weather</span>
           </button>
           <button
             onClick={() => onNavigateTab('safety')}
-            className="px-3 py-1.5 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
+            style={{
+              background: 'var(--accent-subtle)',
+              border: '1px solid var(--accent-border)',
+              color: 'var(--accent)',
+            }}
           >
-            <LifeBuoy className="w-3.5 h-3.5 text-cyan-300" />
-            <span>Citizen Safety Guide</span>
+            <LifeBuoy className="w-3.5 h-3.5" />
+            <span>Citizen Safety</span>
             <ArrowRight className="w-3 h-3" />
           </button>
         </div>
       </motion.div>
 
-      {/* ─── Demo Narrative (When Active) ────────────────────────────────────── */}
+      {/* ─── Demo Narrative (When Active) ───────────────────────────────────── */}
       {isDemoMode && (
         <DemoNarrative
           time={currentState.time}
@@ -128,29 +167,35 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
         />
       )}
 
-      {/* ─── Live Metrics Summary Bar ────────────────────────────────────────── */}
+      {/* ─── Live Metrics Summary Bar ─────────────────────────────────────── */}
       <LiveStats
         stats={currentState.stats}
-        totalCells={config.rows * config.cols}
+        totalCells={totalCells}
       />
 
-      {/* ─── Hydrodynamic Flood Map Grid ─────────────────────────────────────── */}
-      <div className="flex flex-col items-center justify-center p-3 rounded-2xl bg-slate-900/60 border border-slate-800/80 shadow-2xl backdrop-blur-xl">
-        <div className="w-full flex items-center justify-between px-2 pb-2 mb-2 border-b border-slate-800/60 text-xs">
+      {/* ─── Hydrodynamic Flood Map Grid ──────────────────────────────────── */}
+      <div
+        className="flex flex-col items-center justify-center p-3 rounded-2xl shadow-xl backdrop-blur-xl"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+      >
+        <div
+          className="w-full flex items-center justify-between px-2 pb-2 mb-2 text-xs"
+          style={{ borderBottom: '1px solid var(--border-strong)' }}
+        >
           <div className="flex items-center gap-2">
-            <span className="font-bold text-white">8×8 Catchment Sectors (A1 - H8)</span>
-            <span className="text-slate-500">•</span>
-            <span className="text-slate-400">Click any sector to inspect water depth and terrain elevation</span>
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>8×8 Catchment Grid</span>
+            <span style={{ color: 'var(--text-faint)' }}>·</span>
+            <span style={{ color: 'var(--text-muted)' }}>Click any sector to inspect depth & elevation</span>
           </div>
-          <div className="hidden sm:flex items-center gap-3 text-[11px] text-slate-400">
+          <div className="hidden sm:flex items-center gap-3" style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/40" /> Safe (&lt;0.15m)
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--status-safe)', opacity: 0.5 }} /> Safe (&lt;0.15m)
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/60" /> Warning (&gt;0.15m)
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--status-warn)', opacity: 0.65 }} /> Warning (&gt;0.15m)
             </span>
             <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm bg-red-500/80" /> Critical (&gt;0.5m)
+              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--status-crit)', opacity: 0.85 }} /> Critical (&gt;0.5m)
             </span>
           </div>
         </div>
@@ -166,7 +211,7 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
         />
       </div>
 
-      {/* ─── Timeline Playback Controller ────────────────────────────────────── */}
+      {/* ─── Timeline Playback Controller ─────────────────────────────────── */}
       <TimelineControls
         currentStep={currentStep}
         totalSteps={timeline.length}
@@ -181,49 +226,55 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
         currentState={currentState}
       />
 
-      {/* ─── Bottom Shortcuts to Humanized Tools ─────────────────────────────── */}
+      {/* ─── Bottom Navigation Shortcuts ──────────────────────────────────── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-        <div
-          onClick={() => onNavigateTab('weather')}
-          className="p-3.5 rounded-2xl bg-slate-900/70 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-cyan-400 text-xs font-bold mb-1">
-            <span className="flex items-center gap-1.5">
-              <CloudSun className="w-4 h-4" /> Real-time Weather
-            </span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+        {[
+          {
+            tab: 'weather' as NavTabId,
+            icon: <CloudSun className="w-4 h-4" style={{ color: 'var(--accent)' }} />,
+            label: 'Real-time Weather',
+            heading: 'BBC Weather & 7-Day Radar',
+            body: 'Explore 24-hour rainfall curves, UV ratings, and air quality indices.',
+          },
+          {
+            tab: 'storm-lab' as NavTabId,
+            icon: <FlaskConical className="w-4 h-4" style={{ color: 'var(--accent)' }} />,
+            label: 'Storm Lab',
+            heading: 'Scenario Modeling & Drainage Stress',
+            body: 'Simulate cloudbursts, test drainage failures, and inspect hydrograph curves.',
+          },
+          {
+            tab: 'safety' as NavTabId,
+            icon: <LifeBuoy className="w-4 h-4" style={{ color: 'var(--accent)' }} />,
+            label: 'Citizen Safety',
+            heading: 'Evacuation Routes & Hotline Directory',
+            body: 'Find high-ground shelters, emergency checklists, and state disaster helplines.',
+          },
+        ].map(({ tab, icon, label, heading, body }) => (
+          <div
+            key={tab}
+            onClick={() => onNavigateTab(tab)}
+            className="group cursor-pointer p-3.5 rounded-2xl transition-all"
+            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+            onMouseEnter={e => {
+              (e.currentTarget as HTMLElement).style.border = '1px solid var(--accent-border)';
+              (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)';
+            }}
+            onMouseLeave={e => {
+              (e.currentTarget as HTMLElement).style.border = '1px solid var(--border-subtle)';
+              (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface)';
+            }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--accent)' }}>
+                {icon} {label}
+              </span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" style={{ color: 'var(--text-faint)' }} />
+            </div>
+            <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{heading}</p>
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{body}</p>
           </div>
-          <p className="text-xs text-white font-semibold">BBC Weather & 7-Day Radar Suite</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Explore 24-hour rainfall curves, UV ratings, and air quality indices.</p>
-        </div>
-
-        <div
-          onClick={() => onNavigateTab('storm-lab')}
-          className="p-3.5 rounded-2xl bg-slate-900/70 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-blue-400 text-xs font-bold mb-1">
-            <span className="flex items-center gap-1.5">
-              <FlaskConical className="w-4 h-4" /> Storm Lab
-            </span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-          <p className="text-xs text-white font-semibold">Scenario Modeling & Drainage Stress</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Simulate cloudbursts, test drainage failures, and inspect hydrograph curves.</p>
-        </div>
-
-        <div
-          onClick={() => onNavigateTab('safety')}
-          className="p-3.5 rounded-2xl bg-slate-900/70 hover:bg-slate-800/80 border border-slate-800 hover:border-cyan-500/40 transition-all cursor-pointer group"
-        >
-          <div className="flex items-center justify-between text-emerald-400 text-xs font-bold mb-1">
-            <span className="flex items-center gap-1.5">
-              <LifeBuoy className="w-4 h-4" /> Citizen Safety
-            </span>
-            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-          </div>
-          <p className="text-xs text-white font-semibold">Evacuation Routes & Hotline Directory</p>
-          <p className="text-[11px] text-slate-400 mt-0.5">Find high-ground shelters, emergency checklists, and state disaster helplines.</p>
-        </div>
+        ))}
       </div>
     </div>
   );

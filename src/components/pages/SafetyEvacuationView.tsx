@@ -72,22 +72,29 @@ export const SafetyEvacuationView: React.FC<SafetyEvacuationViewProps> = ({
       <motion.div
         initial={{ opacity: 0, y: -8 }}
         animate={{ opacity: 1, y: 0 }}
-        className="p-5 rounded-2xl bg-gradient-to-r from-slate-950 via-slate-900 to-emerald-950/40 border border-slate-800 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        className="p-5 rounded-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
       >
         <div className="flex items-start sm:items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500/20 to-cyan-500/20 border border-emerald-500/40 flex items-center justify-center text-2xl shrink-0 shadow-lg shadow-emerald-500/10">
+          <div
+            className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl shrink-0"
+            style={{ background: 'var(--status-safe-subtle)', border: '1px solid var(--status-safe-border)' }}
+          >
             🛡️
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-xl font-bold text-white tracking-tight">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-xl font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
                 Citizen Safety & Emergency Evacuation Hub
               </h2>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
+              <span
+                className="text-xs font-semibold px-2 py-0.5 rounded-full"
+                style={{ color: 'var(--status-safe)', background: 'var(--status-safe-subtle)', border: '1px solid var(--status-safe-border)', fontSize: '10px' }}
+              >
                 Public Assistance
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
               Live safety advisories, verified evacuation shelters, emergency contact numbers, and personal preparedness guidance for urban catchments.
             </p>
           </div>
@@ -95,22 +102,29 @@ export const SafetyEvacuationView: React.FC<SafetyEvacuationViewProps> = ({
 
         <button
           onClick={() => onNavigateTab('map')}
-          className="px-3.5 py-2 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs font-semibold transition-all cursor-pointer self-end md:self-auto shrink-0"
+          className="px-3.5 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer self-end md:self-auto shrink-0"
+          style={{ background: 'var(--accent-subtle)', border: '1px solid var(--accent-border)', color: 'var(--accent)' }}
         >
           Check Flood Depth on Map
         </button>
       </motion.div>
 
       {/* ─── Sector Safety Quick-Checker ─────────────────────────────────────── */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/80 border border-slate-800/80 shadow-xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
+      <div
+        className="p-4 sm:p-5 rounded-2xl shadow-sm"
+        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
+      >
+        <div
+          className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3"
+          style={{ borderBottom: '1px solid var(--border-strong)' }}
+        >
           <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              <MapPin className="w-4 h-4 text-cyan-400" />
+            <h3 className="text-sm font-semibold flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
+              <MapPin className="w-4 h-4" style={{ color: 'var(--accent)' }} />
               <span>Is My Sector Safe Right Now?</span>
             </h3>
-            <p className="text-xs text-slate-400 mt-0.5">
-              Type your sector code (e.g. <strong>A1</strong>, <strong>B4</strong>, <strong>H8</strong>) to check current hydraulic inundation depth.
+            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>
+              Type your sector code (e.g. <strong style={{ color: 'var(--text-primary)' }}>A1</strong>, <strong style={{ color: 'var(--text-primary)' }}>B4</strong>, <strong style={{ color: 'var(--text-primary)' }}>H8</strong>) to check current hydraulic inundation depth.
             </p>
           </div>
 
