@@ -21,6 +21,7 @@ interface NavbarProps {
   onSelectTab: (tab: NavTabId) => void;
   isSimulating?: boolean;
   criticalCount?: number;
+  onOpenHistorical?: () => void;
 }
 
 export const NAV_ITEMS: Array<{
