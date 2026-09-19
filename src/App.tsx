@@ -1,30 +1,31 @@
 /**
- * FLOWSHIELD — Main Application
+ * FLOWSHIELD — Flood Telemetry & Early Warning Command Center
+ * Hack-a-Matics 24-Hour Hackathon (Pentagram × BMSCE IEEE Computer Society)
  *
- * Clean 2-panel layout with:
- * - Left/Main: Flood map, playback, charts
- * - Right sidebar: Stats, controls, location weather, warnings, scenarios
- * - Floating AI Chatbot (Gemini) that can control the simulation
- *
- * Backend engine is COMPLETELY UNTOUCHED.
+ * Full-viewport tactical dashboard (100vw × 100vh, no page-level scroll on desktop):
+ * - Top Tactical Status Bar (Logo, Scenario Badge, "Synthetic Terrain" Disclosure, Clock)
+ * - Left Column: Meteorological & Topographic Configuration Deck
+ * - Center Hero: DPI-Aware HTML5 Canvas Heatmap + Vertical Tide-Staff Gauge + Horizontal Timeline Scrub Deck + Hydro Charts
+ * - Right Column: Early Warning Center (Risk Classification Queue, ML Surrogate Prediction, Live Gemini AI Advisory)
+ * - Bottom Section: 4-Scenario Comparative Matrix (Normal / Heavy / Drainage Failure / Blocked Channel)
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { motion } from 'motion/react';
+import { AnimatePresence } from 'motion/react';
 
-// Simulation Engine & Types (unchanged)
+// Simulation Engine & Types
 import { DEFAULT_CONFIG, run } from './sim/index';
-import type { SimConfig, SimState } from './sim/types';
+import type { SimConfig, SimState, CellState } from './sim/types';
 
-// Web Worker & Hooks (unchanged)
-import type { WorkerMessageResponse, ScenariosSummary } from './worker/simWorker';
+// Web Worker & Scenario Types
+import type { WorkerMessageResponse, ScenariosSummary, ScenarioResult } from './worker/simWorker';
 import { usePlayback } from './hooks/usePlayback';
 
-// UI Components
+// Tactical UI Components
 import { ControlPanel } from './components/controls/ControlPanel';
-import { LocationWeather } from './components/location/LocationWeather';
-import { FloodGrid } from './components/grid/FloodGrid';
 import { LiveStats } from './components/stats/LiveStats';
+import { HeatmapCanvas } from './components/grid/HeatmapCanvas';
+import { TideStaffGauge } from './components/grid/TideStaffGauge';
 import { TimelineControls } from './components/playback/TimelineControls';
 import { EarlyWarnings } from './components/warnings/EarlyWarnings';
 import { Charts } from './components/charts/Charts';
@@ -33,6 +34,7 @@ import { DemoNarrative } from './components/demo/DemoNarrative';
 import { CellDetailModal } from './components/grid/CellDetailModal';
 import { AIChatbot } from './components/chatbot/AIChatbot';
 import type { ChatAction } from './components/chatbot/AIChatbot';
+<<<<<<< HEAD
 import { SocialButton } from './components/kokonutui/social-button';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
@@ -54,6 +56,9 @@ const panelVariants = {
     transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
+=======
+import { LocationWeather } from './components/location/LocationWeather';
+>>>>>>> 397bf60 (feat: rebuild FlowShield frontend as tactical command center)
 
 export const AppContent: React.FC = () => {
   const { openAuthModal } = useAuth();
@@ -61,27 +66,35 @@ export const AppContent: React.FC = () => {
   // ─── Simulation Configuration ─────────────────────────────────────────────
   const [config, setConfig] = useState<SimConfig>({
     ...DEFAULT_CONFIG,
+    rows: 8,
+    cols: 8,
     rainfallIntensity: 80,
+    rainfallDuration: 90,
+    drainageEfficiency: 1.0,
+    elevationMultiplier: 1.0,
+    seed: 42,
   });
 
-  // ─── Simulation Results & Worker State ─────────────────────────────────────
+  // Active scenario identifier
+  const [activeScenarioName, setActiveScenarioName] = useState<string>('Heavy Rain');
+
+  // ─── Simulation State & Timeline ──────────────────────────────────────────
   const [timeline, setTimeline] = useState<SimState[]>(() => run(config));
   const [scenarios, setScenarios] = useState<ScenariosSummary | null>(null);
   const [isSimulating, setIsSimulating] = useState(false);
   const [isLoadingScenarios, setIsLoadingScenarios] = useState(false);
 
-  // ─── Interactive States ───────────────────────────────────────────────────
+  // ─── Interactive Overlays ─────────────────────────────────────────────────
   const [blockedCells, setBlockedCells] = useState<Set<string>>(new Set());
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [weatherSearchQuery, setWeatherSearchQuery] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'monitor' | 'scenarios' | 'weather'>('monitor');
 
   // ─── Web Worker Instance ──────────────────────────────────────────────────
   const workerRef = useRef<Worker | null>(null);
 
-  // Playback controller
+  // ─── Playback Engine Hook ─────────────────────────────────────────────────
   const {
     currentStep,
     isPlaying,
@@ -100,12 +113,12 @@ export const AppContent: React.FC = () => {
 
   const currentState: SimState = timeline[currentStep] || timeline[0];
 
-  const selectedCell = useMemo(() => {
+  const selectedCell: CellState | null = useMemo(() => {
     if (!selectedCellId || !currentState) return null;
     return currentState.cells.find((c) => c.id === selectedCellId) || null;
   }, [selectedCellId, currentState]);
 
-  // ─── Initialize Worker ────────────────────────────────────────────────────
+  // ─── Web Worker Lifecycle ─────────────────────────────────────────────────
   useEffect(() => {
     try {
       const worker = new Worker(new URL('./worker/simWorker.ts', import.meta.url), {
@@ -131,8 +144,9 @@ export const AppContent: React.FC = () => {
 
       workerRef.current = worker;
 
+      // Initial scenario synthesis
       worker.postMessage({
-        id: 'initial_scenarios',
+        id: 'init_scenarios',
         type: 'RUN_SCENARIOS',
         config,
       });
@@ -142,66 +156,31 @@ export const AppContent: React.FC = () => {
         worker.terminate();
       };
     } catch {
-      const initialScenarios = {
-        normal: {
-          name: 'Normal' as const,
-          rainfallIntensity: 20,
-          peakLevel: 0.18,
-          maxCriticalCount: 0,
-          timeToFirstCritical: null,
-          peakAffectedArea: 2,
-          peakAffectedPopulation: 1400,
-          timeline: [],
-        },
-        heavy: {
-          name: 'Heavy' as const,
-          rainfallIntensity: 80,
-          peakLevel: 0.72,
-          maxCriticalCount: 6,
-          timeToFirstCritical: 48,
-          peakAffectedArea: 14,
-          peakAffectedPopulation: 18200,
-          timeline: [],
-        },
-        extreme: {
-          name: 'Extreme' as const,
-          rainfallIntensity: 160,
-          peakLevel: 1.45,
-          maxCriticalCount: 22,
-          timeToFirstCritical: 28,
-          peakAffectedArea: 38,
-          peakAffectedPopulation: 46500,
-          timeline: [],
-        },
-      };
-      setScenarios(initialScenarios);
+      // Fallback if worker fails
     }
   }, []);
 
-  // ─── Simulation Runners ───────────────────────────────────────────────────
-  const runSimulationWithConfig = useCallback(
-    (newConfig: SimConfig) => {
-      setIsSimulating(true);
+  // ─── Simulation Trigger ───────────────────────────────────────────────────
+  const runSimulationWithConfig = useCallback((newConfig: SimConfig) => {
+    setIsSimulating(true);
 
-      if (workerRef.current) {
-        workerRef.current.postMessage({
-          id: `sim_${Date.now()}`,
-          type: 'RUN_SIMULATION',
-          config: newConfig,
-        });
-        workerRef.current.postMessage({
-          id: `scen_${Date.now()}`,
-          type: 'RUN_SCENARIOS',
-          config: newConfig,
-        });
-      } else {
-        const newTimeline = run(newConfig);
-        setTimeline(newTimeline);
-        setIsSimulating(false);
-      }
-    },
-    []
-  );
+    if (workerRef.current) {
+      workerRef.current.postMessage({
+        id: `sim_${Date.now()}`,
+        type: 'RUN_SIMULATION',
+        config: newConfig,
+      });
+      workerRef.current.postMessage({
+        id: `scen_${Date.now()}`,
+        type: 'RUN_SCENARIOS',
+        config: newConfig,
+      });
+    } else {
+      const newTimeline = run(newConfig);
+      setTimeline(newTimeline);
+      setIsSimulating(false);
+    }
+  }, []);
 
   const handleConfigChange = useCallback(
     (updated: Partial<SimConfig>) => {
@@ -212,7 +191,79 @@ export const AppContent: React.FC = () => {
     [config, runSimulationWithConfig]
   );
 
-  // ─── Blocked Channel ─────────────────────────────────────────────────────
+  // ─── Scenario Presets ─────────────────────────────────────────────────────
+  const handleSelectPresetScenario = useCallback(
+    (scenarioKey: 'normal' | 'heavy' | 'failure' | 'blocked') => {
+      let updated: Partial<SimConfig> = {};
+      if (scenarioKey === 'normal') {
+        updated = { rainfallIntensity: 20, drainageEfficiency: 1.0, rainfallDuration: 60 };
+        setBlockedCells(new Set());
+        setActiveScenarioName('Normal Rain');
+      } else if (scenarioKey === 'heavy') {
+        updated = { rainfallIntensity: 80, drainageEfficiency: 1.0, rainfallDuration: 90 };
+        setBlockedCells(new Set());
+        setActiveScenarioName('Heavy Rain');
+      } else if (scenarioKey === 'failure') {
+        updated = { rainfallIntensity: 80, drainageEfficiency: 0.2, rainfallDuration: 90 };
+        setBlockedCells(new Set());
+        setActiveScenarioName('Drainage Failure');
+      } else if (scenarioKey === 'blocked') {
+        updated = { rainfallIntensity: 80, drainageEfficiency: 1.0, rainfallDuration: 90 };
+        setActiveScenarioName('Blocked Channel');
+        // Block central valley outlet (row 4, col 4)
+        if (workerRef.current) {
+          setIsSimulating(true);
+          workerRef.current.postMessage({
+            id: `block_${Date.now()}`,
+            type: 'RUN_BLOCKED_CHANNEL',
+            config: { ...config, ...updated },
+            blockedCell: { row: 4, col: 4 },
+          });
+          setConfig({ ...config, ...updated });
+          return;
+        }
+      }
+
+      const next = { ...config, ...updated };
+      setConfig(next);
+      runSimulationWithConfig(next);
+    },
+    [config, runSimulationWithConfig]
+  );
+
+  // Apply scenario from bottom comparative deck
+  const handleApplyScenarioFromMatrix = useCallback(
+    (scenario: ScenarioResult) => {
+      setActiveScenarioName(scenario.name);
+      const updated: Partial<SimConfig> = {
+        rainfallIntensity: scenario.rainfallIntensity,
+        drainageEfficiency: scenario.drainageEfficiency,
+      };
+
+      if (scenario.name === 'Blocked Channel') {
+        if (workerRef.current) {
+          setIsSimulating(true);
+          workerRef.current.postMessage({
+            id: `block_matrix_${Date.now()}`,
+            type: 'RUN_BLOCKED_CHANNEL',
+            config: { ...config, ...updated },
+            blockedCell: { row: 4, col: 4 },
+          });
+          setConfig({ ...config, ...updated });
+          return;
+        }
+      } else {
+        setBlockedCells(new Set());
+      }
+
+      const next = { ...config, ...updated };
+      setConfig(next);
+      runSimulationWithConfig(next);
+    },
+    [config, runSimulationWithConfig]
+  );
+
+  // ─── Blocked Channel Toggle ──────────────────────────────────────────────
   const handleToggleBlockChannel = useCallback(
     (row: number, col: number) => {
       const cellId = `r${row}c${col}`;
@@ -255,6 +306,7 @@ export const AppContent: React.FC = () => {
     setConfig(demoConfig);
     setBlockedCells(new Set());
     setEmergencyMode(false);
+    setActiveScenarioName('90s Hackathon Demo');
 
     const demoTimeline = run(demoConfig);
     setTimeline(demoTimeline);
@@ -262,19 +314,7 @@ export const AppContent: React.FC = () => {
     play();
   }, [setStep, play]);
 
-  const handleExitDemoMode = useCallback(() => {
-    setIsDemoMode(false);
-  }, []);
-
-  // ─── Location Weather → Apply Rainfall ────────────────────────────────────
-  const handleApplyRealRainfall = useCallback(
-    (intensity: number) => {
-      handleConfigChange({ rainfallIntensity: Math.min(200, Math.max(0, intensity)) });
-    },
-    [handleConfigChange]
-  );
-
-  // ─── AI Chatbot Action Handler ────────────────────────────────────────────
+  // ─── AI Chatbot Action Dispatcher ─────────────────────────────────────────
   const handleChatAction = useCallback(
     (action: ChatAction) => {
       switch (action.type) {
@@ -308,18 +348,12 @@ export const AppContent: React.FC = () => {
         case 'RESET':
           reset();
           break;
-        case 'SEARCH_LOCATION':
-          setWeatherSearchQuery(action.payload);
-          setSidebarOpen(true);
-          break;
         case 'SELECT_ZONE': {
-          // Convert zone name like "A1" to cell id like "r0c0"
           const zone = (action.payload as string).toUpperCase();
-          const zoneRow = zone.charCodeAt(0) - 65; // A=0, B=1...
-          const zoneCol = parseInt(zone.slice(1), 10) - 1; // 1=0, 2=1...
+          const zoneRow = zone.charCodeAt(0) - 65;
+          const zoneCol = parseInt(zone.slice(1), 10) - 1;
           if (zoneRow >= 0 && zoneRow < config.rows && zoneCol >= 0 && zoneCol < config.cols) {
-            const cellId = `r${zoneRow}c${zoneCol}`;
-            setSelectedCellId(cellId);
+            setSelectedCellId(`r${zoneRow}c${zoneCol}`);
           }
           break;
         }
@@ -332,11 +366,10 @@ export const AppContent: React.FC = () => {
     [handleConfigChange, handleStartDemoMode, play, pause, reset, config.rows, config.cols, openAuthModal]
   );
 
-  // ─── Chatbot Context ─────────────────────────────────────────────────────
   const chatContext = useMemo(
     () => ({
       config,
-      stats: currentState.stats,
+      stats: currentState?.stats ?? null,
       currentTime: currentState.time,
       totalSteps: timeline.length,
       isPlaying,
@@ -349,27 +382,31 @@ export const AppContent: React.FC = () => {
   );
 
   return (
-    <div className="relative min-h-screen bg-[#06090f] text-slate-200 overflow-x-hidden">
-      {/* ─── Clean Header ─────────────────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl px-4 py-3">
-        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-3">
+    <div className="min-h-screen w-full bg-[#050811] text-slate-200 command-grid-bg flex flex-col antialiased select-none overflow-x-hidden">
+      {/* ─── 1. Top Tactical Status Bar ────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 w-full border-b border-[#17243b] bg-[#050811]/90 backdrop-blur-xl px-4 py-2.5 shadow-xl">
+        <div className="w-full max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-3">
+          {/* Logo & Operational Title */}
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-lg">
-              💧
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-600/30 border border-cyan-500/40 flex items-center justify-center text-lg shadow-lg shadow-cyan-500/20">
+              🌊
             </div>
             <div>
-              <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                FlowShield
-                <span className="text-cyan-400 text-xs font-normal bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
-                  v2.4
-                </span>
-              </h1>
-              <p className="text-[11px] text-slate-400 hidden sm:block">
-                Flood Simulation & Early Warning System
+              <div className="flex items-center gap-2">
+                <h1 className="font-display font-bold text-base sm:text-lg text-white tracking-wide flex items-center gap-2">
+                  FLOWSHIELD
+                  <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 uppercase">
+                    v2.5 Tactical Command
+                  </span>
+                </h1>
+              </div>
+              <p className="text-[10px] font-mono text-slate-400 hidden sm:block">
+                Hydrodynamic Cellular Inundation &amp; Early Warning System
               </p>
             </div>
           </div>
 
+<<<<<<< HEAD
           <div className="flex items-center gap-3">
             <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
               <span>Grid: <strong className="text-white">{config.rows}×{config.cols}</strong></span>
@@ -381,62 +418,93 @@ export const AppContent: React.FC = () => {
             <button
               onClick={() => setSidebarOpen(!sidebarOpen)}
               className="lg:hidden px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/40 text-slate-300 text-sm"
+=======
+          {/* Operational Badges & Telemetry */}
+          <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono">
+            {/* Mandatory Synthetic Terrain Disclosure */}
+            <span
+              className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold tracking-tight"
+              title="All terrain, elevation, and drainage metrics are generated via deterministic PRNG Mulberry32 lattice"
+>>>>>>> 397bf60 (feat: rebuild FlowShield frontend as tactical command center)
             >
-              {sidebarOpen ? '✕ Close' : '☰ Menu'}
-            </button>
+              SYNTHETIC TERRAIN
+            </span>
+
+            {/* Active Scenario Indicator */}
+            <span className="px-2.5 py-1 rounded-lg bg-amber-500/15 border border-amber-500/30 text-amber-300 font-bold hidden md:inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
+              {activeScenarioName}
+            </span>
+
+            {/* Runtime Engine Status */}
+            <span className="px-2.5 py-1 rounded-lg bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 font-bold hidden lg:inline-flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              Web Worker Euler Engine (60 FPS)
+            </span>
+
+            {/* Hackathon Badge */}
+            <span className="px-2.5 py-1 rounded-lg bg-purple-500/15 border border-purple-500/30 text-purple-300 font-bold hidden xl:inline-flex items-center gap-1">
+              🏆 Pentagram × BMSCE IEEE
+            </span>
+
+            {/* View Switcher Tabs (Desktop / Mobile) */}
+            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+              <button
+                onClick={() => setActiveTab('monitor')}
+                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                  activeTab === 'monitor'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Dashboard
+              </button>
+              <button
+                onClick={() => setActiveTab('scenarios')}
+                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                  activeTab === 'scenarios'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Scenarios
+              </button>
+              <button
+                onClick={() => setActiveTab('weather')}
+                className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
+                  activeTab === 'weather'
+                    ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Live Weather
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
-      {/* ─── Main Content Area ────────────────────────────────────────────── */}
-      <main className="relative z-20 max-w-[1440px] mx-auto p-3 sm:p-4">
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate="visible"
-          className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start"
-        >
-          {/* ══════ LEFT: Map + Playback + Charts (8 cols) ══════ */}
-          <motion.div variants={panelVariants} className="lg:col-span-8 space-y-4 flex flex-col items-center">
-            {isDemoMode && (
-              <DemoNarrative
-                time={currentState.time}
-                rainfallDuration={config.rainfallDuration}
-                criticalCount={currentState.stats.criticalCells}
-                warningCount={currentState.stats.warningCells}
-                onExit={handleExitDemoMode}
-              />
-            )}
+      {/* ─── 2. Main Command Center Viewport ──────────────────────────────── */}
+      <main className="w-full max-w-[1720px] mx-auto p-3 sm:p-4 flex-1 flex flex-col gap-4">
+        {/* Narrated Demo Banner if active */}
+        {isDemoMode && (
+          <DemoNarrative
+            time={currentState.time}
+            rainfallDuration={config.rainfallDuration}
+            criticalCount={currentState.stats.criticalCells}
+            warningCount={currentState.stats.warningCells}
+            onExit={() => setIsDemoMode(false)}
+          />
+        )}
 
-            <LiveStats
-              stats={currentState.stats}
-              totalCells={config.rows * config.cols}
+        {activeTab === 'scenarios' ? (
+          /* Full Scenarios Comparison View */
+          <div className="space-y-4">
+            <ScenarioComparison
+              scenarios={scenarios}
+              isLoading={isLoadingScenarios}
+              onApplyScenario={handleApplyScenarioFromMatrix}
             />
-
-            <FloodGrid
-              cells={currentState.cells}
-              rows={config.rows}
-              cols={config.cols}
-              blockedCells={blockedCells}
-              selectedCellId={selectedCellId}
-              emergencyMode={emergencyMode}
-              onCellClick={(cell) => setSelectedCellId(cell.id)}
-            />
-
-            <TimelineControls
-              currentStep={currentStep}
-              totalSteps={timeline.length}
-              currentTime={currentState.time}
-              rainfallDuration={config.rainfallDuration}
-              isPlaying={isPlaying}
-              playbackSpeed={playbackSpeed}
-              onTogglePlay={togglePlay}
-              onReset={reset}
-              onSeek={setStep}
-              onSpeedChange={setPlaybackSpeed}
-              currentState={currentState}
-            />
-
             <Charts
               timeline={timeline}
               currentStep={currentStep}
@@ -444,64 +512,158 @@ export const AppContent: React.FC = () => {
               rainfallDuration={config.rainfallDuration}
               onSeek={setStep}
             />
-          </motion.div>
-
-          {/* ══════ RIGHT SIDEBAR (4 cols) ══════ */}
-          <motion.div
-            variants={panelVariants}
-            className={`lg:col-span-4 space-y-4 ${
-              sidebarOpen ? 'block' : 'hidden lg:block'
-            }`}
-          >
-            <ControlPanel
-              config={config}
-              onConfigChange={handleConfigChange}
-              emergencyMode={emergencyMode}
-              onToggleEmergencyMode={() => setEmergencyMode((prev) => !prev)}
-              blockedCellsCount={blockedCells.size}
-              onResetBlockedChannels={handleResetBlockedChannels}
-              isSimulating={isSimulating}
-              onStartDemoMode={handleStartDemoMode}
-              isDemoMode={isDemoMode}
-            />
-
+          </div>
+        ) : activeTab === 'weather' ? (
+          /* Live Weather View */
+          <div className="max-w-2xl mx-auto w-full py-4">
             <LocationWeather
-              onApplyRainfall={handleApplyRealRainfall}
-              externalQuery={weatherSearchQuery}
-            />
-
-            <EarlyWarnings
-              cells={currentState.cells}
-              selectedCellId={selectedCellId}
-              onSelectCell={(cellId) => setSelectedCellId(cellId)}
-            />
-
-            <ScenarioComparison
-              scenarios={scenarios}
-              isLoading={isLoadingScenarios}
-              onApplyPreset={(intensity) => {
-                handleConfigChange({ rainfallIntensity: intensity });
+              onApplyRainfall={(intensity) => {
+                handleConfigChange({ rainfallIntensity: Math.min(200, Math.max(0, intensity)) });
+                setActiveTab('monitor');
               }}
             />
-          </motion.div>
-        </motion.div>
+          </div>
+        ) : (
+          /* Primary 3-Column Command Center Dashboard */
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
+            {/* ══════ LEFT COLUMN: Controls & Presets (3 cols) ══════ */}
+            <div className="lg:col-span-3 space-y-4">
+              <ControlPanel
+                config={config}
+                onConfigChange={handleConfigChange}
+                emergencyMode={emergencyMode}
+                onToggleEmergencyMode={() => setEmergencyMode((prev) => !prev)}
+                blockedCellsCount={blockedCells.size}
+                onResetBlockedChannels={handleResetBlockedChannels}
+                isSimulating={isSimulating}
+                onStartDemoMode={handleStartDemoMode}
+                isDemoMode={isDemoMode}
+                onRunSimulation={() => runSimulationWithConfig(config)}
+                onSelectPresetScenario={handleSelectPresetScenario}
+              />
+
+              <div className="hidden lg:block">
+                <LocationWeather
+                  onApplyRainfall={(intensity) =>
+                    handleConfigChange({ rainfallIntensity: Math.min(200, Math.max(0, intensity)) })
+                  }
+                />
+              </div>
+            </div>
+
+            {/* ══════ CENTER HERO: Heatmap + Tide Gauge + Timeline + Charts (5 cols) ══════ */}
+            <div className="lg:col-span-5 space-y-3.5 flex flex-col items-center">
+              {/* Tactical Live HUD Metrics */}
+              <LiveStats
+                stats={currentState.stats}
+                totalCells={config.rows * config.cols}
+              />
+
+              {/* Heatmap Canvas paired with Vertical Tide Gauge */}
+              <div className="w-full flex items-stretch justify-center gap-2.5">
+                <div className="flex-1 max-w-[560px]">
+                  <HeatmapCanvas
+                    cells={currentState.cells}
+                    rows={config.rows}
+                    cols={config.cols}
+                    blockedCells={blockedCells}
+                    selectedCellId={selectedCellId}
+                    emergencyMode={emergencyMode}
+                    onCellClick={(cell) => setSelectedCellId(cell.id)}
+                  />
+
+                  {/* Standardized Risk & Hydrology Legend */}
+                  <div className="mt-2 px-3 py-1.5 flex flex-wrap items-center justify-between text-[11px] font-mono bg-[#0a101f]/70 border border-[#17243b] rounded-xl text-slate-400">
+                    <div className="flex items-center gap-3">
+                      <span className="flex items-center gap-1.5 text-emerald-400">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-emerald-500/40 border border-emerald-500" />
+                        Safe (&lt;0.15m)
+                      </span>
+                      <span className="flex items-center gap-1.5 text-amber-400">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-amber-500/40 border border-amber-500" />
+                        Warning (0.15-0.30m)
+                      </span>
+                      <span className="flex items-center gap-1.5 text-red-400">
+                        <span className="w-2.5 h-2.5 rounded-sm bg-red-500/50 border border-red-500" />
+                        Critical (&ge;0.30m)
+                      </span>
+                    </div>
+                    <span className="text-slate-500 text-[10px]">Click sector to inspect</span>
+                  </div>
+                </div>
+
+                {/* Tactical Vertical Tide-Staff Gauge */}
+                <TideStaffGauge
+                  maxWater={currentState.stats.maxWater}
+                  criticalThreshold={0.30}
+                  warningThreshold={0.15}
+                  maxScale={1.20}
+                />
+              </div>
+
+              {/* Large Horizontal Timeline Scrub Bar */}
+              <TimelineControls
+                currentStep={currentStep}
+                totalSteps={timeline.length}
+                currentTime={currentState.time}
+                rainfallDuration={config.rainfallDuration}
+                isPlaying={isPlaying}
+                playbackSpeed={playbackSpeed}
+                onTogglePlay={togglePlay}
+                onReset={reset}
+                onSeek={setStep}
+                onSpeedChange={setPlaybackSpeed}
+                currentState={currentState}
+              />
+
+              {/* Analytics & Hydrodynamic Progression Charts */}
+              <div className="w-full">
+                <Charts
+                  timeline={timeline}
+                  currentStep={currentStep}
+                  rainfallIntensity={config.rainfallIntensity}
+                  rainfallDuration={config.rainfallDuration}
+                  onSeek={setStep}
+                />
+              </div>
+            </div>
+
+            {/* ══════ RIGHT COLUMN: Early Warnings & Real AI Engine (4 cols) ══════ */}
+            <div className="lg:col-span-4 space-y-4">
+              <EarlyWarnings
+                cells={currentState.cells}
+                config={config}
+                stats={currentState.stats}
+                currentTime={currentState.time}
+                selectedCellId={selectedCellId}
+                onSelectCell={(cellId) => setSelectedCellId(cellId)}
+              />
+
+              {/* Collapsible Quick Comparative Matrix */}
+              <ScenarioComparison
+                scenarios={scenarios}
+                isLoading={isLoadingScenarios}
+                onApplyScenario={handleApplyScenarioFromMatrix}
+              />
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* ─── Zone Inspector (Slide-in Panel) ──────────────────────────────── */}
-      {selectedCell && (
-        <CellDetailModal
-          cell={selectedCell}
-          isBlocked={blockedCells.has(selectedCell.id)}
-          onToggleBlock={handleToggleBlockChannel}
-          onClose={() => setSelectedCellId(null)}
-        />
-      )}
+      {/* ─── 3. Sector Detail Slide-In Inspector ─────────────────────────── */}
+      <AnimatePresence>
+        {selectedCell && (
+          <CellDetailModal
+            cell={selectedCell}
+            isBlocked={blockedCells.has(selectedCell.id)}
+            onToggleBlock={handleToggleBlockChannel}
+            onClose={() => setSelectedCellId(null)}
+          />
+        )}
+      </AnimatePresence>
 
-      {/* ─── AI Chatbot (Floating) ────────────────────────────────────────── */}
-      <AIChatbot
-        context={chatContext}
-        onAction={handleChatAction}
-      />
+      {/* ─── 4. Floating Tactical AI Chatbot ──────────────────────────────── */}
+      <AIChatbot context={chatContext} onAction={handleChatAction} />
 
       {/* ─── Authentication Modal (Google & Email) ─────────────────────────── */}
       <AuthModal />

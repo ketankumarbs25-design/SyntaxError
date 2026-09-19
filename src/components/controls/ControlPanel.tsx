@@ -1,8 +1,15 @@
 /**
- * FLOWSHIELD — ControlPanel (Simplified)
+ * FLOWSHIELD — ControlPanel
  *
- * Storm settings with friendly labels and emoji presets.
- * No jargon — just clear controls anyone can understand.
+ * Tactical Meteorological & Topographic Configuration Panel:
+ * - 4 Standard Hackathon Scenarios:
+ *   1. Normal Rain (20 mm/hr)
+ *   2. Heavy Rain (80 mm/hr)
+ *   3. Drainage Failure (80 mm/hr, 20% drain)
+ *   4. Blocked Channel (critical valley flow obstructed)
+ * - Fine-grained hydrological sliders (Rainfall rate, Storm duration, Drainage efficiency, Relief multiplier)
+ * - Deterministic PRNG Seed input
+ * - Primary "Run Simulation" trigger button & Emergency Mode toggle
  */
 
 import React from 'react';
@@ -20,6 +27,8 @@ interface ControlPanelProps {
   isSimulating: boolean;
   onStartDemoMode: () => void;
   isDemoMode: boolean;
+  onRunSimulation?: () => void;
+  onSelectPresetScenario?: (scenarioName: 'normal' | 'heavy' | 'failure' | 'blocked') => void;
 }
 
 export const ControlPanel: React.FC<ControlPanelProps> = ({
@@ -32,201 +41,231 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
   isSimulating,
   onStartDemoMode,
   isDemoMode,
+  onRunSimulation,
+  onSelectPresetScenario,
 }) => {
-  const handleNumericInput = (
-    field: keyof SimConfig,
-    rawVal: string,
-    min: number,
-    max: number,
-    isPercent: boolean = false
-  ) => {
-    const parsed = parseFloat(rawVal);
-    if (isNaN(parsed)) return;
-    const clamped = Math.min(max, Math.max(min, parsed));
-    const finalVal = isPercent ? clamped / 100 : clamped;
-    onConfigChange({ [field]: finalVal });
-  };
-
   return (
-    <div className="w-full flex flex-col gap-4 bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 shadow-xl">
+    <div className="w-full flex flex-col gap-4 bg-[#0a101f]/90 border border-[#17243b] rounded-2xl p-4 shadow-xl backdrop-blur-md">
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-slate-800/60">
-        <div className="flex items-center gap-2.5">
-          <span className="text-lg">🌧️</span>
-          <h2 className="font-semibold text-sm text-white">Storm Settings</h2>
+      <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+        <div className="flex items-center gap-2">
+          <span className="text-base text-cyan-400">⚙️</span>
+          <h3 className="font-mono font-bold text-xs text-white uppercase tracking-wider">
+            Hydrological Controls
+          </h3>
         </div>
         {isSimulating && (
-          <span className="text-xs px-2.5 py-1 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 animate-pulse font-medium">
-            Calculating...
+          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 animate-pulse font-semibold">
+            Computing Euler...
           </span>
         )}
       </div>
 
-      {/* Storm Presets */}
+      {/* 4 Standard Scenarios */}
       <div>
-        <label className="text-xs text-slate-400 block mb-2 font-medium">
-          Choose Storm Type
+        <label className="text-[11px] font-mono text-slate-400 uppercase font-semibold block mb-2">
+          Operational Scenarios
         </label>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { label: '☀️ Light', value: 20, active: 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300 ring-1 ring-emerald-500/30', idle: 'bg-slate-800/50 border-slate-700/40 text-slate-300 hover:bg-emerald-500/10' },
-            { label: '🌧️ Heavy', value: 80, active: 'bg-amber-500/15 border-amber-500/50 text-amber-300 ring-1 ring-amber-500/30', idle: 'bg-slate-800/50 border-slate-700/40 text-slate-300 hover:bg-amber-500/10' },
-            { label: '⛈️ Extreme', value: 160, active: 'bg-red-500/15 border-red-500/50 text-red-300 ring-1 ring-red-500/30', idle: 'bg-slate-800/50 border-slate-700/40 text-slate-300 hover:bg-red-500/10' },
-          ].map((preset) => {
-            const isSelected = config.rainfallIntensity === preset.value;
-            return (
-              <button
-                key={preset.value}
-                onClick={() => onConfigChange({ rainfallIntensity: preset.value })}
-                className={`py-2.5 px-2 rounded-xl text-sm font-semibold border transition-all duration-200 ${isSelected ? preset.active : preset.idle}`}
-              >
-                <div>{preset.label}</div>
-                <div className="text-[10px] mt-0.5 opacity-70">{preset.value} mm/hr</div>
-              </button>
-            );
-          })}
+        <div className="grid grid-cols-2 gap-2 font-mono text-xs">
+          {/* Normal */}
+          <button
+            onClick={() => {
+              if (onSelectPresetScenario) onSelectPresetScenario('normal');
+              else onConfigChange({ rainfallIntensity: 20, drainageEfficiency: 1.0, rainfallDuration: 60 });
+            }}
+            className={`p-2 rounded-xl border text-left transition-all ${
+              config.rainfallIntensity === 20 && config.drainageEfficiency >= 0.9 && blockedCellsCount === 0
+                ? 'bg-emerald-500/15 border-emerald-500/50 text-emerald-300 ring-1 ring-emerald-500/30'
+                : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1.5">
+              <span>☀️</span> Normal Rain
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">20 mm/hr • 100% Drain</div>
+          </button>
+
+          {/* Heavy */}
+          <button
+            onClick={() => {
+              if (onSelectPresetScenario) onSelectPresetScenario('heavy');
+              else onConfigChange({ rainfallIntensity: 80, drainageEfficiency: 1.0, rainfallDuration: 90 });
+            }}
+            className={`p-2 rounded-xl border text-left transition-all ${
+              config.rainfallIntensity === 80 && config.drainageEfficiency >= 0.9 && blockedCellsCount === 0
+                ? 'bg-amber-500/15 border-amber-500/50 text-amber-300 ring-1 ring-amber-500/30'
+                : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1.5">
+              <span>🌧️</span> Heavy Rain
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">80 mm/hr • 100% Drain</div>
+          </button>
+
+          {/* Drainage Failure */}
+          <button
+            onClick={() => {
+              if (onSelectPresetScenario) onSelectPresetScenario('failure');
+              else onConfigChange({ rainfallIntensity: 80, drainageEfficiency: 0.2, rainfallDuration: 90 });
+            }}
+            className={`p-2 rounded-xl border text-left transition-all ${
+              config.rainfallIntensity === 80 && config.drainageEfficiency <= 0.3
+                ? 'bg-red-500/15 border-red-500/50 text-red-300 ring-1 ring-red-500/30'
+                : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1.5">
+              <span>⚠️</span> Drain Failure
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">80 mm/hr • 20% Drain</div>
+          </button>
+
+          {/* Blocked Channel */}
+          <button
+            onClick={() => {
+              if (onSelectPresetScenario) onSelectPresetScenario('blocked');
+              else onConfigChange({ rainfallIntensity: 80, drainageEfficiency: 1.0 });
+            }}
+            className={`p-2 rounded-xl border text-left transition-all ${
+              blockedCellsCount > 0
+                ? 'bg-red-500/15 border-red-500/50 text-red-300 ring-1 ring-red-500/30'
+                : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/60'
+            }`}
+          >
+            <div className="font-bold flex items-center gap-1.5">
+              <span>🚧</span> Blocked Channel
+            </div>
+            <div className="text-[10px] text-slate-400 mt-0.5">
+              {blockedCellsCount > 0 ? `${blockedCellsCount} obstructed` : 'Outlet blockage'}
+            </div>
+          </button>
         </div>
       </div>
 
-      {/* Rain Intensity Slider */}
-      <div>
-        <div className="flex justify-between text-sm mb-1.5">
-          <span className="text-slate-300">Rain Intensity</span>
-          <span className="font-bold text-cyan-400">{config.rainfallIntensity} mm/hr</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="200"
-          step="5"
-          value={config.rainfallIntensity}
-          onChange={(e) => handleNumericInput('rainfallIntensity', e.target.value, 0, 200)}
-          className="w-full accent-cyan-400 cursor-pointer h-2"
-        />
-        <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-          <span>0 (Dry)</span>
-          <span>100</span>
-          <span>200 (Torrential)</span>
-        </div>
-      </div>
-
-      {/* Storm Duration Slider */}
-      <div>
-        <div className="flex justify-between text-sm mb-1.5">
-          <span className="text-slate-300">Storm Duration</span>
-          <span className="font-bold text-cyan-400">{config.rainfallDuration} min</span>
-        </div>
-        <input
-          type="range"
-          min="15"
-          max="180"
-          step="5"
-          value={config.rainfallDuration}
-          onChange={(e) => handleNumericInput('rainfallDuration', e.target.value, 15, 180)}
-          className="w-full accent-cyan-400 cursor-pointer h-2"
-        />
-        <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-          <span>15 min</span>
-          <span>90 min</span>
-          <span>3 hours</span>
-        </div>
-      </div>
-
-      {/* Drainage Slider */}
-      <div>
-        <div className="flex justify-between text-sm mb-1.5">
-          <span className="text-slate-300">Drainage Quality</span>
-          <span className="font-bold text-cyan-400">{Math.round(config.drainageEfficiency * 100)}%</span>
-        </div>
-        <input
-          type="range"
-          min="0"
-          max="100"
-          step="5"
-          value={Math.round(config.drainageEfficiency * 100)}
-          onChange={(e) => handleNumericInput('drainageEfficiency', e.target.value, 0, 100, true)}
-          className="w-full accent-cyan-400 cursor-pointer h-2"
-        />
-        <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-          <span>0% (Blocked)</span>
-          <span>50%</span>
-          <span>100% (Perfect)</span>
-        </div>
-      </div>
-
-      {/* Terrain */}
-      <div>
-        <div className="flex justify-between text-sm mb-1.5">
-          <span className="text-slate-300">Terrain Steepness</span>
-          <span className="font-bold text-cyan-400">{config.elevationMultiplier.toFixed(1)}x</span>
-        </div>
-        <input
-          type="range"
-          min="0.2"
-          max="2.5"
-          step="0.1"
-          value={config.elevationMultiplier}
-          onChange={(e) => handleNumericInput('elevationMultiplier', e.target.value, 0.2, 2.5)}
-          className="w-full accent-cyan-400 cursor-pointer h-2"
-        />
-        <div className="flex justify-between text-[10px] text-slate-500 mt-1">
-          <span>Flat</span>
-          <span>Normal</span>
-          <span>Very Steep</span>
-        </div>
-      </div>
-
-      {/* Scenarios */}
-      <div className="pt-3 border-t border-slate-800/60 space-y-2">
-        <label className="text-xs text-slate-400 block font-medium">Quick Scenarios</label>
-
-        {/* Drainage Failure */}
-        <button
-          onClick={() => onConfigChange({ drainageEfficiency: 0.15 })}
-          className="w-full py-2.5 px-3 rounded-xl bg-slate-800/50 hover:bg-amber-500/10 border border-slate-700/40 hover:border-amber-500/30 text-left text-sm flex items-center justify-between text-slate-200 transition-all"
-        >
-          <span className="flex items-center gap-2">
-            <span>🚫</span>
-            <span>Drainage Failure</span>
-          </span>
-          <span className="text-xs text-slate-500">Sets to 15%</span>
-        </button>
-
-        {/* Blocked Channels */}
-        <div className="flex items-center gap-2">
-          <div className="flex-1 py-2.5 px-3 rounded-xl bg-slate-800/50 border border-slate-700/40 text-sm flex items-center justify-between text-slate-200">
-            <span className="flex items-center gap-2">
-              <span>🧱</span>
-              <span>Blocked Zones</span>
-            </span>
-            <span className={`text-xs font-semibold ${blockedCellsCount > 0 ? 'text-red-400' : 'text-slate-500'}`}>
-              {blockedCellsCount} active
+      {/* Parameter Sliders */}
+      <div className="space-y-3 font-mono text-xs">
+        {/* Rainfall Intensity */}
+        <div>
+          <div className="flex justify-between text-slate-300 mb-1">
+            <span>Rainfall Rate:</span>
+            <span className="font-bold text-cyan-300 tabular-nums">
+              {config.rainfallIntensity} mm/hr
             </span>
           </div>
-          {blockedCellsCount > 0 && (
-            <button
-              onClick={onResetBlockedChannels}
-              className="py-2.5 px-3 rounded-xl bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 text-sm font-semibold transition-all"
-            >
-              Clear
-            </button>
-          )}
+          <input
+            type="range"
+            min="0"
+            max="200"
+            step="5"
+            value={config.rainfallIntensity}
+            onChange={(e) => onConfigChange({ rainfallIntensity: parseFloat(e.target.value) })}
+            className="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-900 rounded-lg appearance-none border border-slate-800"
+          />
         </div>
 
-        {/* Emergency Mode */}
-        <button
-          onClick={onToggleEmergencyMode}
-          className={`w-full py-2.5 px-3 rounded-xl text-left text-sm flex items-center justify-between border transition-all ${
-            emergencyMode
-              ? 'bg-red-500/15 border-red-500/50 text-red-300 ring-1 ring-red-500/30'
-              : 'bg-slate-800/50 hover:bg-slate-800/70 border-slate-700/40 text-slate-200'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <span>🚨</span>
-            <span>Emergency Mode</span>
+        {/* Storm Duration */}
+        <div>
+          <div className="flex justify-between text-slate-300 mb-1">
+            <span>Storm Duration:</span>
+            <span className="font-bold text-cyan-300 tabular-nums">
+              {config.rainfallDuration} min
+            </span>
+          </div>
+          <input
+            type="range"
+            min="15"
+            max="180"
+            step="5"
+            value={config.rainfallDuration}
+            onChange={(e) => onConfigChange({ rainfallDuration: parseFloat(e.target.value) })}
+            className="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-900 rounded-lg appearance-none border border-slate-800"
+          />
+        </div>
+
+        {/* Drainage Capacity Efficiency */}
+        <div>
+          <div className="flex justify-between text-slate-300 mb-1">
+            <span>Drainage Efficiency:</span>
+            <span className={`font-bold tabular-nums ${config.drainageEfficiency < 0.4 ? 'text-red-400' : 'text-emerald-400'}`}>
+              {(config.drainageEfficiency * 100).toFixed(0)}%
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            step="5"
+            value={Math.round(config.drainageEfficiency * 100)}
+            onChange={(e) => onConfigChange({ drainageEfficiency: parseFloat(e.target.value) / 100 })}
+            className="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-900 rounded-lg appearance-none border border-slate-800"
+          />
+        </div>
+
+        {/* Topographic Relief Multiplier */}
+        <div>
+          <div className="flex justify-between text-slate-300 mb-1">
+            <span>Terrain Elevation Relief:</span>
+            <span className="font-bold text-slate-200 tabular-nums">
+              {config.elevationMultiplier.toFixed(2)}x
+            </span>
+          </div>
+          <input
+            type="range"
+            min="0.5"
+            max="2.0"
+            step="0.1"
+            value={config.elevationMultiplier}
+            onChange={(e) => onConfigChange({ elevationMultiplier: parseFloat(e.target.value) })}
+            className="w-full accent-cyan-400 cursor-pointer h-2 bg-slate-900 rounded-lg appearance-none border border-slate-800"
+          />
+        </div>
+
+        {/* PRNG Seed Input for Deterministic Terrain */}
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-slate-400 text-[11px]">Synthetic Terrain Seed:</span>
+          <div className="flex items-center gap-1.5">
+            <input
+              type="number"
+              value={config.seed}
+              onChange={(e) => onConfigChange({ seed: parseInt(e.target.value, 10) || 42 })}
+              className="w-16 px-2 py-1 bg-slate-950 border border-slate-800 rounded-lg text-xs font-mono text-cyan-300 text-center"
+            />
+            <button
+              onClick={() => onConfigChange({ seed: Math.floor(Math.random() * 9000) + 100 })}
+              className="px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-mono transition-colors"
+              title="Generate new random seed"
+            >
+              🎲
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Blocked Channel Indicator / Clear */}
+      {blockedCellsCount > 0 && (
+        <div className="p-2.5 rounded-xl bg-red-950/40 border border-red-500/30 flex items-center justify-between text-xs font-mono">
+          <span className="text-red-300 flex items-center gap-1.5">
+            <span>🚧</span> {blockedCellsCount} sector{blockedCellsCount > 1 ? 's' : ''} blocked
           </span>
-          <span className="text-xs font-medium">{emergencyMode ? 'ON — Highlighting floods only' : 'OFF'}</span>
+          <button
+            onClick={onResetBlockedChannels}
+            className="text-[10px] text-red-300 underline hover:text-white"
+          >
+            Clear Obstructions
+          </button>
+        </div>
+      )}
+
+      {/* Tactical Actions */}
+      <div className="flex flex-col gap-2 pt-2 border-t border-slate-800">
+        {/* Run Simulation Trigger */}
+        <button
+          onClick={onRunSimulation}
+          className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-mono font-bold text-xs uppercase tracking-wider shadow-lg shadow-cyan-500/20 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+        >
+          <span>⚡</span>
+          <span>Execute Simulation</span>
         </button>
 
         {/* Demo Mode */}

@@ -1,30 +1,56 @@
 /**
- * FLOWSHIELD — EarlyWarnings (Simplified)
+ * FLOWSHIELD — EarlyWarnings
  *
- * Plain English warnings: "Zone B3 will flood in ~12 minutes"
- * Sorted by urgency — most urgent first.
+ * Emergency Operations Early Warning Center:
+ * - The primary tactical intelligence column on the dashboard
+ * - Real-time prioritized Critical Inundation & Rising Water alert queue
+ * - Integrated Trained ML Surrogate Model prediction card
+ * - Integrated Live Gemini Emergency Advisory card
+ * - Instant zone inspection triggers
  */
 
 import React, { useMemo } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import type { CellState } from '../../sim/types';
+import type { CellState, SimConfig, SimStats } from '../../sim/types';
+import { MLPredictionCard } from '../ai/MLPredictionCard';
+import { GeminiAdvisoryCard } from '../ai/GeminiAdvisoryCard';
+
+const DEFAULT_STATS: SimStats = {
+  safeCells: 0,
+  warningCells: 0,
+  criticalCells: 0,
+  maxWater: 0,
+  avgWater: 0,
+  affectedArea: 0,
+  affectedPopulation: 0,
+  maxDepth: 0,
+  predictedCriticalCount: 0,
+  earliestCriticalTime: null,
+};
 
 interface EarlyWarningsProps {
   cells: CellState[];
+  config: SimConfig;
+  stats: SimStats;
+  currentTime: number;
   selectedCellId?: string | null;
   onSelectCell?: (cellId: string) => void;
 }
 
-/** Convert row,col to friendly zone name */
 function getZoneName(row: number, col: number): string {
   return `${String.fromCharCode(65 + row)}${col + 1}`;
 }
 
 export const EarlyWarnings: React.FC<EarlyWarningsProps> = ({
   cells,
+  config,
+  stats: statsProp,
+  currentTime,
   selectedCellId = null,
   onSelectCell,
 }) => {
+  const stats: SimStats = statsProp ?? DEFAULT_STATS;
+  // Sort vulnerable cells: Critical first, then lowest ETA, then highest water ratio
   const prioritizedWarnings = useMemo(() => {
     return cells
       .filter((c) => c.risk !== 'SAFE' || (c.eta !== null && c.eta > 0))
@@ -40,111 +66,127 @@ export const EarlyWarnings: React.FC<EarlyWarningsProps> = ({
       });
   }, [cells]);
 
+  const hasCritical = stats.criticalCells > 0;
+
   return (
-    <div className="w-full flex flex-col bg-slate-900/60 border border-slate-700/50 rounded-2xl overflow-hidden shadow-xl">
-      {/* Header */}
-      <div className="px-4 py-3 bg-slate-800/40 border-b border-slate-800/60 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-base">⚠️</span>
-          <h3 className="font-semibold text-sm text-white">
-            Warnings & Alerts
-          </h3>
-        </div>
-        <span className="text-xs px-2.5 py-1 rounded-full bg-slate-800/60 text-slate-400 border border-slate-700/40 font-medium">
-          {prioritizedWarnings.length} active
-        </span>
-      </div>
-
-      {/* Warning List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1.5 max-h-[400px]">
-        {prioritizedWarnings.length === 0 ? (
-          <div className="h-28 flex flex-col items-center justify-center text-center p-4">
-            <span className="text-2xl mb-2">✅</span>
-            <span className="text-sm text-slate-300 font-medium">All zones are safe</span>
-            <span className="text-xs text-slate-500 mt-0.5">No flood warnings right now</span>
+    <div className="w-full flex flex-col gap-3.5">
+      {/* ─── 1. Early Warning Status Card ──────────────────────────────────── */}
+      <div className="w-full bg-[#0a101f]/90 border border-[#17243b] rounded-2xl overflow-hidden shadow-xl backdrop-blur-md flex flex-col">
+        {/* Banner Header */}
+        <div
+          className={`px-4 py-3 border-b flex items-center justify-between transition-colors ${
+            hasCritical
+              ? 'bg-red-500/15 border-red-500/30'
+              : stats.warningCells > 0
+              ? 'bg-amber-500/10 border-amber-500/25'
+              : 'bg-slate-900/60 border-slate-800'
+          }`}
+        >
+          <div className="flex items-center gap-2">
+            <span className="text-base">{hasCritical ? '🚨' : stats.warningCells > 0 ? '⚠️' : '🛡️'}</span>
+            <div>
+              <h3 className="font-mono font-bold text-xs text-white uppercase tracking-wider">
+                Early Warning Engine
+              </h3>
+              <div className="text-[10px] text-slate-400 font-mono">
+                {hasCritical
+                  ? `FLASH INUNDATION BREACH: ${stats.criticalCells} SECTOR(S)`
+                  : stats.warningCells > 0
+                  ? `ACCUMULATION DETECTED: ${stats.warningCells} SECTOR(S)`
+                  : 'HYDROLOGIC BALANCE NOMINAL'}
+              </div>
+            </div>
           </div>
-        ) : (
-          <AnimatePresence initial={false}>
-            {prioritizedWarnings.map((cell) => {
-              const isSelected = selectedCellId === cell.id;
-              const isCrit = cell.risk === 'CRITICAL';
-              const isWarn = cell.risk === 'WARNING';
-              const zoneName = getZoneName(cell.row, cell.col);
 
-              // Build human-readable message
-              let message = '';
-              if (isCrit) {
-                message = `Zone ${zoneName} is flooding! Water: ${cell.water.toFixed(2)}m`;
-              } else if (isWarn) {
-                message = `Zone ${zoneName} at risk — water at ${cell.water.toFixed(2)}m`;
-              } else if (cell.eta !== null && cell.eta > 0) {
-                message = `Zone ${zoneName} may flood in ~${cell.eta.toFixed(0)} min`;
-              }
+          <span
+            className={`text-xs px-2.5 py-1 rounded-full font-mono font-bold border ${
+              hasCritical
+                ? 'bg-red-500/20 text-red-300 border-red-500/40 animate-pulse'
+                : stats.warningCells > 0
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+            }`}
+          >
+            {prioritizedWarnings.length} Active Alerts
+          </span>
+        </div>
 
-              return (
-                <motion.div
-                  key={cell.id}
-                  layout
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  transition={{
-                    layout: { duration: 0.25, ease: [0.22, 1, 0.36, 1] },
-                    opacity: { duration: 0.15 },
-                  }}
-                  onClick={() => onSelectCell?.(cell.id)}
-                  className={`
-                    flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm cursor-pointer
-                    border transition-colors duration-150 select-none
-                    ${
+        {/* Priority Alert Queue */}
+        <div className="p-2.5 max-h-[220px] overflow-y-auto space-y-1.5">
+          {prioritizedWarnings.length === 0 ? (
+            <div className="py-6 text-center text-xs font-mono text-slate-400 flex flex-col items-center gap-1">
+              <span className="text-xl">✅</span>
+              <span>All 64 synthetic terrain sectors within safe threshold (&lt; 0.15m)</span>
+            </div>
+          ) : (
+            <AnimatePresence initial={false}>
+              {prioritizedWarnings.slice(0, 10).map((cell) => {
+                const isSelected = selectedCellId === cell.id;
+                const isCrit = cell.risk === 'CRITICAL';
+                const isWarn = cell.risk === 'WARNING';
+                const zone = getZoneName(cell.row, cell.col);
+
+                return (
+                  <motion.div
+                    key={cell.id}
+                    layout
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.96 }}
+                    onClick={() => onSelectCell?.(cell.id)}
+                    className={`p-2 rounded-xl text-xs font-mono cursor-pointer border transition-all flex items-center justify-between select-none ${
                       isSelected
-                        ? 'bg-cyan-500/10 border-cyan-500/50 ring-1 ring-cyan-400/50'
+                        ? 'ring-2 ring-cyan-400 border-cyan-400 bg-cyan-500/10'
                         : isCrit
-                        ? 'bg-red-500/8 border-red-500/25 hover:bg-red-500/12'
+                        ? 'bg-red-950/40 border-red-500/40 text-red-200 hover:bg-red-900/30'
                         : isWarn
-                        ? 'bg-amber-500/8 border-amber-500/20 hover:bg-amber-500/12'
-                        : 'bg-slate-800/30 border-slate-700/30 hover:bg-slate-800/50'
-                    }
-                  `}
-                >
-                  {/* Icon */}
-                  <span className="text-base flex-shrink-0">
-                    {isCrit ? '🔴' : isWarn ? '🟡' : '🔮'}
-                  </span>
-
-                  {/* Message */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-slate-200 truncate">{message}</div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[10px] text-slate-500">
-                        👥 {cell.population.toLocaleString()} people
-                      </span>
-                      {cell.eta !== null && cell.eta > 0 && (
-                        <span className={`text-[10px] font-semibold ${cell.eta < 15 ? 'text-amber-400' : 'text-slate-400'}`}>
-                          ⏱️ ~{cell.eta.toFixed(0)} min
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Status Badge */}
-                  <span
-                    className={`text-[10px] font-bold px-2 py-0.5 rounded-lg flex-shrink-0 ${
-                      isCrit
-                        ? 'bg-red-500/20 text-red-400'
-                        : isWarn
-                        ? 'bg-amber-500/20 text-amber-300'
-                        : 'bg-slate-700/40 text-slate-400'
+                        ? 'bg-amber-950/30 border-amber-500/30 text-amber-200 hover:bg-amber-900/20'
+                        : 'bg-slate-900/60 border-slate-800 text-slate-300 hover:bg-slate-800/50'
                     }`}
                   >
-                    {isCrit ? 'FLOOD' : isWarn ? 'RISK' : 'WATCH'}
-                  </span>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        )}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`w-2 h-2 rounded-full ${
+                          isCrit ? 'bg-red-400 animate-ping' : isWarn ? 'bg-amber-400' : 'bg-cyan-400'
+                        }`}
+                      />
+                      <span className="font-bold text-white">Sector {zone}</span>
+                      <span className="text-[10px] text-slate-400">
+                        ({cell.water.toFixed(2)}m / {cell.criticalDepth.toFixed(2)}m)
+                      </span>
+                    </div>
+
+                    <div className="text-right">
+                      {isCrit ? (
+                        <span className="text-[10px] font-bold text-red-400 bg-red-500/20 px-1.5 py-0.5 rounded border border-red-500/30">
+                          CRITICAL INUNDATION
+                        </span>
+                      ) : cell.eta !== null && cell.eta > 0 ? (
+                        <span className="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-1.5 py-0.5 rounded border border-amber-500/30">
+                          ETA: ~{cell.eta.toFixed(0)} min
+                        </span>
+                      ) : (
+                        <span className="text-[10px] text-slate-500">Approaching Limit</span>
+                      )}
+                    </div>
+                  </motion.div>
+                );
+              })}
+            </AnimatePresence>
+          )}
+        </div>
       </div>
+
+      {/* ─── 2. Real ML Surrogate Model Prediction Card ────────────────────── */}
+      <MLPredictionCard config={config} stats={stats} currentTime={currentTime} />
+
+      {/* ─── 3. Real Live Gemini AI Emergency Advisory Card ───────────────── */}
+      <GeminiAdvisoryCard
+        config={config}
+        stats={stats}
+        cells={cells}
+        currentTime={currentTime}
+      />
     </div>
   );
 };

@@ -254,6 +254,29 @@ def run_simulation(config: Dict[str, Any] = None) -> Dict[str, Any]:
     water_tensor = np.stack(timeline_water, axis=0)  # (timesteps, rows, cols)
     total_water = [float(np.sum(w)) for w in timeline_water]
 
+    # Calculate affected population across timesteps (Warning + Critical cells)
+    # Critical threshold: 0.30m (or ratio >= 1.0), Warning threshold: 0.15m
+    affected_pop_timeline = []
+    # Base cell populations
+    cell_pop = np.zeros((rows, cols), dtype=np.int32)
+    rng_stats = Mulberry32(config.get("seed", 42))
+    lattices_stats = [build_lattice(6, rng_stats), build_lattice(10, rng_stats), build_lattice(18, rng_stats)]
+    for r in range(rows):
+        for c in range(cols):
+            raw_elev = terrain_elevation(r, c, rows, cols, lattices_stats)
+            pop_factor = 1.0 - raw_elev
+            pop_noise = 0.5 + rng_stats.next() * 0.5
+            cell_pop[r, c] = round(100 + pop_factor * pop_noise * 4900)
+            rng_stats.next()  # match PRNG calls: _crit, d_rate, _cap
+            rng_stats.next()
+            rng_stats.next()
+
+    for w_step in timeline_water:
+        # Warning (>= 0.15m) or Critical (>= 0.30m)
+        is_affected = w_step >= 0.15
+        step_affected_pop = int(np.sum(cell_pop[is_affected]))
+        affected_pop_timeline.append(step_affected_pop)
+
     return {
         "steps": len(timeline_water),
         "rows": rows,
@@ -261,4 +284,7 @@ def run_simulation(config: Dict[str, Any] = None) -> Dict[str, Any]:
         "elevation": elevation.tolist(),
         "water": water_tensor.tolist(),
         "totalWater": total_water,
+        "affectedPopulation": affected_pop_timeline,
+        "peakAffectedPopulation": max(affected_pop_timeline) if affected_pop_timeline else 0,
     }
+

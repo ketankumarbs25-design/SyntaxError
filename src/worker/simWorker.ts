@@ -21,8 +21,10 @@ export interface WorkerMessageRequest {
 }
 
 export interface ScenarioResult {
-  name: 'Normal' | 'Heavy' | 'Extreme';
+  name: 'Normal' | 'Heavy' | 'Drainage Failure' | 'Blocked Channel';
   rainfallIntensity: number;
+  drainageEfficiency: number;
+  isBlocked?: boolean;
   peakLevel: number;
   maxCriticalCount: number;
   timeToFirstCritical: number | null;
@@ -34,7 +36,8 @@ export interface ScenarioResult {
 export interface ScenariosSummary {
   normal: ScenarioResult;
   heavy: ScenarioResult;
-  extreme: ScenarioResult;
+  failure: ScenarioResult;
+  blocked: ScenarioResult;
 }
 
 export interface WorkerMessageResponse {
@@ -47,17 +50,20 @@ export interface WorkerMessageResponse {
 }
 
 function computeScenarioSummary(
-  name: 'Normal' | 'Heavy' | 'Extreme',
+  name: 'Normal' | 'Heavy' | 'Drainage Failure' | 'Blocked Channel',
   intensity: number,
-  baseConfig: Partial<SimConfig>
+  drainageEfficiency: number,
+  baseConfig: Partial<SimConfig>,
+  blocked?: { row: number; col: number }
 ): ScenarioResult {
   const cfg: SimConfig = {
     ...DEFAULT_CONFIG,
     ...baseConfig,
     rainfallIntensity: intensity,
+    drainageEfficiency,
   };
 
-  const timeline = run(cfg);
+  const timeline = blocked ? runBlockedChannel(cfg, blocked) : run(cfg);
 
   let peakLevel = 0;
   let maxCriticalCount = 0;
@@ -80,6 +86,8 @@ function computeScenarioSummary(
   return {
     name,
     rainfallIntensity: intensity,
+    drainageEfficiency,
+    isBlocked: Boolean(blocked),
     peakLevel,
     maxCriticalCount,
     timeToFirstCritical,
@@ -170,14 +178,18 @@ self.onmessage = (event: MessageEvent<WorkerMessageRequest>) => {
       };
       self.postMessage(response);
     } else if (type === 'RUN_SCENARIOS') {
-      const normal = computeScenarioSummary('Normal', 20, config);
-      const heavy = computeScenarioSummary('Heavy', 80, config);
-      const extreme = computeScenarioSummary('Extreme', 160, config);
+      const normal = computeScenarioSummary('Normal', 20, 1.0, config);
+      const heavy = computeScenarioSummary('Heavy', 80, 1.0, config);
+      const failure = computeScenarioSummary('Drainage Failure', 80, 0.2, config);
+      // Block the lowest central drainage cell (r4c4 or custom)
+      const centerRow = Math.floor((config.rows || 8) / 2);
+      const centerCol = Math.floor((config.cols || 8) / 2);
+      const blocked = computeScenarioSummary('Blocked Channel', 80, 1.0, config, { row: centerRow, col: centerCol });
 
       const response: WorkerMessageResponse = {
         id,
         type: 'SCENARIOS_COMPLETE',
-        scenarios: { normal, heavy, extreme },
+        scenarios: { normal, heavy, failure, blocked },
       };
       self.postMessage(response);
     } else if (type === 'RUN_BLOCKED_CHANNEL' && blockedCell) {
