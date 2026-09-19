@@ -28,7 +28,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
 }) => {
   if (isLoading || !scenarios) {
     return (
-      <div className="w-full bg-[#0a101f]/90 border border-[#17243b] rounded-2xl p-4 shadow-xl backdrop-blur-md">
+      <div className="w-full bg-[var(--bg-surface)]/90 border border-[var(--border-subtle)] rounded-2xl p-4 shadow-xl backdrop-blur-md">
         <div className="flex items-center gap-2 pb-3 border-b border-slate-800">
           <span className="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin" />
           <h3 className="font-mono font-bold text-xs text-white uppercase tracking-wider">
@@ -88,7 +88,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
   const maxPop = Math.max(...items.map((s) => s.peakAffectedPopulation), 100);
 
   return (
-    <div className="w-full bg-[#0a101f]/90 border border-[#17243b] rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-col gap-3">
+    <div className="w-full bg-[var(--bg-surface)]/90 border border-[var(--border-subtle)] rounded-2xl p-4 shadow-xl backdrop-blur-md flex flex-col gap-3">
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-slate-800">
         <div className="flex items-center gap-2">
@@ -118,7 +118,7 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
           return (
             <div
               key={scenario.name}
-              className={`p-3.5 rounded-xl border bg-slate-950/70 ${scenario.border} flex flex-col justify-between gap-3 shadow-lg relative overflow-hidden`}
+              className={`p-3.5 rounded-xl border bg-[var(--bg-surface)]/70 ${scenario.border} flex flex-col justify-between gap-3 shadow-lg relative overflow-hidden`}
             >
               {/* Card Header */}
               <div>
