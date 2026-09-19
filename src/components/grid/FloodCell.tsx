@@ -1,12 +1,9 @@
 /**
- * FLOWSHIELD — FloodCell
+ * FLOWSHIELD — FloodCell (Simplified)
  *
- * High-performance grid cell rendered as a pure HTML div.
- * STRICT ANIMATION COMPLIANCE:
- * - NO Motion springs on color or geometry
- * - Sets CSS custom property `--depth` and `--risk-hue`
- * - Transitions via CSS: `transition: background-color 180ms linear`
- * - Critical cells receive the shared CSS `.critical-pulse` class
+ * Clear, readable grid cells with friendly zone names (A1, A2, B1...).
+ * Color-coded backgrounds: green = safe, yellow = warning, red = flooding.
+ * Shows water depth clearly. No jargon.
  */
 
 import React, { memo } from 'react';
@@ -20,6 +17,12 @@ interface FloodCellProps {
   onCellClick?: (cell: CellState) => void;
 }
 
+/** Convert row,col to friendly zone name: A1, A2, B1... */
+function getZoneName(row: number, col: number): string {
+  const letter = String.fromCharCode(65 + row); // A, B, C...
+  return `${letter}${col + 1}`;
+}
+
 export const FloodCell: React.FC<FloodCellProps> = memo(({
   cell,
   isBlocked = false,
@@ -27,35 +30,31 @@ export const FloodCell: React.FC<FloodCellProps> = memo(({
   emergencyMode = false,
   onCellClick,
 }) => {
-  const { id, elevation, water, criticalDepth, risk, eta, population } = cell;
+  const { row, col, elevation, water, criticalDepth, risk, eta, population } = cell;
 
   const ratio = criticalDepth > 0 ? water / criticalDepth : 0;
   const isCritical = risk === 'CRITICAL';
   const isWarning = risk === 'WARNING';
+  const zoneName = getZoneName(row, col);
 
-  // Compute CSS background color based on risk & depth ratio
-  // Uses CSS custom properties for 180ms linear transitions
+  // Background color based on risk level
   let bgColor: string;
   let borderColor: string;
 
   if (isCritical) {
-    // Red / Crimson alert
     const alpha = Math.min(0.95, 0.55 + Math.min(1, ratio - 1.0) * 0.4);
     bgColor = `rgba(239, 68, 68, ${alpha})`;
     borderColor = 'rgba(248, 113, 113, 0.9)';
   } else if (isWarning) {
-    // Amber / Warning
     const alpha = Math.min(0.85, 0.35 + (ratio - 0.6) * 1.1);
     bgColor = `rgba(245, 158, 11, ${alpha})`;
     borderColor = 'rgba(251, 191, 36, 0.75)';
   } else {
-    // Safe: water shows as deep oceanic blue-green gradient
     if (water > 0.001) {
       const alpha = Math.min(0.7, 0.15 + (water / (criticalDepth * 0.6)) * 0.45);
       bgColor = `rgba(6, 182, 212, ${alpha})`;
       borderColor = 'rgba(14, 165, 233, 0.5)';
     } else {
-      // Dry terrain: shaded by elevation (hills lighter, valleys darker)
       const elevNorm = Math.min(1, Math.max(0, elevation / 1.5));
       const shade = Math.round(18 + elevNorm * 24);
       bgColor = `rgb(${shade}, ${shade + 8}, ${shade + 18})`;
@@ -63,17 +62,19 @@ export const FloodCell: React.FC<FloodCellProps> = memo(({
     }
   }
 
-  // Visual cues for emergency mode
   const nonCriticalClass = emergencyMode && !isCritical ? 'cell-non-critical' : '';
   const criticalRingClass = isCritical ? 'critical-pulse ring-2 ring-red-500/80' : '';
-  const selectedClass = isSelected ? 'ring-2 ring-cyan-400 z-30 shadow-lg shadow-cyan-500/20' : '';
+  const selectedClass = isSelected ? 'ring-2 ring-cyan-400 z-30 shadow-lg shadow-cyan-500/25' : '';
+
+  // Readable tooltip
+  const tooltipText = `${zoneName} — Water: ${water.toFixed(2)}m / Critical: ${criticalDepth.toFixed(2)}m | Pop: ${population.toLocaleString()} | Status: ${risk}`;
 
   return (
     <div
-      id={`cell-${id}`}
+      id={`cell-${cell.id}`}
       role="button"
       tabIndex={0}
-      title={`${id} | Water: ${water.toFixed(3)}m | Crit: ${criticalDepth.toFixed(2)}m | Elev: ${elevation.toFixed(2)}m | Pop: ${population} | ETA: ${eta !== null ? (eta === 0 ? 'ACTIVE' : eta.toFixed(1) + 'm') : '—'}`}
+      title={tooltipText}
       onClick={() => onCellClick?.(cell)}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
@@ -82,9 +83,9 @@ export const FloodCell: React.FC<FloodCellProps> = memo(({
         }
       }}
       className={`
-        flood-cell relative flex flex-col justify-between p-1.5 rounded cursor-pointer select-none
-        border overflow-hidden min-h-[64px] sm:min-h-[76px]
-        hover:scale-[1.02] hover:z-20 transition-all duration-150
+        flood-cell relative flex flex-col justify-between p-2 rounded-xl cursor-pointer select-none
+        border overflow-hidden min-h-[72px] sm:min-h-[84px]
+        hover:scale-[1.03] hover:z-20 transition-all duration-150
         ${criticalRingClass}
         ${selectedClass}
         ${nonCriticalClass}
@@ -96,16 +97,16 @@ export const FloodCell: React.FC<FloodCellProps> = memo(({
         ['--risk-hue' as any]: isCritical ? '0' : isWarning ? '38' : '190',
       }}
     >
-      {/* Top row: ID and Blocked Badge / Risk Indicator */}
+      {/* Top: Zone Name + Status */}
       <div className="flex items-center justify-between pointer-events-none">
-        <span className="text-[10px] font-telemetry font-bold tracking-tight text-slate-300/80">
-          {id}
+        <span className="text-[11px] font-semibold tracking-tight text-white/90">
+          {zoneName}
         </span>
 
         {isBlocked && (
           <span
-            title="Blocked Drainage Channel"
-            className="flex items-center justify-center w-3.5 h-3.5 rounded-full bg-red-950/90 border border-red-500 text-red-300 text-[8px] font-bold"
+            title="Drainage Blocked"
+            className="flex items-center justify-center w-4 h-4 rounded-full bg-red-950/90 border border-red-500 text-red-300 text-[8px] font-bold"
           >
             ✕
           </span>
@@ -119,32 +120,33 @@ export const FloodCell: React.FC<FloodCellProps> = memo(({
         )}
       </div>
 
-      {/* Middle row: Live Water Depth */}
-      <div className="my-auto text-center pointer-events-none">
-        <div className="font-telemetry font-bold text-xs sm:text-sm tracking-tight text-white drop-shadow-sm">
-          {water.toFixed(2)}
-          <span className="text-[9px] font-normal text-slate-300 ml-0.5">m</span>
+      {/* Center: Water Depth */}
+      <div className="my-auto text-center pointer-events-none py-1">
+        <div className="font-bold text-sm sm:text-base tracking-tight text-white drop-shadow-sm">
+          {water < 0.01 ? 'Dry' : `${water.toFixed(2)}m`}
         </div>
-        <div className="text-[9px] font-telemetry text-slate-400">
-          elev {elevation.toFixed(1)}m
-        </div>
+        {population > 0 && (
+          <div className="text-[9px] text-white/60 mt-0.5">
+            👥 {population.toLocaleString()}
+          </div>
+        )}
       </div>
 
-      {/* Bottom row: ETA or Risk status */}
-      <div className="flex items-center justify-between text-[9px] font-telemetry pointer-events-none pt-0.5 border-t border-white/10">
+      {/* Bottom: Risk Badge */}
+      <div className="flex items-center justify-between text-[9px] pointer-events-none pt-1 border-t border-white/10">
         <span
-          className={`font-semibold tracking-wider ${
+          className={`font-semibold tracking-wide px-1.5 py-0.5 rounded-md ${
             isCritical
-              ? 'text-red-200'
+              ? 'bg-red-500/20 text-red-200'
               : isWarning
-              ? 'text-amber-200'
-              : 'text-emerald-300/80'
+              ? 'bg-amber-500/20 text-amber-200'
+              : 'bg-emerald-500/15 text-emerald-300/80'
           }`}
         >
-          {risk}
+          {isCritical ? '🔴 FLOOD' : isWarning ? '🟡 RISK' : '🟢 SAFE'}
         </span>
-        <span className="text-slate-300 font-mono">
-          {eta !== null ? (eta === 0 ? 'CRIT' : `${eta.toFixed(0)}m`) : '—'}
+        <span className="text-white/50 font-medium">
+          {eta !== null ? (eta === 0 ? '⚠️' : `~${eta.toFixed(0)}m`) : ''}
         </span>
       </div>
     </div>

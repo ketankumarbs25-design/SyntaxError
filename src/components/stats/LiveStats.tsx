@@ -1,11 +1,8 @@
 /**
- * FLOWSHIELD — LiveStats
+ * FLOWSHIELD — LiveStats (Simplified)
  *
- * Real-time tactical metrics with Motion spring-animated counters.
- * STRICT ANIMATION COMPLIANCE:
- * - Uses `useSpring` + `useTransform` from 'motion/react' for counters
- * - Prominently displays: risk counts, max/avg water, affected area,
- *   simulation estimated population, predicted-critical count, earliest critical time.
+ * Big, clear stat cards with emoji icons.
+ * No jargon — just numbers that make sense at a glance.
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -46,7 +43,7 @@ export const AnimatedCounter: React.FC<CounterProps> = ({
   }, [spring, decimals, prefix, suffix]);
 
   return (
-    <span ref={textRef} className="font-telemetry font-bold">
+    <span ref={textRef} className="font-bold tabular-nums">
       {prefix}{value.toFixed(decimals)}{suffix}
     </span>
   );
@@ -66,85 +63,117 @@ export const LiveStats: React.FC<LiveStatsProps> = ({ stats, totalCells }) => {
   } = stats;
 
   return (
-    <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
-      {/* 1. Risk Counts */}
-      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex flex-col justify-between">
-        <div className="text-[10px] font-telemetry tracking-wider uppercase text-slate-400">
-          Risk Overview
+    <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+      {/* Safe Zones */}
+      <div className="p-3 rounded-2xl bg-emerald-500/8 border border-emerald-500/20 flex flex-col">
+        <div className="flex items-center gap-1.5 text-xs text-emerald-400/80">
+          <span>🟢</span>
+          <span>Safe Zones</span>
         </div>
-        <div className="mt-1 flex items-baseline justify-between">
-          <div className="text-red-400 font-telemetry text-lg font-bold">
-            <AnimatedCounter value={criticalCells} />
-            <span className="text-[10px] text-red-500/80 font-normal ml-1">CRIT</span>
-          </div>
-          <div className="text-amber-400 font-telemetry text-sm font-semibold">
-            <AnimatedCounter value={warningCells} />
-            <span className="text-[9px] text-amber-500/80 font-normal ml-0.5">WARN</span>
-          </div>
-          <div className="text-emerald-400 font-telemetry text-sm font-semibold">
-            <AnimatedCounter value={safeCells} />
-            <span className="text-[9px] text-emerald-500/80 font-normal ml-0.5">SAFE</span>
-          </div>
+        <div className="mt-1.5 text-2xl font-bold text-emerald-400">
+          <AnimatedCounter value={safeCells} />
         </div>
-        <div className="text-[10px] text-slate-500 font-telemetry mt-0.5">
-          {((affectedArea / totalCells) * 100).toFixed(0)}% grid at risk
+        <div className="text-[11px] text-slate-500 mt-0.5">
+          of {totalCells} total zones
         </div>
       </div>
 
-      {/* 2. Water Depths (Max & Mean) */}
-      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex flex-col justify-between">
-        <div className="text-[10px] font-telemetry tracking-wider uppercase text-slate-400">
-          Max / Avg Depth
+      {/* At Risk */}
+      <div className="p-3 rounded-2xl bg-amber-500/8 border border-amber-500/20 flex flex-col">
+        <div className="flex items-center gap-1.5 text-xs text-amber-400/80">
+          <span>🟡</span>
+          <span>At Risk</span>
         </div>
-        <div className="mt-1 flex items-baseline gap-2">
-          <div className="text-cyan-400 font-telemetry text-lg font-bold">
-            <AnimatedCounter value={maxWater} decimals={2} suffix="m" />
-          </div>
-          <div className="text-slate-400 font-telemetry text-xs">
-            avg <AnimatedCounter value={avgWater} decimals={2} suffix="m" />
-          </div>
+        <div className="mt-1.5 text-2xl font-bold text-amber-400">
+          <AnimatedCounter value={warningCells} />
         </div>
-        <div className="text-[10px] text-slate-500 font-telemetry mt-0.5">
-          hydrostatic peak
+        <div className="text-[11px] text-slate-500 mt-0.5">
+          water rising
         </div>
       </div>
 
-      {/* 3. Affected Population */}
-      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex flex-col justify-between">
-        <div className="flex items-center justify-between">
-          <span className="text-[10px] font-telemetry tracking-wider uppercase text-slate-400">
-            Pop. Exposed
-          </span>
-          <span className="text-[8px] px-1 py-0.2 rounded bg-cyan-950/80 border border-cyan-800 text-cyan-300">
-            SIM ESTIMATE
-          </span>
+      {/* Flooding */}
+      <div className="p-3 rounded-2xl bg-red-500/8 border border-red-500/20 flex flex-col">
+        <div className="flex items-center gap-1.5 text-xs text-red-400/80">
+          <span>🔴</span>
+          <span>Flooding</span>
         </div>
-        <div className="mt-1 text-white font-telemetry text-lg font-bold">
+        <div className="mt-1.5 text-2xl font-bold text-red-400">
+          <AnimatedCounter value={criticalCells} />
+        </div>
+        <div className="text-[11px] text-slate-500 mt-0.5">
+          {criticalCells > 0 ? 'zones underwater' : 'all clear'}
+        </div>
+      </div>
+
+      {/* People Affected */}
+      <div className="p-3 rounded-2xl bg-slate-500/8 border border-slate-600/20 flex flex-col">
+        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+          <span>👥</span>
+          <span>People Affected</span>
+        </div>
+        <div className="mt-1.5 text-2xl font-bold text-white">
           <AnimatedCounter value={affectedPopulation} />
         </div>
-        <div className="text-[10px] text-slate-400 font-telemetry mt-0.5">
-          {affectedArea} zones (Warning+Critical)
+        <div className="text-[11px] text-slate-500 mt-0.5">
+          {affectedArea > 0 ? `in ${affectedArea} zones` : 'nobody at risk'}
         </div>
       </div>
 
-      {/* 4. Early Inundation Prediction */}
-      <div className="p-2.5 rounded-lg bg-slate-900/80 border border-slate-800/80 flex flex-col justify-between">
-        <div className="text-[10px] font-telemetry tracking-wider uppercase text-slate-400">
-          Earliest Critical
+      {/* Deepest Water */}
+      <div className="p-3 rounded-2xl bg-cyan-500/8 border border-cyan-500/20 flex flex-col">
+        <div className="flex items-center gap-1.5 text-xs text-cyan-400/80">
+          <span>💧</span>
+          <span>Deepest Water</span>
         </div>
-        <div className="mt-1 text-amber-300 font-telemetry text-lg font-bold">
+        <div className="mt-1.5 text-2xl font-bold text-cyan-400">
+          <AnimatedCounter value={maxWater} decimals={2} suffix="m" />
+        </div>
+        <div className="text-[11px] text-slate-500 mt-0.5">
+          avg <AnimatedCounter value={avgWater} decimals={2} suffix="m" />
+        </div>
+      </div>
+
+      {/* Predictions */}
+      <div className="p-3 rounded-2xl bg-purple-500/8 border border-purple-500/20 flex flex-col">
+        <div className="flex items-center gap-1.5 text-xs text-purple-400/80">
+          <span>🔮</span>
+          <span>Prediction</span>
+        </div>
+        <div className="mt-1.5 text-lg font-bold text-purple-300">
           {criticalCells > 0 ? (
-            <span className="text-red-400">ACTIVE INUNDATION</span>
+            <span className="text-red-400">⚠️ Active Flood</span>
           ) : earliestCriticalTime !== null ? (
             <span>
-              in <AnimatedCounter value={earliestCriticalTime} decimals={1} suffix="m" />
+              ~<AnimatedCounter value={earliestCriticalTime} decimals={0} /> min
             </span>
           ) : (
-            <span className="text-slate-500 font-normal text-sm">NO PROJECTED THREAT</span>
+            <span className="text-emerald-400 text-base">✅ No threat</span>
           )}
         </div>
-        <div className="text-[10px] text-slate-500 font-telemetry mt-0.5">
-          {predictedCriticalCount} cells rising to critical
+        <div className="text-[11px] text-slate-500 mt-0.5">
+          {predictedCriticalCount > 0 ? `${predictedCriticalCount} zones may flood` : 'looking good'}
+        </div>
+      </div>
+
+      {/* Total Water Depth */}
+      <div className="sm:col-span-2 p-3 rounded-2xl bg-blue-500/8 border border-blue-500/20 flex items-center justify-between">
+        <div>
+          <div className="flex items-center gap-1.5 text-xs text-blue-400/80">
+            <span>🌊</span>
+            <span>Overall Flood Status</span>
+          </div>
+          <div className="mt-1 text-sm text-slate-300">
+            {criticalCells === 0 && warningCells === 0
+              ? '✅ All zones safe — no flooding detected'
+              : criticalCells > 0
+              ? `🚨 ${criticalCells} zone${criticalCells > 1 ? 's' : ''} flooding, ${affectedPopulation.toLocaleString()} people affected`
+              : `⚠️ ${warningCells} zone${warningCells > 1 ? 's' : ''} at risk — monitor closely`
+            }
+          </div>
+        </div>
+        <div className="text-3xl">
+          {criticalCells > 0 ? '🌊' : warningCells > 0 ? '⚠️' : '☀️'}
         </div>
       </div>
     </div>

@@ -1,32 +1,28 @@
 /**
- * FLOWSHIELD — Main Command Center Application
+ * FLOWSHIELD — Main Application
  *
- * Tactical 3-column control center layout:
- * - Col 1: Meteorological Controls, Presets, Scenarios, Demo Launcher
- * - Col 2: Telemetry Stats, Heatmap Grid, rAF Playback Timeline, Analytical Charts
- * - Col 3: Prioritized Early Warnings (ETA-sorted), Headless Scenario Stress Test
+ * Clean 2-panel layout with:
+ * - Left/Main: Flood map, playback, charts
+ * - Right sidebar: Stats, controls, location weather, warnings, scenarios
+ * - Floating AI Chatbot (Gemini) that can control the simulation
  *
- * STRICT PERFORMANCE & ANIMATION ADHERENCE:
- * - Full simulation precomputed in Web Worker
- * - Playback driven by rAF with fixed accumulator (10 sim steps/sec)
- * - Cell colors transitioned purely via CSS (no Motion springs on grid)
- * - Motion used exclusively for panel mount, warning list reordering, stat counters, and scenario bars
+ * Backend engine is COMPLETELY UNTOUCHED.
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { motion } from 'motion/react';
 
-// Simulation Engine & Types
+// Simulation Engine & Types (unchanged)
 import { DEFAULT_CONFIG, run } from './sim/index';
 import type { SimConfig, SimState } from './sim/types';
 
-// Web Worker & Hooks
+// Web Worker & Hooks (unchanged)
 import type { WorkerMessageResponse, ScenariosSummary } from './worker/simWorker';
 import { usePlayback } from './hooks/usePlayback';
 
-// Tactical UI Components
-import { BackgroundPaths } from './components/kokonutui/background-paths';
+// UI Components
 import { ControlPanel } from './components/controls/ControlPanel';
+import { LocationWeather } from './components/location/LocationWeather';
 import { FloodGrid } from './components/grid/FloodGrid';
 import { LiveStats } from './components/stats/LiveStats';
 import { TimelineControls } from './components/playback/TimelineControls';
@@ -35,24 +31,23 @@ import { Charts } from './components/charts/Charts';
 import { ScenarioComparison } from './components/scenarios/ScenarioComparison';
 import { DemoNarrative } from './components/demo/DemoNarrative';
 import { CellDetailModal } from './components/grid/CellDetailModal';
+import { AIChatbot } from './components/chatbot/AIChatbot';
+import type { ChatAction } from './components/chatbot/AIChatbot';
 
-// Panel Mount Stagger Animation: 300ms, ease [0.22, 1, 0.36, 1]
 const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-    },
+    transition: { staggerChildren: 0.06 },
   },
 };
 
 const panelVariants = {
-  hidden: { opacity: 0, y: 14 },
+  hidden: { opacity: 0, y: 12 },
   visible: {
     opacity: 1,
     y: 0,
-    transition: { duration: 0.3, ease: [0.22, 1, 0.36, 1] as const },
+    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
 
@@ -60,7 +55,7 @@ export const App: React.FC = () => {
   // ─── Simulation Configuration ─────────────────────────────────────────────
   const [config, setConfig] = useState<SimConfig>({
     ...DEFAULT_CONFIG,
-    rainfallIntensity: 80, // Heavy preset default
+    rainfallIntensity: 80,
   });
 
   // ─── Simulation Results & Worker State ─────────────────────────────────────
@@ -74,11 +69,13 @@ export const App: React.FC = () => {
   const [selectedCellId, setSelectedCellId] = useState<string | null>(null);
   const [emergencyMode, setEmergencyMode] = useState(false);
   const [isDemoMode, setIsDemoMode] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [weatherSearchQuery, setWeatherSearchQuery] = useState<string | null>(null);
 
   // ─── Web Worker Instance ──────────────────────────────────────────────────
   const workerRef = useRef<Worker | null>(null);
 
-  // Playback controller (10 sim steps/sec decoupled rAF clock)
+  // Playback controller
   const {
     currentStep,
     isPlaying,
@@ -87,6 +84,7 @@ export const App: React.FC = () => {
     setStep,
     togglePlay,
     play,
+    pause,
     reset,
   } = usePlayback({
     totalSteps: timeline.length,
@@ -94,10 +92,8 @@ export const App: React.FC = () => {
     targetStepsPerSec: 10,
   });
 
-  // Active state at current playback index
   const currentState: SimState = timeline[currentStep] || timeline[0];
 
-  // Selected cell object (from live state)
   const selectedCell = useMemo(() => {
     if (!selectedCellId || !currentState) return null;
     return currentState.cells.find((c) => c.id === selectedCellId) || null;
@@ -129,7 +125,6 @@ export const App: React.FC = () => {
 
       workerRef.current = worker;
 
-      // Initial scenario run
       worker.postMessage({
         id: 'initial_scenarios',
         type: 'RUN_SCENARIOS',
@@ -141,7 +136,6 @@ export const App: React.FC = () => {
         worker.terminate();
       };
     } catch {
-      // Fallback for environments where Web Workers are restricted
       const initialScenarios = {
         normal: {
           name: 'Normal' as const,
@@ -178,7 +172,7 @@ export const App: React.FC = () => {
     }
   }, []);
 
-  // ─── Trigger Simulation when Config Changes ───────────────────────────────
+  // ─── Simulation Runners ───────────────────────────────────────────────────
   const runSimulationWithConfig = useCallback(
     (newConfig: SimConfig) => {
       setIsSimulating(true);
@@ -189,14 +183,12 @@ export const App: React.FC = () => {
           type: 'RUN_SIMULATION',
           config: newConfig,
         });
-
         workerRef.current.postMessage({
           id: `scen_${Date.now()}`,
           type: 'RUN_SCENARIOS',
           config: newConfig,
         });
       } else {
-        // Direct thread fallback
         const newTimeline = run(newConfig);
         setTimeline(newTimeline);
         setIsSimulating(false);
@@ -214,19 +206,17 @@ export const App: React.FC = () => {
     [config, runSimulationWithConfig]
   );
 
-  // ─── Blocked Channel Interaction ──────────────────────────────────────────
+  // ─── Blocked Channel ─────────────────────────────────────────────────────
   const handleToggleBlockChannel = useCallback(
     (row: number, col: number) => {
       const cellId = `r${row}c${col}`;
 
       if (blockedCells.has(cellId)) {
-        // Unblock: re-run simulation without this block
         const nextBlocked = new Set(blockedCells);
         nextBlocked.delete(cellId);
         setBlockedCells(nextBlocked);
         runSimulationWithConfig(config);
       } else {
-        // Block: send to worker to set drainageRate = 0
         if (workerRef.current) {
           setIsSimulating(true);
           workerRef.current.postMessage({
@@ -249,7 +239,6 @@ export const App: React.FC = () => {
   // ─── Demo Mode ────────────────────────────────────────────────────────────
   const handleStartDemoMode = useCallback(() => {
     setIsDemoMode(true);
-    // Preset: fixed seed + heavy storm (80 mm/hr, 90 min)
     const demoConfig: SimConfig = {
       ...DEFAULT_CONFIG,
       seed: 42,
@@ -261,7 +250,6 @@ export const App: React.FC = () => {
     setBlockedCells(new Set());
     setEmergencyMode(false);
 
-    // Precompute timeline and begin play
     const demoTimeline = run(demoConfig);
     setTimeline(demoTimeline);
     setStep(0);
@@ -272,67 +260,132 @@ export const App: React.FC = () => {
     setIsDemoMode(false);
   }, []);
 
+  // ─── Location Weather → Apply Rainfall ────────────────────────────────────
+  const handleApplyRealRainfall = useCallback(
+    (intensity: number) => {
+      handleConfigChange({ rainfallIntensity: Math.min(200, Math.max(0, intensity)) });
+    },
+    [handleConfigChange]
+  );
+
+  // ─── AI Chatbot Action Handler ────────────────────────────────────────────
+  const handleChatAction = useCallback(
+    (action: ChatAction) => {
+      switch (action.type) {
+        case 'CHANGE_RAINFALL':
+          handleConfigChange({ rainfallIntensity: action.payload });
+          break;
+        case 'CHANGE_DURATION':
+          handleConfigChange({ rainfallDuration: action.payload });
+          break;
+        case 'CHANGE_DRAINAGE':
+          handleConfigChange({ drainageEfficiency: action.payload / 100 });
+          break;
+        case 'CHANGE_TERRAIN':
+          handleConfigChange({ elevationMultiplier: action.payload });
+          break;
+        case 'SET_PRESET':
+          handleConfigChange({ rainfallIntensity: action.payload });
+          break;
+        case 'TOGGLE_EMERGENCY':
+          setEmergencyMode((prev) => !prev);
+          break;
+        case 'START_DEMO':
+          handleStartDemoMode();
+          break;
+        case 'PLAY':
+          play();
+          break;
+        case 'PAUSE':
+          pause();
+          break;
+        case 'RESET':
+          reset();
+          break;
+        case 'SEARCH_LOCATION':
+          setWeatherSearchQuery(action.payload);
+          setSidebarOpen(true);
+          break;
+        case 'SELECT_ZONE': {
+          // Convert zone name like "A1" to cell id like "r0c0"
+          const zone = (action.payload as string).toUpperCase();
+          const zoneRow = zone.charCodeAt(0) - 65; // A=0, B=1...
+          const zoneCol = parseInt(zone.slice(1), 10) - 1; // 1=0, 2=1...
+          if (zoneRow >= 0 && zoneRow < config.rows && zoneCol >= 0 && zoneCol < config.cols) {
+            const cellId = `r${zoneRow}c${zoneCol}`;
+            setSelectedCellId(cellId);
+          }
+          break;
+        }
+      }
+    },
+    [handleConfigChange, handleStartDemoMode, play, pause, reset, config.rows, config.cols]
+  );
+
+  // ─── Chatbot Context ─────────────────────────────────────────────────────
+  const chatContext = useMemo(
+    () => ({
+      config,
+      stats: currentState.stats,
+      currentTime: currentState.time,
+      totalSteps: timeline.length,
+      isPlaying,
+      playbackSpeed,
+      isDemoMode,
+      emergencyMode,
+      blockedCellsCount: blockedCells.size,
+    }),
+    [config, currentState, timeline.length, isPlaying, playbackSpeed, isDemoMode, emergencyMode, blockedCells.size]
+  );
+
   return (
     <div className="relative min-h-screen bg-[#06090f] text-slate-200 overflow-x-hidden">
-      {/* Subtle KokonutUI Ambient Background Paths (Accent Only, Low Opacity) */}
-      <BackgroundPaths className="opacity-20 pointer-events-none" />
-
-      {/* Top Tactical Command Header */}
-      <header className="relative z-30 w-full border-b border-slate-800/80 bg-slate-950/80 backdrop-blur-md px-4 py-3">
-        <div className="max-w-[1600px] mx-auto flex flex-wrap items-center justify-between gap-3">
+      {/* ─── Clean Header ─────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-40 w-full border-b border-slate-800/60 bg-slate-950/90 backdrop-blur-xl px-4 py-3">
+        <div className="max-w-[1440px] mx-auto flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 font-telemetry font-bold text-sm">
-              FS
+            <div className="flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-cyan-500/20 to-blue-500/20 border border-cyan-500/30 text-lg">
+              💧
             </div>
             <div>
-              <h1 className="text-sm sm:text-base font-telemetry font-bold tracking-wider uppercase text-white flex items-center gap-2">
-                FLOWSHIELD <span className="text-cyan-400 text-xs">v2.4</span>
+              <h1 className="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                FlowShield
+                <span className="text-cyan-400 text-xs font-normal bg-cyan-500/10 px-2 py-0.5 rounded-full border border-cyan-500/20">
+                  v2.4
+                </span>
               </h1>
-              <p className="text-[10px] font-telemetry text-slate-400">
-                Deterministic Hydrodynamic Inundation Telemetry & Early Warning Engine
+              <p className="text-[11px] text-slate-400 hidden sm:block">
+                Flood Simulation & Early Warning System
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-telemetry">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded bg-slate-900 border border-slate-800 text-slate-400">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-              <span>Jacobi explicit Euler (dt=1m)</span>
-            </div>
-            <div className="hidden sm:flex items-center gap-2 text-slate-400">
+          <div className="flex items-center gap-3">
+            <div className="hidden sm:flex items-center gap-2 text-xs text-slate-400">
               <span>Grid: <strong className="text-white">{config.rows}×{config.cols}</strong></span>
+              <span className="text-slate-700">•</span>
               <span>Seed: <strong className="text-cyan-300">{config.seed}</strong></span>
             </div>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="lg:hidden px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/40 text-slate-300 text-sm"
+            >
+              {sidebarOpen ? '✕ Close' : '☰ Menu'}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Main 3-Column Tactical Command Grid */}
-      <main className="relative z-20 max-w-[1600px] mx-auto p-3 sm:p-4">
+      {/* ─── Main Content Area ────────────────────────────────────────────── */}
+      <main className="relative z-20 max-w-[1440px] mx-auto p-3 sm:p-4">
         <motion.div
           variants={containerVariants}
           initial="hidden"
           animate="visible"
           className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start"
         >
-          {/* ─── COLUMN 1: Meteorological Controls (3 cols on desktop) ─── */}
-          <motion.div variants={panelVariants} className="lg:col-span-3 space-y-4">
-            <ControlPanel
-              config={config}
-              onConfigChange={handleConfigChange}
-              emergencyMode={emergencyMode}
-              onToggleEmergencyMode={() => setEmergencyMode((prev) => !prev)}
-              blockedCellsCount={blockedCells.size}
-              onResetBlockedChannels={handleResetBlockedChannels}
-              isSimulating={isSimulating}
-              onStartDemoMode={handleStartDemoMode}
-              isDemoMode={isDemoMode}
-            />
-          </motion.div>
-
-          {/* ─── COLUMN 2: Map Heatmap & Timeline (6 cols on desktop) ─── */}
-          <motion.div variants={panelVariants} className="lg:col-span-6 space-y-4 flex flex-col items-center">
-            {/* Demo Mode Tactical Briefing */}
+          {/* ══════ LEFT: Map + Playback + Charts (8 cols) ══════ */}
+          <motion.div variants={panelVariants} className="lg:col-span-8 space-y-4 flex flex-col items-center">
             {isDemoMode && (
               <DemoNarrative
                 time={currentState.time}
@@ -343,13 +396,11 @@ export const App: React.FC = () => {
               />
             )}
 
-            {/* Tactical Live Metrics Strip */}
             <LiveStats
               stats={currentState.stats}
               totalCells={config.rows * config.cols}
             />
 
-            {/* 8x8 FloodGrid Heatmap */}
             <FloodGrid
               cells={currentState.cells}
               rows={config.rows}
@@ -357,12 +408,9 @@ export const App: React.FC = () => {
               blockedCells={blockedCells}
               selectedCellId={selectedCellId}
               emergencyMode={emergencyMode}
-              onCellClick={(cell) => {
-                setSelectedCellId(cell.id);
-              }}
+              onCellClick={(cell) => setSelectedCellId(cell.id)}
             />
 
-            {/* Decoupled Playback Timeline */}
             <TimelineControls
               currentStep={currentStep}
               totalSteps={timeline.length}
@@ -377,7 +425,6 @@ export const App: React.FC = () => {
               currentState={currentState}
             />
 
-            {/* Recharts Hydrological Analytical Telemetry */}
             <Charts
               timeline={timeline}
               currentStep={currentStep}
@@ -387,16 +434,36 @@ export const App: React.FC = () => {
             />
           </motion.div>
 
-          {/* ─── COLUMN 3: Prioritized Warnings & Scenarios (3 cols) ─── */}
-          <motion.div variants={panelVariants} className="lg:col-span-3 space-y-4">
-            {/* Prioritized Early Warning List */}
+          {/* ══════ RIGHT SIDEBAR (4 cols) ══════ */}
+          <motion.div
+            variants={panelVariants}
+            className={`lg:col-span-4 space-y-4 ${
+              sidebarOpen ? 'block' : 'hidden lg:block'
+            }`}
+          >
+            <ControlPanel
+              config={config}
+              onConfigChange={handleConfigChange}
+              emergencyMode={emergencyMode}
+              onToggleEmergencyMode={() => setEmergencyMode((prev) => !prev)}
+              blockedCellsCount={blockedCells.size}
+              onResetBlockedChannels={handleResetBlockedChannels}
+              isSimulating={isSimulating}
+              onStartDemoMode={handleStartDemoMode}
+              isDemoMode={isDemoMode}
+            />
+
+            <LocationWeather
+              onApplyRainfall={handleApplyRealRainfall}
+              externalQuery={weatherSearchQuery}
+            />
+
             <EarlyWarnings
               cells={currentState.cells}
               selectedCellId={selectedCellId}
               onSelectCell={(cellId) => setSelectedCellId(cellId)}
             />
 
-            {/* Headless Multi-Scenario Stress Test */}
             <ScenarioComparison
               scenarios={scenarios}
               isLoading={isLoadingScenarios}
@@ -408,7 +475,7 @@ export const App: React.FC = () => {
         </motion.div>
       </main>
 
-      {/* Sector Inspector Modal */}
+      {/* ─── Zone Inspector (Slide-in Panel) ──────────────────────────────── */}
       {selectedCell && (
         <CellDetailModal
           cell={selectedCell}
@@ -417,6 +484,12 @@ export const App: React.FC = () => {
           onClose={() => setSelectedCellId(null)}
         />
       )}
+
+      {/* ─── AI Chatbot (Floating) ────────────────────────────────────────── */}
+      <AIChatbot
+        context={chatContext}
+        onAction={handleChatAction}
+      />
     </div>
   );
 };

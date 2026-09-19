@@ -32,7 +32,7 @@
   }
 }
 
-/* ─── Shared Single-Keyframe Critical Pulse ───────────────────────────────── */
+/* ─── Shared Critical Pulse Animation ─────────────────────────────────────── */
 @keyframes critical-pulse-ring {
   0% {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.85), inset 0 0 8px rgba(239, 68, 68, 0.6);
@@ -50,9 +50,9 @@
   z-index: 20;
 }
 
-/* ─── High-Performance Cell Transition (NO Motion springs) ────────────────── */
+/* ─── High-Performance Cell Transition ────────────────────────────────────── */
 .flood-cell {
-  transition: background-color 180ms linear, border-color 180ms linear, opacity 180ms ease;
+  transition: background-color 180ms linear, border-color 180ms linear, opacity 180ms ease, transform 150ms ease;
   will-change: background-color;
 }
 
@@ -62,29 +62,71 @@
   filter: grayscale(80%) brightness(0.6);
 }
 
-/* ─── Numbers / Monospace Telemetry Typography ───────────────────────────── */
+/* ─── Monospace / Tabular Numbers ─────────────────────────────────────────── */
 .font-telemetry {
   font-family: var(--font-mono);
   font-feature-settings: "tnum" 1, "zero" 1;
 }
 
-/* ─── Custom Scrollbar for Tactical Panels ───────────────────────────────── */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ─── Custom Scrollbar ───────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   background: rgba(11, 17, 30, 0.6);
 }
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
   background: #334155;
 }
 
-/* ─── Prefers-Reduced-Motion Override ────────────────────────────────────── */
+/* ─── Range Input Styling ────────────────────────────────────────────────── */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 4px;
+  background: #1e293b;
+  outline: none;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00e5ff;
+  cursor: pointer;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+
+input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.5);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #00e5ff;
+  cursor: pointer;
+  border: 2px solid #0f172a;
+  box-shadow: 0 0 8px rgba(0, 229, 255, 0.3);
+}
+
+/* ─── Prefers Reduced Motion ─────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
