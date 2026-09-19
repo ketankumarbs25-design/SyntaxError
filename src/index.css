@@ -1,35 +1,150 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════════════
+   FLOWSHIELD — Global Design System
+   Theme architecture: CSS custom properties on [data-theme] attribute.
+   The anti-flash inline script in index.html sets data-theme before paint.
+═══════════════════════════════════════════════════════════════════════════════ */
+
+/* ─── Dark Theme (default) ──────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-base:              #050811;
+  --bg-surface:           #0a101f;
+  --bg-surface-elevated:  #10192e;
+  --bg-surface-hover:     #141e35;
+  --bg-glass:             rgba(10, 16, 31, 0.85);
+
+  /* Borders */
+  --border-subtle:        #17243b;
+  --border-strong:        #223758;
+
+  /* Foreground / text */
+  --text-primary:         #e2e8f0;
+  --text-secondary:       #94a3b8;
+  --text-muted:           #64748b;
+  --text-faint:           #475569;
+
+  /* Brand / accent — unchanged across themes */
+  --color-cyan:           #00e5ff;
+  --color-cyan-glow:      rgba(0, 229, 255, 0.15);
+  --color-safe:           #10b981;
+  --color-safe-glow:      rgba(16, 185, 129, 0.2);
+  --color-warning:        #f59e0b;
+  --color-warning-glow:   rgba(245, 158, 11, 0.25);
+  --color-critical:       #ef4444;
+  --color-critical-glow:  rgba(239, 68, 68, 0.35);
+
+  /* Header */
+  --header-bg:            rgba(5, 8, 17, 0.90);
+  --header-border:        #17243b;
+
+  /* Scrollbar */
+  --scrollbar-track:      rgba(5, 8, 17, 0.7);
+  --scrollbar-thumb:      #17243b;
+  --scrollbar-thumb-hover:#223758;
+
+  /* Grid texture opacity */
+  --grid-opacity:         0.25;
+
+  /* Theme-switcher dropdown */
+  --dropdown-bg:          #0a101f;
+  --dropdown-border:      #17243b;
+  --dropdown-shadow:      0 24px 64px -8px rgba(0,0,0,0.7);
+  --option-active-bg:     rgba(0, 229, 255, 0.12);
+  --option-active-text:   #67e8f9;
+  --option-idle-bg:       transparent;
+  --option-idle-label:    #e2e8f0;
+  --option-idle-sub:      #64748b;
+  --option-hover-bg:      rgba(255,255,255,0.05);
+  --dropdown-footer-border: rgba(255,255,255,0.06);
+  --btn-idle-bg:          transparent;
+  --btn-idle-text:        #94a3b8;
+}
+
+/* ─── Light Theme ────────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-base:              #f0f4f8;
+  --bg-surface:           #ffffff;
+  --bg-surface-elevated:  #f8fafc;
+  --bg-surface-hover:     #f1f5f9;
+  --bg-glass:             rgba(255, 255, 255, 0.88);
+
+  /* Borders */
+  --border-subtle:        #e2e8f0;
+  --border-strong:        #cbd5e1;
+
+  /* Foreground / text */
+  --text-primary:         #0f172a;
+  --text-secondary:       #334155;
+  --text-muted:           #64748b;
+  --text-faint:           #94a3b8;
+
+  /* Brand accent — keep vivid for both themes */
+  --color-cyan:           #0284c7;
+  --color-cyan-glow:      rgba(2, 132, 199, 0.12);
+  --color-safe:           #059669;
+  --color-safe-glow:      rgba(5, 150, 105, 0.15);
+  --color-warning:        #d97706;
+  --color-warning-glow:   rgba(217, 119, 6, 0.18);
+  --color-critical:       #dc2626;
+  --color-critical-glow:  rgba(220, 38, 38, 0.25);
+
+  /* Header */
+  --header-bg:            rgba(240, 244, 248, 0.92);
+  --header-border:        #e2e8f0;
+
+  /* Scrollbar */
+  --scrollbar-track:      #f1f5f9;
+  --scrollbar-thumb:      #cbd5e1;
+  --scrollbar-thumb-hover:#94a3b8;
+
+  /* Grid texture opacity — lighter for readability */
+  --grid-opacity:         0.10;
+
+  /* Theme-switcher dropdown */
+  --dropdown-bg:          #ffffff;
+  --dropdown-border:      #e2e8f0;
+  --dropdown-shadow:      0 24px 64px -8px rgba(15,23,42,0.20);
+  --option-active-bg:     rgba(2, 132, 199, 0.10);
+  --option-active-text:   #0369a1;
+  --option-idle-bg:       transparent;
+  --option-idle-label:    #0f172a;
+  --option-idle-sub:      #64748b;
+  --option-hover-bg:      rgba(0,0,0,0.04);
+  --dropdown-footer-border: rgba(0,0,0,0.08);
+  --btn-idle-bg:          transparent;
+  --btn-idle-text:        #64748b;
+}
+
+/* ─── Font Stacks ────────────────────────────────────────────────────────────── */
+:root {
+  --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono:    'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   BASE STYLES — driven by CSS variables
+═══════════════════════════════════════════════════════════════════════════════ */
 @layer base {
-  :root {
-    --bg-base: #050811;
-    --bg-surface: #0a101f;
-    --bg-surface-elevated: #10192e;
-    --border-subtle: #17243b;
-    --border-strong: #223758;
-
-    --color-cyan: #00e5ff;
-    --color-cyan-glow: rgba(0, 229, 255, 0.15);
-    --color-safe: #10b981;
-    --color-safe-glow: rgba(16, 185, 129, 0.2);
-    --color-warning: #f59e0b;
-    --color-warning-glow: rgba(245, 158, 11, 0.25);
-    --color-critical: #ef4444;
-    --color-critical-glow: rgba(239, 68, 68, 0.35);
-
-    --font-display: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    --font-mono: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  }
-
   * {
     border-color: var(--border-subtle);
+  }
+
+  html {
+    /* Smooth colour transitions when switching themes */
+    transition:
+      background-color 250ms ease,
+      color            250ms ease;
   }
 
   html,
   body {
     background-color: var(--bg-base);
-    color: #e2e8f0;
+    color: var(--text-primary);
     font-family: var(--font-sans);
     margin: 0;
     padding: 0;
@@ -47,58 +162,108 @@
   }
 }
 
-/* ─── Ambient Command Center Radar Grid Texture ───────────────────────────── */
+/* ─── Smooth theme transition on all interactive surfaces ────────────────────── */
+*,
+*::before,
+*::after {
+  transition-property: background-color, border-color, color, box-shadow, opacity;
+  transition-duration: 200ms;
+  transition-timing-function: ease;
+}
+
+/* Exclude animation-heavy elements from the blanket transition */
+.pulse-critical,
+.pulse-critical *,
+[class*="animate-"] {
+  transition: none !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   THEME-SWITCHER COMPONENT STYLES
+   Named semantic classes used by ThemeSwitcher.tsx
+═══════════════════════════════════════════════════════════════════════════════ */
+.theme-switcher-btn {
+  color: var(--btn-idle-text);
+  background: var(--btn-idle-bg);
+}
+
+.theme-text-muted  { color: var(--text-muted); }
+.theme-text-faint  { color: var(--text-faint); }
+
+.theme-dropdown {
+  background: var(--dropdown-bg);
+  border-color: var(--dropdown-border);
+  box-shadow: var(--dropdown-shadow);
+}
+
+.theme-option-active {
+  background: var(--option-active-bg);
+}
+.theme-option-active-text {
+  color: var(--option-active-text);
+}
+.theme-option-idle {
+  background: var(--option-idle-bg);
+}
+.theme-option-idle:hover,
+.hover\:theme-option-hover:hover {
+  background: var(--option-hover-bg);
+}
+.theme-option-label { color: var(--option-idle-label); }
+.theme-option-sub   { color: var(--option-idle-sub); }
+
+.theme-dropdown-footer {
+  border-color: var(--dropdown-footer-border);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════════
+   COMMAND CENTER GRID BACKGROUND — theme-aware
+═══════════════════════════════════════════════════════════════════════════════ */
 .command-grid-bg {
-  background-image: 
-    radial-gradient(circle at 50% 10%, rgba(0, 229, 255, 0.05) 0%, transparent 45%),
-    radial-gradient(circle at 90% 80%, rgba(239, 68, 68, 0.03) 0%, transparent 40%),
-    linear-gradient(rgba(23, 36, 59, 0.25) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(23, 36, 59, 0.25) 1px, transparent 1px);
+  background-color: var(--bg-base);
+  background-image:
+    radial-gradient(circle at 50% 10%, var(--color-cyan-glow) 0%, transparent 45%),
+    radial-gradient(circle at 90% 80%, var(--color-critical-glow) 0%, transparent 40%),
+    linear-gradient(var(--border-subtle) 1px, transparent 1px),
+    linear-gradient(90deg, var(--border-subtle) 1px, transparent 1px);
   background-size: 100% 100%, 100% 100%, 32px 32px, 32px 32px;
 }
 
-/* ─── Shared Critical Warning Pulse Glow ───────────────────────────────────── */
+/* ─── Critical Pulse ─────────────────────────────────────────────────────────── */
 @keyframes critical-tactical-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6), inset 0 0 8px rgba(239, 68, 68, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 0 8px rgba(239, 68, 68, 0), inset 0 0 16px rgba(239, 68, 68, 0.7);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), inset 0 0 8px rgba(239, 68, 68, 0.4);
-  }
+  0%   { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6), inset 0 0 8px  rgba(239, 68, 68, 0.4); }
+  50%  { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0), inset 0 0 16px rgba(239, 68, 68, 0.7); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0), inset 0 0 8px  rgba(239, 68, 68, 0.4); }
 }
 
 .pulse-critical {
   animation: critical-tactical-pulse 1.8s cubic-bezier(0.25, 1, 0.5, 1) infinite;
 }
 
-/* ─── Custom Dark Scrollbars ─────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: rgba(5, 8, 17, 0.7);
-}
-
+/* ─── Scrollbars ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--scrollbar-track); }
 ::-webkit-scrollbar-thumb {
-  background: #17243b;
+  background: var(--scrollbar-thumb);
   border-radius: 9999px;
 }
+::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #223758;
-}
-
-/* ─── Monospace Numeric Readouts ─────────────────────────────────────────── */
+/* ─── Typography utilities ───────────────────────────────────────────────────── */
 .tabular-nums {
   font-variant-numeric: tabular-nums;
   font-family: var(--font-mono);
 }
 
-.font-display {
-  font-family: var(--font-display);
+.font-display { font-family: var(--font-display); }
+
+/* ─── Animate-in helper (used by dropdown) ───────────────────────────────────── */
+@keyframes fade-in          { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slide-in-from-top {
+  from { transform: translateY(-6px); }
+  to   { transform: translateY(0); }
 }
+.animate-in { animation-fill-mode: both; }
+.fade-in    { animation-name: fade-in; }
+.slide-in-from-top-1 { animation-name: slide-in-from-top; }
+.duration-150 { animation-duration: 150ms; }

@@ -20,6 +20,7 @@ import type { SimConfig, SimState, CellState } from './sim/types';
 // Web Worker & Scenario Types
 import type { WorkerMessageResponse, ScenariosSummary, ScenarioResult } from './worker/simWorker';
 import { usePlayback } from './hooks/usePlayback';
+import { useTheme } from './hooks/useTheme';
 
 // Tactical UI Components
 import { ControlPanel } from './components/controls/ControlPanel';
@@ -34,11 +35,12 @@ import { DemoNarrative } from './components/demo/DemoNarrative';
 import { CellDetailModal } from './components/grid/CellDetailModal';
 import { AIChatbot } from './components/chatbot/AIChatbot';
 import type { ChatAction } from './components/chatbot/AIChatbot';
-<<<<<<< HEAD
 import { SocialButton } from './components/kokonutui/social-button';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { AuthModal } from './components/auth/AuthModal';
 import { UserMenu } from './components/auth/UserMenu';
+import { LocationWeather } from './components/location/LocationWeather';
+import { ThemeSwitcher } from './components/theme/ThemeSwitcher';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -56,13 +58,12 @@ const panelVariants = {
     transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
   },
 };
-=======
-import { LocationWeather } from './components/location/LocationWeather';
->>>>>>> 397bf60 (feat: rebuild FlowShield frontend as tactical command center)
 
 export const AppContent: React.FC = () => {
   const { openAuthModal } = useAuth();
 
+  // ─── Theme ────────────────────────────────────────────────────────────────
+  const { mode: themeMode, setMode: setThemeMode } = useTheme();
   // ─── Simulation Configuration ─────────────────────────────────────────────
   const [config, setConfig] = useState<SimConfig>({
     ...DEFAULT_CONFIG,
@@ -382,9 +383,9 @@ export const AppContent: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen w-full bg-[#050811] text-slate-200 command-grid-bg flex flex-col antialiased select-none overflow-x-hidden">
+    <div className="min-h-screen w-full command-grid-bg flex flex-col antialiased select-none overflow-x-hidden" style={{ backgroundColor: 'var(--bg-base)', color: 'var(--text-primary)' }}>
       {/* ─── 1. Top Tactical Status Bar ────────────────────────────────────── */}
-      <header className="sticky top-0 z-40 w-full border-b border-[#17243b] bg-[#050811]/90 backdrop-blur-xl px-4 py-2.5 shadow-xl">
+      <header className="sticky top-0 z-40 w-full border-b backdrop-blur-xl px-4 py-2.5 shadow-xl" style={{ backgroundColor: 'var(--header-bg)', borderColor: 'var(--header-border)' }}>
         <div className="w-full max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-3">
           {/* Logo & Operational Title */}
           <div className="flex items-center gap-3">
@@ -448,7 +449,7 @@ export const AppContent: React.FC = () => {
             </span>
 
             {/* View Switcher Tabs (Desktop / Mobile) */}
-            <div className="flex items-center bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <div className="flex items-center p-1 rounded-xl border" style={{ backgroundColor: 'var(--bg-surface)', borderColor: 'var(--border-subtle)' }}>
               <button
                 onClick={() => setActiveTab('monitor')}
                 className={`px-3 py-1 rounded-lg text-xs font-mono font-bold transition-all ${
@@ -480,6 +481,9 @@ export const AppContent: React.FC = () => {
                 Live Weather
               </button>
             </div>
+
+            {/* Theme Switcher */}
+            <ThemeSwitcher mode={themeMode} onSetMode={setThemeMode} />
           </div>
         </div>
       </header>
