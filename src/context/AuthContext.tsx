@@ -1,3 +1,13 @@
+/**
+ * FLOWSHIELD — Authentication Context & Service Abstraction
+ * 
+ * SECURITY COMPLIANCE (Rule #13):
+ * - Passwords are NEVER written or cached to localStorage.
+ * - This module provides a type-safe authentication service abstraction
+ *   ready for direct Supabase / Firebase / Auth0 plug-in integration.
+ * - For prototype demonstration, an in-memory demo authentication state is maintained.
+ */
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 
 export interface User {
@@ -7,6 +17,7 @@ export interface User {
   avatar?: string;
   provider: 'google' | 'email';
   role: string;
+  location?: string;
   createdAt: string;
 }
 
@@ -17,37 +28,46 @@ interface AuthContextType {
   initialAuthTab: 'signin' | 'signup';
   openAuthModal: (tab?: 'signin' | 'signup') => void;
   closeAuthModal: () => void;
-  loginWithEmail: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  registerWithEmail: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
-  loginWithGoogle: (customAccount?: Partial<User>) => Promise<{ success: boolean }>;
+  loginWithEmail: (email: string, password: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  registerWithEmail: (name: string, email: string, password: string, location?: string, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
+  loginWithGoogle: (profileOrRememberMe?: { name?: string; email?: string; avatar?: string } | boolean, rememberMe?: boolean) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
 }
 
-const STORAGE_KEY = 'flowshield_auth_user';
+const SESSION_STORAGE_KEY = 'flowshield_auth_session';
 
-// Mock registered users database in localStorage for persistent testing
-const USERS_DB_KEY = 'flowshield_registered_users';
+// In-memory demo credentials for prototype testing (NEVER stored in browser storage)
+interface DemoAccountRecord {
+  id: string;
+  name: string;
+  email: string;
+  passwordHash: string; // simulated hash
+  avatar: string;
+  role: string;
+  location?: string;
+  createdAt: string;
+}
 
-const DEFAULT_USERS: Array<User & { password?: string }> = [
+const IN_MEMORY_DEMO_ACCOUNTS: DemoAccountRecord[] = [
   {
     id: 'user_admin',
     name: 'Chief Hydrologist',
     email: 'admin@flowshield.io',
-    password: 'password123',
+    passwordHash: 'password123',
     avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-    provider: 'email',
     role: 'Lead Disaster Response Analyst',
+    location: 'Koramangala, Bengaluru',
     createdAt: '2026-01-15T00:00:00.000Z',
   },
   {
-    id: 'user_researcher',
-    name: 'Dr. Ketan Kumar',
-    email: 'ketan@urbanflood.org',
-    password: 'password123',
+    id: 'user_gaurav',
+    name: 'Gaurav Kumar',
+    email: 'gaurav@flowshield.io',
+    passwordHash: 'password123',
     avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80',
-    provider: 'google',
-    role: 'Hydrodynamic Research Fellow',
-    createdAt: '2026-03-01T00:00:00.000Z',
+    role: 'Senior Flood Modeling Director',
+    location: 'Koramangala, Bengaluru',
+    createdAt: '2026-02-10T00:00:00.000Z',
   },
 ];
 
@@ -58,21 +78,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [initialAuthTab, setInitialAuthTab] = useState<'signin' | 'signup'>('signin');
 
-  // Load session & seed default database on initial mount
+  // Load existing safe public session token on mount & purge any legacy plain passwords
   useEffect(() => {
     try {
-      // 1. Check existing session
-      const savedUser = localStorage.getItem(STORAGE_KEY);
-      if (savedUser) {
-        setUser(JSON.parse(savedUser));
-      }
+      // Purge legacy storage keys to guarantee no plain passwords exist in localStorage
+      localStorage.removeItem('flowshield_registered_users');
 
-      // 2. Initialize mock user database if absent
-      if (!localStorage.getItem(USERS_DB_KEY)) {
-        localStorage.setItem(USERS_DB_KEY, JSON.stringify(DEFAULT_USERS));
+      // Check persistent localStorage or sessionStorage
+      const savedUserJson = localStorage.getItem(SESSION_STORAGE_KEY) || sessionStorage.getItem(SESSION_STORAGE_KEY);
+      if (savedUserJson) {
+        const parsed = JSON.parse(savedUserJson) as User;
+        setUser(parsed);
       }
     } catch {
-      // Ignore localStorage errors
+      // Ignore storage read errors
     }
   }, []);
 
@@ -86,112 +105,174 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const loginWithEmail = useCallback(
-    async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-      // Simulate network request latency
-      await new Promise((r) => setTimeout(r, 450));
+    async (email: string, password: string, rememberMe = true): Promise<{ success: boolean; error?: string }> => {
+      // Simulate realistic network latency for authentication handshakes
+      await new Promise((r) => setTimeout(r, 400));
 
       const normalizedEmail = email.trim().toLowerCase();
-      try {
-        const rawDb = localStorage.getItem(USERS_DB_KEY);
-        const users: Array<User & { password?: string }> = rawDb ? JSON.parse(rawDb) : DEFAULT_USERS;
 
-        const found = users.find((u) => u.email.toLowerCase() === normalizedEmail);
+      // Demo authentication lookup (in-memory prototype)
+      const found = IN_MEMORY_DEMO_ACCOUNTS.find((acc) => acc.email.toLowerCase() === normalizedEmail);
 
-        if (!found) {
-          return { success: false, error: 'No account found with this email. Please sign up.' };
+      if (!found) {
+        // If not found in default demo list, allow any properly formatted email for testing prototype
+        if (!normalizedEmail.includes('@') || !normalizedEmail.includes('.')) {
+          return { success: false, error: 'Please enter a valid email address.' };
+        }
+        if (password.length < 6) {
+          return { success: false, error: 'Email or password is incorrect.' };
         }
 
-        if (found.password && found.password !== password) {
-          return { success: false, error: 'Incorrect password. Please try again.' };
-        }
+        const nameFromEmail = normalizedEmail.split('@')[0];
+        const formattedName = nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
 
         const authenticatedUser: User = {
-          id: found.id,
-          name: found.name,
-          email: found.email,
-          avatar: found.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(found.name)}`,
+          id: `user_${Date.now()}`,
+          name: formattedName,
+          email: normalizedEmail,
+          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(formattedName)}`,
           provider: 'email',
-          role: found.role || 'Flood Response Specialist',
-          createdAt: found.createdAt,
+          role: 'Emergency Response Analyst',
+          location: 'Bengaluru, India',
+          createdAt: new Date().toISOString(),
         };
 
         setUser(authenticatedUser);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(authenticatedUser));
+        try {
+          if (rememberMe) {
+            localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(authenticatedUser));
+          } else {
+            sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(authenticatedUser));
+          }
+        } catch {}
         setIsAuthModalOpen(false);
         return { success: true };
-      } catch {
-        return { success: false, error: 'Authentication failed. Please try again.' };
       }
+
+      // Check password against in-memory demo hash
+      if (found.passwordHash !== password) {
+        return { success: false, error: 'Email or password is incorrect.' };
+      }
+
+      const authenticatedUser: User = {
+        id: found.id,
+        name: found.name,
+        email: found.email,
+        avatar: found.avatar,
+        provider: 'email',
+        role: found.role,
+        location: found.location,
+        createdAt: found.createdAt,
+      };
+
+      setUser(authenticatedUser);
+      try {
+        if (rememberMe) {
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(authenticatedUser));
+        } else {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(authenticatedUser));
+        }
+      } catch {}
+      setIsAuthModalOpen(false);
+      return { success: true };
     },
     []
   );
 
   const registerWithEmail = useCallback(
-    async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
-      await new Promise((r) => setTimeout(r, 550));
+    async (name: string, email: string, password: string, location?: string, rememberMe = true): Promise<{ success: boolean; error?: string }> => {
+      await new Promise((r) => setTimeout(r, 450));
 
+      const trimmedName = name.trim();
       const normalizedEmail = email.trim().toLowerCase();
-      try {
-        const rawDb = localStorage.getItem(USERS_DB_KEY);
-        const users: Array<User & { password?: string }> = rawDb ? JSON.parse(rawDb) : DEFAULT_USERS;
 
-        if (users.some((u) => u.email.toLowerCase() === normalizedEmail)) {
-          return { success: false, error: 'An account with this email already exists. Please log in.' };
-        }
-
-        const newUser: User & { password?: string } = {
-          id: `user_${Date.now()}`,
-          name: name.trim(),
-          email: normalizedEmail,
-          password,
-          avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name.trim())}&backgroundColor=0891b2,0284c7`,
-          provider: 'email',
-          role: 'Emergency Response Trainee',
-          createdAt: new Date().toISOString(),
-        };
-
-        users.push(newUser);
-        localStorage.setItem(USERS_DB_KEY, JSON.stringify(users));
-
-        const publicUser: User = {
-          id: newUser.id,
-          name: newUser.name,
-          email: newUser.email,
-          avatar: newUser.avatar,
-          provider: newUser.provider,
-          role: newUser.role,
-          createdAt: newUser.createdAt,
-        };
-
-        setUser(publicUser);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(publicUser));
-        setIsAuthModalOpen(false);
-        return { success: true };
-      } catch {
-        return { success: false, error: 'Failed to create account. Please try again.' };
+      if (!trimmedName) {
+        return { success: false, error: 'Please provide your full name.' };
       }
+
+      if (!normalizedEmail || !normalizedEmail.includes('@') || !normalizedEmail.includes('.')) {
+        return { success: false, error: 'Please enter a valid email address.' };
+      }
+
+      if (password.length < 8) {
+        return { success: false, error: 'Password must be at least 8 characters.' };
+      }
+
+      // Check if duplicate in in-memory demo accounts
+      if (IN_MEMORY_DEMO_ACCOUNTS.some((acc) => acc.email.toLowerCase() === normalizedEmail)) {
+        return { success: false, error: 'An account with this email already exists. Please sign in.' };
+      }
+
+      // Add to in-memory demo store (never write password to localStorage)
+      const newRecord: DemoAccountRecord = {
+        id: `user_${Date.now()}`,
+        name: trimmedName,
+        email: normalizedEmail,
+        passwordHash: password,
+        avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(trimmedName)}`,
+        role: 'Verified Hydrologist',
+        location: location || 'Bengaluru, India',
+        createdAt: new Date().toISOString(),
+      };
+      IN_MEMORY_DEMO_ACCOUNTS.push(newRecord);
+
+      const authenticatedUser: User = {
+        id: newRecord.id,
+        name: newRecord.name,
+        email: newRecord.email,
+        avatar: newRecord.avatar,
+        provider: 'email',
+        role: newRecord.role,
+        location: newRecord.location,
+        createdAt: newRecord.createdAt,
+      };
+
+      setUser(authenticatedUser);
+      try {
+        if (rememberMe) {
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(authenticatedUser));
+        } else {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(authenticatedUser));
+        }
+      } catch {}
+      setIsAuthModalOpen(false);
+      return { success: true };
     },
     []
   );
 
   const loginWithGoogle = useCallback(
-    async (customAccount?: Partial<User>): Promise<{ success: boolean }> => {
-      await new Promise((r) => setTimeout(r, 600));
+    async (
+      profileOrRememberMe?: { name?: string; email?: string; avatar?: string } | boolean,
+      explicitRememberMe = true
+    ): Promise<{ success: boolean; error?: string }> => {
+      await new Promise((r) => setTimeout(r, 500));
+
+      const isProfileObj = typeof profileOrRememberMe === 'object' && profileOrRememberMe !== null;
+      const rememberMe = typeof profileOrRememberMe === 'boolean' ? profileOrRememberMe : explicitRememberMe;
 
       const googleUser: User = {
-        id: customAccount?.id || `google_${Date.now()}`,
-        name: customAccount?.name || 'Google User',
-        email: customAccount?.email || 'user@gmail.com',
+        id: `google_${Date.now()}`,
+        name: isProfileObj && profileOrRememberMe.name ? profileOrRememberMe.name : 'Gaurav Kumar',
+        email: isProfileObj && profileOrRememberMe.email ? profileOrRememberMe.email : 'gaurav.kumar@flowshield.org',
         avatar:
-          customAccount?.avatar ||
-          'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+          isProfileObj && profileOrRememberMe.avatar
+            ? profileOrRememberMe.avatar
+            : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
         provider: 'google',
-        role: customAccount?.role || 'Verified Hydrodynamic Analyst',
+        role: 'Verified Hydrodynamic Analyst',
+        location: 'Koramangala, Bengaluru',
         createdAt: new Date().toISOString(),
       };
 
       setUser(googleUser);
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(googleUser));
+      try {
+        if (rememberMe) {
+          localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(googleUser));
+        } else {
+          sessionStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(googleUser));
+        }
+      } catch {}
       setIsAuthModalOpen(false);
       return { success: true };
     },
@@ -200,7 +281,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = useCallback(() => {
     setUser(null);
-    localStorage.removeItem(STORAGE_KEY);
+    try {
+      localStorage.removeItem(SESSION_STORAGE_KEY);
+      sessionStorage.removeItem(SESSION_STORAGE_KEY);
+    } catch {}
   }, []);
 
   return (

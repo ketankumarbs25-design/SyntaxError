@@ -11,7 +11,7 @@
  */
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
 
 // Simulation Engine & Types
 import { DEFAULT_CONFIG, run } from './sim/index';
@@ -43,9 +43,10 @@ import { UserMenu } from './components/auth/UserMenu';
 import { LocationWeather } from './components/location/LocationWeather';
 import { ThemeSwitcher } from './components/theme/ThemeSwitcher';
 import { MinimalDashboard } from './components/minimal/MinimalDashboard';
+import { FlowShieldAuthScreen } from './components/auth/FlowShieldAuthScreen';
 
 export const AppContent: React.FC = () => {
-  const { openAuthModal } = useAuth();
+  const { isAuthenticated, openAuthModal } = useAuth();
 
   // ─── Theme ────────────────────────────────────────────────────────────────
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
@@ -410,8 +411,28 @@ export const AppContent: React.FC = () => {
   );
 
   return (
-    <div className="min-h-screen w-full bg-[#f4f5f8] text-slate-900 antialiased select-none">
-      <MinimalDashboard
+    <AnimatePresence mode="wait">
+      {!isAuthenticated ? (
+        <motion.div
+          key="auth-landing"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.3 }}
+          className="min-h-screen w-full"
+        >
+          <FlowShieldAuthScreen />
+        </motion.div>
+      ) : (
+        <motion.div
+          key="flowshield-dashboard"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35 }}
+          className="min-h-screen w-full bg-[#f4f5f8] text-slate-900 antialiased select-none"
+        >
+          <MinimalDashboard
         config={config}
         currentState={currentState}
         onConfigChange={handleConfigChange}
@@ -602,7 +623,9 @@ export const AppContent: React.FC = () => {
 
       {/* ─── Authentication Modal (Google & Email) ─────────────────────────── */}
       <AuthModal />
-    </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 

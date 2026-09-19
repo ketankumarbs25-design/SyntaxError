@@ -33,6 +33,8 @@ import {
 import type { SimConfig, SimState } from '../../sim/types';
 import { geocodeLocation, type GeocodedLocation } from '../map/geocoding';
 import { fetchAreaWeatherTelemetry, type AreaTelemetry, type RiskAssessment } from '../map/weatherTelemetry';
+import { useAuth } from '../../context/AuthContext';
+import { UserProfileMenu } from '../auth/UserProfileMenu';
 
 interface MinimalDashboardProps {
   config: SimConfig;
@@ -61,6 +63,8 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
   simulationComponent,
   weatherComponent,
 }) => {
+  const { user } = useAuth();
+
   // Local search query for input field
   const [searchQuery, setSearchQuery] = useState(sharedLocation || 'Koramangala, Bengaluru');
   const [currentLoc, setCurrentLoc] = useState<GeocodedLocation>({
@@ -104,14 +108,16 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
     factors: ['Negligible rainfall intensity', 'Catchment soil saturation low'],
   });
 
-  // Dynamic greeting based on current local hour
+  // Dynamic greeting based on current local hour and user name
   const [greeting, setGreeting] = useState('Good evening, Gaurav');
   useEffect(() => {
     const hour = new Date().getHours();
-    if (hour >= 5 && hour < 12) setGreeting('Good morning, Gaurav');
-    else if (hour >= 12 && hour < 17) setGreeting('Good afternoon, Gaurav');
-    else setGreeting('Good evening, Gaurav');
-  }, []);
+    let timePrefix = 'Good evening';
+    if (hour >= 5 && hour < 12) timePrefix = 'Good morning';
+    else if (hour >= 12 && hour < 17) timePrefix = 'Good afternoon';
+    const firstName = user?.name ? user.name.split(' ')[0] : 'Gaurav';
+    setGreeting(`${timePrefix}, ${firstName}`);
+  }, [user]);
 
   // Sync with sharedLocation when updated externally
   useEffect(() => {
@@ -250,11 +256,14 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
           </nav>
         </div>
 
-        {/* Sidebar Footer Branding */}
-        <div className="pt-6 border-t border-slate-100/80 px-1">
-          <div className="text-xs font-bold text-slate-800">FlowShield</div>
-          <div className="text-[11px] text-slate-500 font-medium mt-0.5">Safer Communities</div>
-          <div className="text-[10px] text-slate-400">Through Better Information</div>
+        {/* Sidebar Footer Branding & User Profile */}
+        <div className="pt-4 border-t border-slate-100/80 px-1 space-y-3">
+          <UserProfileMenu compact={false} />
+          <div>
+            <div className="text-xs font-bold text-slate-800">FlowShield</div>
+            <div className="text-[11px] text-slate-500 font-medium mt-0.5">Safer Communities</div>
+            <div className="text-[10px] text-slate-400">Through Better Information</div>
+          </div>
         </div>
       </aside>
 
@@ -273,24 +282,28 @@ export const MinimalDashboard: React.FC<MinimalDashboardProps> = ({
             </p>
           </div>
 
-          {/* Search Pill Input with Blue Circular Arrow Button */}
-          <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full md:w-96 max-w-md">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search location (e.g. Koramangala, Bengaluru)"
-              className="w-full pl-10 pr-12 py-2.5 rounded-full bg-white border border-slate-200/90 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition-all"
-            />
-            <button
-              type="submit"
-              title="Search Location"
-              className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors shadow-xs cursor-pointer"
-            >
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </form>
+          {/* Search Pill Input & Profile Avatar Menu */}
+          <div className="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end">
+            <form onSubmit={handleSearchSubmit} className="relative flex items-center w-full md:w-80 lg:w-96 max-w-md">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search location (e.g. Koramangala, Bengaluru)"
+                className="w-full pl-10 pr-12 py-2.5 rounded-full bg-white border border-slate-200/90 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 shadow-xs transition-all"
+              />
+              <button
+                type="submit"
+                title="Search Location"
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white flex items-center justify-center transition-colors shadow-xs cursor-pointer"
+              >
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </form>
+
+            <UserProfileMenu />
+          </div>
         </header>
 
         {/* View Switch: Simulation Tab View */}
