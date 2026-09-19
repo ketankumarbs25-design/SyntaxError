@@ -8,6 +8,7 @@
 import React from 'react';
 import { motion } from 'motion/react';
 import type { ScenariosSummary } from '../../worker/simWorker';
+import { Loader } from '../kokonutui/loader';
 
 interface ScenarioComparisonProps {
   scenarios: ScenariosSummary | null;
@@ -22,14 +23,12 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
 }) => {
   if (isLoading || !scenarios) {
     return (
-      <div className="w-full bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 shadow-xl">
-        <div className="flex items-center gap-2 pb-3 border-b border-slate-800/50">
-          <span className="text-base">🔄</span>
-          <h3 className="font-semibold text-sm text-white">Comparing Scenarios...</h3>
-        </div>
-        <div className="h-32 flex items-center justify-center text-sm text-slate-500">
-          Running simulations in background...
-        </div>
+      <div className="w-full bg-slate-900/60 border border-slate-700/50 rounded-2xl p-4 shadow-xl flex flex-col items-center justify-center">
+        <Loader
+          size="sm"
+          title="Comparing Scenarios..."
+          subtitle="Simulating Normal, Heavy & Extreme storms in Web Worker"
+        />
       </div>
     );
   }
