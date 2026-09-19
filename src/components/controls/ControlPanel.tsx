@@ -8,6 +8,7 @@
 import React from 'react';
 import type { SimConfig } from '../../sim/types';
 import { SlideTextButton } from '../kokonutui/slide-text-button';
+import { AttractButton } from '../kokonutui/attract-button';
 
 interface ControlPanelProps {
   config: SimConfig;
@@ -240,6 +241,17 @@ export const ControlPanel: React.FC<ControlPanelProps> = ({
                 ? 'bg-purple-500/20 border-purple-400/50 text-purple-300 animate-pulse'
                 : undefined
             }
+          />
+        </div>
+
+        {/* KokonutUI Attract Button */}
+        <div className="w-full mt-1">
+          <AttractButton
+            colorVariant={emergencyMode ? "rose" : "violet"}
+            label={emergencyMode ? "🚨 Emergency Active" : "🧲 Attract Flood Sensors"}
+            attractLabel={emergencyMode ? "🚨 Disengage Alert" : "⚡ Locking Telemetry..."}
+            onClick={onToggleEmergencyMode}
+            className="w-full justify-center text-xs font-semibold rounded-xl"
           />
         </div>
       </div>
