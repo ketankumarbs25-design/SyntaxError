@@ -42,23 +42,6 @@ import { UserMenu } from './components/auth/UserMenu';
 import { LocationWeather } from './components/location/LocationWeather';
 import { ThemeSwitcher } from './components/theme/ThemeSwitcher';
 
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: { staggerChildren: 0.06 },
-  },
-};
-
-const panelVariants = {
-  hidden: { opacity: 0, y: 12 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.35, ease: [0.22, 1, 0.36, 1] as const },
-  },
-};
-
 export const AppContent: React.FC = () => {
   const { openAuthModal } = useAuth();
 
@@ -407,26 +390,15 @@ export const AppContent: React.FC = () => {
             </div>
           </div>
 
-<<<<<<< HEAD
-          <div className="flex items-center gap-3">
-            <div className="hidden md:flex items-center gap-2 text-xs text-slate-400">
-              <span>Grid: <strong className="text-white">{config.rows}×{config.cols}</strong></span>
-              <span className="text-slate-700">•</span>
-              <span>Seed: <strong className="text-cyan-300">{config.seed}</strong></span>
-            </div>
-            <SocialButton label="Share Sim" />
-            <UserMenu />
-            <button
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden px-3 py-2 rounded-xl bg-slate-800/60 border border-slate-700/40 text-slate-300 text-sm"
-=======
           {/* Operational Badges & Telemetry */}
           <div className="flex flex-wrap items-center gap-2.5 text-xs font-mono">
+            <SocialButton label="Share Sim" />
+            <UserMenu />
+
             {/* Mandatory Synthetic Terrain Disclosure */}
             <span
               className="px-2.5 py-1 rounded-lg bg-slate-900 border border-slate-700/80 text-cyan-300 font-bold tracking-tight"
               title="All terrain, elevation, and drainage metrics are generated via deterministic PRNG Mulberry32 lattice"
->>>>>>> 397bf60 (feat: rebuild FlowShield frontend as tactical command center)
             >
               SYNTHETIC TERRAIN
             </span>

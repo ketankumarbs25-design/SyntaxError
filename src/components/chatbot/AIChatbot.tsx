@@ -1,14 +1,14 @@
 /**
- * FLOWSHIELD — AI Chatbot powered by Gemini
- *
- * A floating chat assistant that can:
- * - Answer questions about floods, weather, the simulation
- * - Control the simulation (change rainfall, play/pause, presets, etc.)
- * - Explain what's happening in the current state
- * - Search weather for locations
- *
- * Uses Gemini 2.0 Flash with function calling for website control.
- */
+* FLOWSHIELD — AI Chatbot powered by Gemini
+*
+* A floating chat assistant that can:
+* - Answer questions about floods, weather, the simulation
+* - Control the simulation (change rainfall, play/pause, presets, etc.)
+* - Explain what's happening in the current state
+* - Search weather for locations
+*
+* Uses Gemini 2.0 Flash with function calling for website control.
+*/
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -187,8 +187,8 @@ function buildSystemPrompt(ctx: SimulationContext): string {
     ctx.stats.criticalCells > 0
       ? '🚨 FLOODING'
       : ctx.stats.warningCells > 0
-      ? '⚠️ AT RISK'
-      : '✅ ALL SAFE';
+        ? '⚠️ AT RISK'
+        : '✅ ALL SAFE';
 
   return `You are FlowShield AI — a friendly, helpful assistant for the FlowShield flood simulation system.
 
@@ -565,11 +565,10 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${
-                      msg.role === 'user'
+                    className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
                         ? 'bg-cyan-600/20 border border-cyan-500/30 text-white rounded-br-md'
                         : 'bg-slate-800/60 border border-slate-700/40 text-slate-200 rounded-bl-md'
-                    }`}
+                      }`}
                   >
                     {/* Render text with newlines */}
                     {msg.content.split('\n').map((line, i) => (
@@ -618,10 +617,10 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
             {/* Quick Actions */}
             <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto">
               {[
-                { label: '▶ Play', action: () => { onAction({ type: 'PLAY' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '▶ Playing simulation!', timestamp: Date.now() }]); }},
-                { label: '⏸ Pause', action: () => { onAction({ type: 'PAUSE' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '⏸ Paused!', timestamp: Date.now() }]); }},
-                { label: '⛈️ Extreme', action: () => { onAction({ type: 'SET_PRESET', payload: 160 }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '⛈️ Set to extreme storm (160 mm/hr)!', timestamp: Date.now() }]); }},
-                { label: '🎬 Demo', action: () => { onAction({ type: 'START_DEMO' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '🎬 Starting demo mode!', timestamp: Date.now() }]); }},
+                { label: '▶ Play', action: () => { onAction({ type: 'PLAY' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '▶ Playing simulation!', timestamp: Date.now() }]); } },
+                { label: '⏸ Pause', action: () => { onAction({ type: 'PAUSE' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '⏸ Paused!', timestamp: Date.now() }]); } },
+                { label: '⛈️ Extreme', action: () => { onAction({ type: 'SET_PRESET', payload: 160 }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '⛈️ Set to extreme storm (160 mm/hr)!', timestamp: Date.now() }]); } },
+                { label: '🎬 Demo', action: () => { onAction({ type: 'START_DEMO' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '🎬 Starting demo mode!', timestamp: Date.now() }]); } },
               ].map((qa) => (
                 <button
                   key={qa.label}

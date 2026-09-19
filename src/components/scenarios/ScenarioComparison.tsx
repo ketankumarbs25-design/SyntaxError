@@ -39,7 +39,6 @@ export const ScenarioComparison: React.FC<ScenarioComparisonProps> = ({
           Computing multi-scenario hydrodynamic convergence in Web Worker...
         </div>
       </div>
-      </div>
     );
   }
 
