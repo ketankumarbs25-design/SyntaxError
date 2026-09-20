@@ -44,9 +44,11 @@ import { LocationWeather } from './components/location/LocationWeather';
 import { ThemeSwitcher } from './components/theme/ThemeSwitcher';
 import { MinimalDashboard } from './components/minimal/MinimalDashboard';
 import { FlowShieldAuthScreen } from './components/auth/FlowShieldAuthScreen';
+import { LandingPage } from './components/landing/LandingPage';
 
 export const AppContent: React.FC = () => {
   const { isAuthenticated, openAuthModal } = useAuth();
+  const [showLanding, setShowLanding] = useState(true);
 
   // ─── Theme ────────────────────────────────────────────────────────────────
   const { mode: themeMode, setMode: setThemeMode } = useTheme();
@@ -422,6 +424,17 @@ export const AppContent: React.FC = () => {
           className="min-h-screen w-full"
         >
           <FlowShieldAuthScreen />
+        </motion.div>
+      ) : showLanding ? (
+        <motion.div
+          key="product-landing"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.35 }}
+          className="min-h-screen w-full"
+        >
+          <LandingPage onEnter={() => setShowLanding(false)} />
         </motion.div>
       ) : (
         <motion.div
