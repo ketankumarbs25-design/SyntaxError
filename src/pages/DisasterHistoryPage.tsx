@@ -110,15 +110,15 @@ export const DisasterHistoryPage: React.FC = () => {
             <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase bg-blue-500/20 text-blue-300 border border-blue-400/30 mb-3">
                 <Globe className="w-3.5 h-3.5 animate-pulse" />
-                {language === 'hi' ? 'राष्ट्रीय आपदा इतिहास एवं रिपोर्ट' : 'National Disaster Records & UN Live Feeds'}
+                {language === 'hi' ? 'राष्ट्रीय आपदा इतिहास एवं रिपोर्ट' : 'Official Natural Disaster Intelligence Feeds'}
               </div>
               <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight">
                 {language === 'hi' ? 'प्राकृतिक आपदा इतिहास एवं लेख' : 'History of Natural Disasters in India'}
               </h1>
               <p className="text-slate-300 text-sm sm:text-base mt-2 max-w-3xl leading-relaxed">
                 {language === 'hi'
-                  ? 'केंद्रीय जल आयोग (CWC), संयुक्त राष्ट्र (UN OCHA ReliefWeb), एवं नासा (NASA EONET) से भारत के ऐतिहासिक व ताज़ा बाढ़, चक्रवात एवं भूस्खलन के आधिकारिक दस्तावेज।'
-                  : 'Official situation reports, landmark deluge archives, and real-time humanitarian intelligence from UN OCHA ReliefWeb, NASA EONET, and Central Water Commission.'}
+                  ? 'केंद्रीय जल आयोग (CWC), GDACS (संयुक्त राष्ट्र एवं यूरोपीय आयोग), एवं नासा (NASA EONET) से भारत के ऐतिहासिक व ताज़ा बाढ़, चक्रवात एवं भूस्खलन के आधिकारिक दस्तावेज। (गैर-संबंधित मनोरंजन समाचार स्वतः अवरुद्ध)।'
+                  : 'Official situation reports, landmark deluge archives, and real-time humanitarian intelligence from GDACS (UN & European Commission), NASA EONET, and Central Water Commission. Strictly filtered for verified disaster intelligence.'}
               </p>
             </div>
 
@@ -126,7 +126,7 @@ export const DisasterHistoryPage: React.FC = () => {
               <div className="flex items-center gap-2 bg-slate-800/80 backdrop-blur-md px-4 py-2 rounded-xl border border-slate-700 text-xs">
                 <span className={`w-2.5 h-2.5 rounded-full ${isLive ? 'bg-emerald-400 animate-ping' : 'bg-emerald-500'}`} />
                 <span className="text-slate-300 font-medium">
-                  {isLive ? `ReliefWeb API Connected (${liveCount} live)` : 'UN OCHA & CWC Feeds Online'}
+                  {isLive ? `GDACS & NASA Live Connected (${liveCount} live)` : 'GDACS & CWC Feeds Online'}
                 </span>
               </div>
               <button

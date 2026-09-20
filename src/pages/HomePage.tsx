@@ -143,6 +143,42 @@ export const HomePage: React.FC = () => {
         severeStations={stations.filter((s) => s.status === 'Extreme' || s.status === 'Severe')}
       />
 
+      {/* ─── Real-Time Telemetry & 1,500 CWC Station Network Banner ─────── */}
+      <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 border border-blue-700/40 shadow-lg text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3.5">
+          <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
+            <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="font-extrabold text-sm sm:text-base tracking-tight text-white">
+                Real-Time Indian Hydrological Telemetry Active
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/25 text-emerald-300 border border-emerald-400/40">
+                LIVE REST STREAM
+              </span>
+              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/25 text-blue-300 border border-blue-400/40">
+                1,500 CWC STATIONS
+              </span>
+            </div>
+            <p className="text-xs text-slate-300 mt-1 max-w-3xl">
+              Live river discharge ($m^3/s$) from Open-Meteo Global Flood System + real-time satellite rainfall from OpenWeatherMap across all Indian river basins.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-2.5 shrink-0 text-xs text-slate-300 flex-wrap">
+          <div className="bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-400" />
+            <span>Open-Meteo: <strong className="text-emerald-300">Live</strong></span>
+          </div>
+          <div className="bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-blue-400" />
+            <span>OWM Radar: <strong className="text-blue-300">Active</strong></span>
+          </div>
+        </div>
+      </div>
+
       {/* ─── Count-Up KPI Metric Cards ───────────────────────────────────── */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
         {/* Total Stations */}

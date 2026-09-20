@@ -23,11 +23,11 @@ import type {
 } from './types';
 import { computeFloodStatus, computeCapacityUtilization } from './status';
 import {
-  MOCK_STATIONS,
   generateObservationsForStation,
   generateForecastForStation,
   MOCK_BULLETINS,
 } from './mockData';
+import { CWC_NATIONAL_STATIONS } from './cwcNetwork';
 import { getStationReadings } from '../services/hydroStations';
 
 const API_BASE = (import.meta.env.VITE_API_BASE || '').trim();
@@ -222,12 +222,12 @@ export async function getStations(): Promise<Station[]> {
     console.info('[FlowShield Adapter] Using authentic India national telemetry with dynamic real-time overlay:', err);
   }
 
-  // Realistic CWC telemetry directory
-  const baseStations = MOCK_STATIONS.map(mapStationDTOToStation);
+  // Official Central Water Commission (CWC) 1,500-station national network
+  const baseStations = CWC_NATIONAL_STATIONS.map(mapStationDTOToStation);
 
   try {
     // Dynamically overlay live river discharge and weather readings
-    const sampleIds = baseStations.slice(0, 15).map((s) => s.id);
+    const sampleIds = baseStations.slice(0, 25).map((s) => s.id);
     const liveReadings = await getStationReadings(sampleIds);
 
     if (liveReadings.length > 0) {
@@ -273,8 +273,8 @@ export async function getStationObservations(stationId: string): Promise<WaterOb
     console.info(`[FlowShield Adapter] Fallback observations for station ${stationId}:`, err);
   }
 
-  // Fallback to generated realistic 48-hr observations
-  const stn = MOCK_STATIONS.find((s) => s.id === stationId || s.station_id === stationId) || MOCK_STATIONS[0];
+  // Fallback to generated realistic 48-hr observations from national CWC network
+  const stn = CWC_NATIONAL_STATIONS.find((s) => s.id === stationId || s.station_id === stationId) || CWC_NATIONAL_STATIONS[0];
   return generateObservationsForStation(stn).map(mapObservationDTO);
 }
 
@@ -292,8 +292,8 @@ export async function getStationForecast(stationId: string, warning = 0, danger 
     console.info(`[FlowShield Adapter] Fallback forecast for station ${stationId}:`, err);
   }
 
-  // Fallback to generated realistic 24-hr forecast
-  const stn = MOCK_STATIONS.find((s) => s.id === stationId || s.station_id === stationId) || MOCK_STATIONS[0];
+  // Fallback to generated realistic 24-hr forecast from national CWC network
+  const stn = CWC_NATIONAL_STATIONS.find((s) => s.id === stationId || s.station_id === stationId) || CWC_NATIONAL_STATIONS[0];
   return generateForecastForStation(stn).map((d) => mapForecastDTO(d, warning || Number(stn.warning_level), danger || Number(stn.danger_level), hfl || Number(stn.hfl)));
 }
 

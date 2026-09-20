@@ -231,78 +231,74 @@ export const HISTORICAL_INDIAN_DISASTERS: DisasterArticle[] = [
   },
 ];
 
-// ─── 2. ReliefWeb UN OCHA API Integration (Open, Public, No Key Required) ────
+// ─── STRICT RELEVANCE & ANTI-SLOP FILTER ─────────────────────────────────────
+const BANNED_PATTERNS = [
+  /\bbigg?\s*boss\b/i,
+  /\b(bollywood|hollywood|cinema|movie|film|trailer|teaser)\b/i,
+  /\b(actor|actress|celebrity|model)\b/i,
+  /\bbox\s*office\b/i,
+  /\b(cricket|ipl|scorecard|t20)\b/i,
+  /\b(entertainment|fashion|gossip|romance)\b/i,
+  /\b(eviction|elimination|reality\s*show)\b/i,
+  /\b(song|album|music\s*video)\b/i,
+  /\b(horoscope|astrology)\b/i,
+];
 
-interface ReliefWebReport {
-  id: number;
-  fields: {
-    title: string;
-    body?: string;
-    url: string;
-    date: {
-      created: string;
-    };
-    source?: Array<{ name: string; shortname?: string }>;
-    primary_country?: { name: string };
-    disaster_type?: Array<{ name: string }>;
-  };
+const DISASTER_KEYWORDS = [
+  'flood', 'inundat', 'river', 'water level', 'rain', 'monsoon',
+  'cyclone', 'storm', 'landslide', 'cloudburst', 'cwc', 'ndma',
+  'imd', 'deluge', 'waterlog', 'dam', 'barrage', 'breach', 'overflow',
+  'evacuat', 'displaced', 'calamity', 'hazard'
+];
+
+export function isGenuineDisasterArticle(title: string, desc: string = ''): boolean {
+  const text = `${title} ${desc}`.toLowerCase();
+  for (const banned of BANNED_PATTERNS) {
+    if (banned.test(text)) return false;
+  }
+  return DISASTER_KEYWORDS.some((kw) => text.includes(kw));
 }
 
-export async function fetchReliefWebDisasterReports(): Promise<DisasterArticle[]> {
-  const url =
-    'https://api.reliefweb.int/v1/reports?appname=flowshield-india&query[value]=India+(flood+OR+cyclone+OR+landslide)&limit=15&profile=list&preset=latest';
+// ─── 2. GDACS (Global Disaster Alert & Coordination System — UN / EC) ────────
 
-  const res = await fetch(url, {
-    headers: { Accept: 'application/json' },
-  });
+export async function fetchGDACSDisasterReports(): Promise<DisasterArticle[]> {
+  try {
+    const url = 'https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?eventtypes=FL,TC&country=India';
+    const res = await fetch(url);
+    if (!res.ok) throw new Error(`GDACS API status ${res.status}`);
+    const data = await res.json();
+    if (!data || !Array.isArray(data.features)) return [];
 
-  if (!res.ok) {
-    throw new Error(`ReliefWeb API returned status ${res.status}`);
-  }
+    return data.features
+      .filter((feat: any) => {
+        const title = feat.properties?.name || '';
+        const desc = feat.properties?.htmldescription || '';
+        return isGenuineDisasterArticle(title, desc);
+      })
+      .map((feat: any) => {
+        const p = feat.properties;
+        const fromDate = p.fromdate || new Date().toISOString();
+        const year = new Date(fromDate).getFullYear();
+        const isCyclone = p.eventtype === 'TC';
 
-  const data = await res.json();
-  if (!data || !Array.isArray(data.data)) {
+        return {
+          id: `gdacs-${p.eventid}-${p.episodeid}`,
+          title: `${isCyclone ? 'Cyclone Alert' : 'Active Flood Alert'}: ${p.name || 'India Hydrological Event'}`,
+          disasterType: isCyclone ? ('Cyclone' as const) : ('Flood' as const),
+          state: p.country || 'India',
+          year,
+          date: fromDate.split('T')[0],
+          source: 'GDACS (UN & European Commission)',
+          sourceUrl: p.url?.report || 'https://www.gdacs.org',
+          description: p.htmldescription?.replace(/<[^>]*>/g, '') || `Official ${p.alertlevel || 'Alert'} level disaster advisory issued by GDACS for India.`,
+          severity: p.alertlevel === 'Red' ? ('Critical' as const) : p.alertlevel === 'Orange' ? ('Severe' as const) : ('Moderate' as const),
+          affectedCount: p.glide ? `GLIDE Record: ${p.glide}` : undefined,
+        };
+      });
+  } catch (err) {
+    console.info('[DisasterService] GDACS fetch error, using verified records:', err);
     return [];
   }
-
-  return data.data.map((item: ReliefWebReport) => {
-    const f = item.fields;
-    const title = f.title || 'India Disaster Situation Report';
-    const dateStr = f.date?.created || new Date().toISOString();
-    const year = new Date(dateStr).getFullYear();
-
-    // Determine type from title/fields
-    let disasterType: DisasterArticle['disasterType'] = 'Flood';
-    const lowerTitle = title.toLowerCase();
-    if (lowerTitle.includes('cyclone')) disasterType = 'Cyclone';
-    else if (lowerTitle.includes('landslide')) disasterType = 'Landslide';
-    else if (lowerTitle.includes('flash flood')) disasterType = 'Flash Flood';
-    else if (lowerTitle.includes('monsoon')) disasterType = 'Severe Monsoon';
-
-    // Infer State if mentioned
-    const knownStates = [
-      'Assam', 'Kerala', 'Bihar', 'Uttarakhand', 'Himachal Pradesh',
-      'Odisha', 'West Bengal', 'Gujarat', 'Tamil Nadu', 'Maharashtra',
-      'Jammu and Kashmir', 'Delhi', 'Tripura', 'Sikkim', 'Andhra Pradesh',
-    ];
-    const detectedState = knownStates.find((st) => lowerTitle.includes(st.toLowerCase())) || 'National / Multi-State';
-
-    const sourceName = f.source?.[0]?.name || 'UN OCHA ReliefWeb';
-
-    return {
-      id: `rw-${item.id}`,
-      title,
-      disasterType,
-      state: detectedState,
-      year,
-      date: dateStr.split('T')[0],
-      source: sourceName,
-      sourceUrl: f.url || `https://reliefweb.int/node/${item.id}`,
-      description: `Official situation report published on ReliefWeb by ${sourceName} documenting flood and severe hydro-meteorological impacts in ${detectedState}.`,
-      severity: lowerTitle.includes('emergency') || lowerTitle.includes('severe') ? 'Critical' : 'Severe',
-      affectedCount: 'Regional population impacted',
-    };
-  });
 }
 
 // ─── 3. NASA EONET Event Tracking (Open, Public, No Key Required) ──────────────
@@ -399,7 +395,7 @@ export async function getDisasterArticles(filters?: DisasterFilterOptions): Prom
   // Query live endpoints concurrently
   try {
     const results = await Promise.allSettled([
-      fetchReliefWebDisasterReports(),
+      fetchGDACSDisasterReports(),
       fetchNASAEONETEvents(),
       fetchLiveNewsArticles(),
     ]);
@@ -410,7 +406,7 @@ export async function getDisasterArticles(filters?: DisasterFilterOptions): Prom
       }
     });
   } catch (e) {
-    console.info('[DisasterService] Live fetch error, utilizing historical records:', e);
+    console.info('[DisasterService] Live fetch error, utilizing verified records:', e);
   }
 
   // Deduplicate and combine live articles with our comprehensive historical registry
@@ -419,8 +415,12 @@ export async function getDisasterArticles(filters?: DisasterFilterOptions): Prom
   // Add historical records first
   HISTORICAL_INDIAN_DISASTERS.forEach((art) => combinedMap.set(art.id, art));
 
-  // Add live articles (avoid duplicate titles)
+  // Add live articles with strict anti-slop disaster relevance check
   liveArticles.forEach((art) => {
+    if (!isGenuineDisasterArticle(art.title, art.description)) {
+      return; // Discard non-relevant entertainment/sports news
+    }
+
     const existing = Array.from(combinedMap.values()).find(
       (a) => a.title.toLowerCase() === art.title.toLowerCase()
     );
@@ -429,7 +429,9 @@ export async function getDisasterArticles(filters?: DisasterFilterOptions): Prom
     }
   });
 
-  let list = Array.from(combinedMap.values());
+  let list = Array.from(combinedMap.values()).filter((art) =>
+    isGenuineDisasterArticle(art.title, art.description)
+  );
 
   // Sort descending by date
   list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());

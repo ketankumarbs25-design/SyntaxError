@@ -2,8 +2,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   HISTORICAL_INDIAN_DISASTERS,
   getDisasterArticles,
-  fetchReliefWebDisasterReports,
+  fetchGDACSDisasterReports,
   fetchNASAEONETEvents,
+  isGenuineDisasterArticle,
 } from '../disasterService';
 
 describe('disasterService', () => {
@@ -50,36 +51,41 @@ describe('disasterService', () => {
     expect(hist.articles.every((a) => a.year < 2020)).toBe(true);
   }, 15000);
 
-  it('gracefully handles ReliefWeb API errors and falls back to historical records', async () => {
-    vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network offline'));
-    const result = await getDisasterArticles();
-    expect(result.articles.length).toBeGreaterThanOrEqual(HISTORICAL_INDIAN_DISASTERS.length);
+  it('strictly filters out non-relevant entertainment news like Bigg Boss or Bollywood', () => {
+    expect(isGenuineDisasterArticle('Bigg Boss 18 contestant elimination causes disaster inside house')).toBe(false);
+    expect(isGenuineDisasterArticle('Bollywood movie trailer creates flood of comments on cinema page')).toBe(false);
+    expect(isGenuineDisasterArticle('India cricket team scores massive win in storm match')).toBe(false);
+    expect(isGenuineDisasterArticle('Assam Brahmaputra river water level breaches danger mark in flood alert')).toBe(true);
+    expect(isGenuineDisasterArticle('Kerala heavy monsoon rain causes flash flood in Wayanad')).toBe(true);
   });
 
-  it('parses ReliefWeb API reports correctly', async () => {
+  it('parses GDACS API disaster reports correctly', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce({
       ok: true,
       json: async () => ({
-        data: [
+        features: [
           {
-            id: 9999,
-            fields: {
-              title: 'India: Severe Floods In Bihar State - Situation Update',
-              url: 'https://reliefweb.int/report/bihar-update',
-              date: { created: '2025-08-15T00:00:00Z' },
-              source: [{ name: 'UN OCHA' }],
+            properties: {
+              eventid: 12345,
+              episodeid: 1,
+              eventtype: 'FL',
+              name: 'Flood in India',
+              htmldescription: 'Severe flood across Brahmaputra valley',
+              fromdate: '2026-08-01T00:00:00',
+              country: 'India',
+              alertlevel: 'Orange',
+              url: { report: 'https://www.gdacs.org/report' },
             },
           },
         ],
       }),
     } as any);
 
-    const reports = await fetchReliefWebDisasterReports();
+    const reports = await fetchGDACSDisasterReports();
     expect(reports.length).toBe(1);
-    expect(reports[0].title).toContain('Bihar State');
+    expect(reports[0].title).toContain('Flood Alert');
     expect(reports[0].disasterType).toBe('Flood');
-    expect(reports[0].state).toBe('Bihar');
-    expect(reports[0].source).toBe('UN OCHA');
+    expect(reports[0].source).toContain('GDACS');
   });
 
   it('parses NASA EONET events within the Indian bounding box', async () => {
