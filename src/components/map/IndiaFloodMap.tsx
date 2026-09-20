@@ -5,7 +5,7 @@ import type { Station } from '../../api/types';
 import { INDIA_OFFICIAL_GEOJSON } from '../../data/indiaOfficialGeoJSON';
 import { useTheme } from '../../hooks/useTheme';
 import { useI18n } from '../../i18n';
-import { Layers, Compass, ShieldCheck } from 'lucide-react';
+import { Layers, Compass } from 'lucide-react';
 
 interface IndiaFloodMapProps {
   stations: Station[];
@@ -86,7 +86,6 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     themeMode === 'dark' ? 'dark' : 'osm'
   );
   const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
-  const [showOfficialBorders, setShowOfficialBorders] = useState(true);
 
   // Sync style default when theme mode changes if user hasn't explicitly chosen satellite
   useEffect(() => {
@@ -160,7 +159,7 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     tileLayerRef.current.setUrl(styleConfig.url);
   }, [activeStyle]);
 
-  // Render / Update Official Survey of India Borders (PoK & Ladakh fully included)
+  // Render Official Survey of India Borders (PoK & Ladakh fully included permanently)
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
@@ -170,8 +169,6 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
       map.removeLayer(geoJsonLayerRef.current);
       geoJsonLayerRef.current = null;
     }
-
-    if (!showOfficialBorders) return;
 
     const isDark = themeMode === 'dark';
     const borderColor = isDark ? '#38bdf8' : '#1d4ed8';
@@ -213,7 +210,7 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     }).addTo(map);
 
     geoJsonLayerRef.current = geoJsonLayer;
-  }, [showOfficialBorders, themeMode]);
+  }, [themeMode]);
 
   // Update Station Markers when stations prop changes
   useEffect(() => {
@@ -344,8 +341,8 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
       {/* Real Cartographic Leaflet Map */}
       <div ref={mapContainerRef} className={`w-full ${heightClass} z-10`} />
 
-      {/* Top-Left Floating Controls: Layer Selector, Fit to India & Survey of India Toggle */}
-      <div className="absolute top-4 left-4 z-20 flex flex-wrap items-center gap-2">
+      {/* Top-Left Floating Controls: Layer Selector & Fit to India */}
+      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
         {/* Fit to India Button */}
         <button
           onClick={fitToIndia}
@@ -354,20 +351,6 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
         >
           <Compass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
           <span className="hidden sm:inline">Fit India</span>
-        </button>
-
-        {/* Official Borders Toggle Button */}
-        <button
-          onClick={() => setShowOfficialBorders((prev) => !prev)}
-          className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl shadow-md border backdrop-blur-md cursor-pointer transition-all active:scale-95 ${
-            showOfficialBorders
-              ? 'bg-blue-600 text-white border-blue-700 hover:bg-blue-700'
-              : 'bg-white/95 dark:bg-slate-900/95 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-slate-700/80 hover:bg-white dark:hover:bg-slate-800'
-          }`}
-          title="Toggle Official Survey of India Boundaries (including PoK & Ladakh)"
-        >
-          <ShieldCheck className="w-3.5 h-3.5" />
-          <span>{showOfficialBorders ? '🇮🇳 PoK Included (On)' : '🇮🇳 Official Border'}</span>
         </button>
 
         {/* Map Layer Switcher Dropdown */}
@@ -409,12 +392,6 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Official Survey of India Integrity Badge (Top-Right) */}
-      <div className="absolute top-4 right-14 z-20 hidden md:flex items-center gap-2 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 py-1.5 rounded-xl border border-blue-200 dark:border-blue-900 shadow-md text-[11px] font-semibold text-blue-800 dark:text-blue-300">
-        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-        <span>Survey of India Compliant • Complete J&K, Ladakh & PoK</span>
       </div>
 
       {/* Floating Map Legend (Bottom-Left) */}
