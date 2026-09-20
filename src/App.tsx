@@ -43,21 +43,20 @@ const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#EAEBED] dark:bg-[#05060A] text-slate-900 dark:text-slate-100 p-2 sm:p-3.5 lg:p-5 transition-colors">
+    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
       {/* 3D Satellite Earth Globe Intro Animation (once per session or on replay) */}
       <React.Suspense fallback={null}>
         <GlobeIntroOverlay />
       </React.Suspense>
 
-      <div className="max-w-[1560px] mx-auto min-h-[calc(100vh-28px)] bg-[#FAFBFD] dark:bg-[#0C0E17] rounded-[24px] sm:rounded-[32px] border border-white/90 dark:border-slate-800/80 shadow-[0_20px_60px_rgba(0,0,0,0.05)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.45)] overflow-hidden flex flex-col">
-        {/* Top Main Navigation */}
-        <AppNavbar
-          onManualRefresh={handleManualRefresh}
-          onOpenHistorical={() => setIsHistoricalOpen(true)}
-        />
+      {/* Top Main Navigation */}
+      <AppNavbar
+        onManualRefresh={handleManualRefresh}
+        onOpenHistorical={() => setIsHistoricalOpen(true)}
+      />
 
-        {/* Main Page Content Container */}
-        <main className="flex-1 w-full p-4 sm:p-6 lg:p-8">
+      {/* Main Page Content Container */}
+      <main className="flex-1 w-full max-w-[1560px] mx-auto px-4 sm:px-6 lg:px-8 py-5">
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/stations" element={<StationsPage />} />
@@ -104,7 +103,6 @@ const AppShell: React.FC = () => {
           onClose={() => setIsHistoricalOpen(false)}
           initialCity={historicalCity}
         />
-      </div>
     </div>
   );
 };

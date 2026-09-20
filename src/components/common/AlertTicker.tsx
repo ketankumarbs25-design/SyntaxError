@@ -1,5 +1,4 @@
-import React from 'react';
-import { Flame, ArrowRight } from 'lucide-react';
+import { AlertCircle, ArrowRight } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import type { FloodBulletin, Station } from '../../api/types';
 import { useI18n } from '../../i18n';
@@ -39,8 +38,8 @@ export const AlertTicker: React.FC<AlertTickerProps> = ({ bulletins, severeStati
       aria-label="Active Flood Warnings Ticker"
     >
       {/* Ticker Fixed Header Label */}
-      <div className="flex items-center gap-1.5 bg-red-700/90 text-white px-2.5 py-0.5 rounded-md text-[11px] font-black uppercase tracking-wider shrink-0 z-10 shadow-xs mr-3">
-        <Flame className="w-3.5 h-3.5 animate-pulse text-amber-300" />
+      <div className="flex items-center gap-1.5 bg-red-700/90 text-white px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider shrink-0 z-10 shadow-xs mr-3">
+        <AlertCircle className="w-3.5 h-3.5 text-amber-300" />
         <span>{language === 'hi' ? 'ताज़ा अलर्ट' : 'LIVE ALERTS'}</span>
       </div>
 

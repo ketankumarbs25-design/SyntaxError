@@ -6,6 +6,7 @@ import {
   X,
   History,
   Calendar,
+  Waves,
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { SmoothThemeToggle } from '../ui/SmoothThemeToggle';
@@ -80,17 +81,19 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
 
             <NavLink
               to="/"
-              className="flex items-center gap-2.5 select-none group shrink-0"
+              className="flex items-center gap-2.5 select-none shrink-0 group"
             >
-              {/* Sleek geometric gradient icon badge */}
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-400 text-white flex items-center justify-center shadow-xs shadow-orange-500/20 group-hover:scale-105 transition-transform">
-                <div className="w-3.5 h-3.5 border-2 border-white rounded-[3px] rotate-45 flex items-center justify-center">
-                  <div className="w-1 h-1 bg-white rounded-full" />
-                </div>
+              <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center shadow-xs group-hover:bg-blue-700 transition-colors">
+                <Waves className="w-4 h-4" />
               </div>
-              <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white font-sans">
-                flowshield
-              </span>
+              <div className="flex flex-col">
+                <span className="font-bold text-base tracking-tight text-slate-900 dark:text-white leading-none">
+                  FlowShield
+                </span>
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium tracking-wide mt-0.5">
+                  CWC Flood Telemetry
+                </span>
+              </div>
             </NavLink>
           </div>
 

@@ -5,13 +5,13 @@ import {
   RotateCcw,
   AlertTriangle,
   Loader2,
+  Radio,
 } from 'lucide-react';
 import { getStations, getBulletins } from '../api/adapter';
 import { IndiaFloodMap } from '../components/map/IndiaFloodMap';
 import { NeedsAttentionList } from '../components/home/NeedsAttentionList';
 import { AlertTicker } from '../components/common/AlertTicker';
 import { useI18n } from '../i18n';
-import { ZentraAnalyticsHero } from '../components/dashboard/ZentraAnalyticsHero';
 
 export const HomePage: React.FC = () => {
   const { t } = useI18n();
@@ -50,6 +50,23 @@ export const HomePage: React.FC = () => {
     return Array.from(new Set(stations.map((s) => s.state))).filter(Boolean).sort();
   }, [stations]);
 
+  // Real KPI Status Counts directly from CWC stations
+  const counts = useMemo(() => {
+    let normal = 0;
+    let above = 0;
+    let severe = 0;
+    let extreme = 0;
+
+    stations.forEach((s) => {
+      if (s.status === 'Extreme') extreme++;
+      else if (s.status === 'Severe') severe++;
+      else if (s.status === 'Above normal') above++;
+      else normal++;
+    });
+
+    return { total: stations.length, normal, above, severe, extreme };
+  }, [stations]);
+
   // Filtered station list
   const filteredStations = useMemo(() => {
     return stations.filter((stn) => {
@@ -78,18 +95,6 @@ export const HomePage: React.FC = () => {
     setSelectedBasin('all');
     setSelectedState('all');
     setSearchQuery('');
-  };
-
-  const handleHeroSelectTag = (tag: string) => {
-    if (tag.includes('severe')) {
-      setSelectedStatus('Severe');
-    } else if (tag.includes('brahmaputra')) {
-      setSelectedBasin('Brahmaputra');
-    } else if (tag.includes('radar')) {
-      setSearchQuery('radar');
-    } else if (tag.includes('anomaly')) {
-      setSelectedStatus('Extreme');
-    }
   };
 
   const hasActiveFilters =
@@ -134,11 +139,88 @@ export const HomePage: React.FC = () => {
         severeStations={stations.filter((s) => s.status === 'Extreme' || s.status === 'Severe')}
       />
 
-      {/* ─── Dribbble Zentra Sleek Analytics Hero (Overview + Striped Bars + 4 Metrics) ─ */}
-      <ZentraAnalyticsHero onSelectTag={handleHeroSelectTag} />
+      {/* ─── Clean Professional Header & Real Telemetry Status ───────────── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+            National Flood Telemetry
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Real-time stage and reservoir inflow monitoring across 1,500 Central Water Commission stations
+          </p>
+        </div>
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
+            <Radio className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+            <span>Live REST Stream</span>
+          </div>
+          <span className="text-xs text-slate-400">·</span>
+          <span className="text-xs text-slate-500 dark:text-slate-400">3-min auto sync</span>
+        </div>
+      </div>
 
-      {/* ─── Multi-Facet Filter Bar ────────────────────────────────────────── */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+      {/* ─── 4 Clean Real KPI Metric Cards (No AI fluff, No emojis) ──────── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block">
+            {t.totalStations}
+          </span>
+          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+            {counts.total.toLocaleString()}
+          </div>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+            Across {basins.length} river basins
+          </span>
+        </div>
+
+        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {t.statusNormal}
+            </span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+            {counts.normal.toLocaleString()}
+          </div>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+            Below warning thresholds
+          </span>
+        </div>
+
+        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              {t.statusAboveNormal}
+            </span>
+            <span className="w-2 h-2 rounded-full bg-amber-500" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+            {counts.above.toLocaleString()}
+          </div>
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+            Approaching warning stage
+          </span>
+        </div>
+
+        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+              High Flood Threat
+            </span>
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          </div>
+          <div className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
+            {(counts.severe + counts.extreme).toLocaleString()}
+          </div>
+          <span className="text-[11px] text-red-600/80 dark:text-red-400/80 mt-1 block">
+            {counts.severe} Severe · {counts.extreme} Extreme
+          </span>
+        </div>
+      </div>
+
+      {/* ─── Multi-Facet Filter Bar (No Emojis) ───────────────────────────── */}
+      <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
           {/* Search Input */}
           <div className="relative md:col-span-1">
@@ -148,7 +230,7 @@ export const HomePage: React.FC = () => {
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
             />
           </div>
 
@@ -157,26 +239,26 @@ export const HomePage: React.FC = () => {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
               <option value="all">{t.typeAll}</option>
-              <option value="river-level">River-Level (Circles)</option>
-              <option value="reservoir-inflow">Reservoir-Inflow (Squares)</option>
+              <option value="river-level">River Level Gauge</option>
+              <option value="reservoir-inflow">Reservoir Inflow</option>
             </select>
           </div>
 
-          {/* Status Filter */}
+          {/* Status Filter (No Emojis) */}
           <div>
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
               <option value="all">{t.statusAll}</option>
-              <option value="Normal">🟢 {t.statusNormal}</option>
-              <option value="Above normal">🟡 {t.statusAboveNormal}</option>
-              <option value="Severe">🟠 {t.statusSevere}</option>
-              <option value="Extreme">🔴 {t.statusExtreme}</option>
+              <option value="Normal">{t.statusNormal}</option>
+              <option value="Above normal">{t.statusAboveNormal}</option>
+              <option value="Severe">{t.statusSevere}</option>
+              <option value="Extreme">{t.statusExtreme}</option>
             </select>
           </div>
 
@@ -185,7 +267,7 @@ export const HomePage: React.FC = () => {
             <select
               value={selectedBasin}
               onChange={(e) => setSelectedBasin(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
             >
               <option value="all">{t.allBasins}</option>
               {basins.map((b) => (
