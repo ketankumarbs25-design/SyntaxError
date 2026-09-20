@@ -24,6 +24,7 @@ function applyTheme(mode: ThemeMode): void {
   const html = document.documentElement;
   const isDark = mode === 'dark' || (mode === 'auto' && getSystemDark());
   html.setAttribute('data-theme', isDark ? 'dark' : 'light');
+  html.classList.toggle('dark', isDark);
 }
 
 function readStoredMode(): ThemeMode {

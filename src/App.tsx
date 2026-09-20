@@ -9,6 +9,8 @@ import { BasinsPage } from './pages/BasinsPage';
 import { BulletinsPage } from './pages/BulletinsPage';
 import { HelpPage } from './pages/HelpPage';
 import { I18nProvider } from './i18n';
+import { Waves } from 'lucide-react';
+import { AuthComponent } from './components/ui/sign-up';
 
 // Configure TanStack Query client with 3-minute auto-refresh defaults
 const queryClient = new QueryClient({
@@ -43,6 +45,23 @@ const AppShell: React.FC = () => {
           <Route path="/basins" element={<BasinsPage />} />
           <Route path="/bulletins" element={<BulletinsPage />} />
           <Route path="/help" element={<HelpPage />} />
+          <Route
+            path="/login"
+            element={
+              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md">
+                <AuthComponent
+                  logo={
+                    <div className="bg-blue-600 text-white rounded-lg p-1.5 shadow-md shadow-blue-500/20">
+                      <Waves className="w-4 h-4" />
+                    </div>
+                  }
+                  brandName="FlowShield India"
+                  onClose={() => window.location.hash = '#/'}
+                  onSuccess={() => window.location.hash = '#/'}
+                />
+              </div>
+            }
+          />
           {/* Catch-all fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
