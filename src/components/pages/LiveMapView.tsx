@@ -1,283 +1,378 @@
-import React from 'react';
-import { motion } from 'motion/react';
-import { ShieldCheck, AlertTriangle, ArrowRight, CloudSun, FlaskConical, LifeBuoy } from 'lucide-react';
-import type { SimConfig, SimState, CellState } from '../../sim/types';
-import { LiveStats } from '@/components/stats/LiveStats';
-import { FloodGrid } from '../grid/FloodGrid';
-import { TimelineControls } from '../playback/TimelineControls';
-import { DemoNarrative } from '../demo/DemoNarrative';
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'motion/react';
+import {
+  Plus,
+  Minus,
+  Crosshair,
+  ArrowRight,
+  ChevronDown,
+} from 'lucide-react';
+import type { SectorLiveMetrics } from '../../lib/liveDataSource';
 import type { NavTabId } from '../nav/Navbar';
 
 interface LiveMapViewProps {
-  config: SimConfig;
-  currentState: SimState;
-  timeline: SimState[];
-  currentStep: number;
-  rainfallDuration: number;
-  isPlaying: boolean;
-  playbackSpeed: number;
-  onTogglePlay: () => void;
-  onReset: () => void;
-  onSeek: (step: number) => void;
-  onSpeedChange: (speed: number) => void;
-  blockedCells: Set<string>;
-  selectedCellId: string | null;
-  emergencyMode: boolean;
-  isDemoMode: boolean;
-  onCellClick: (cell: CellState) => void;
-  onExitDemoMode: () => void;
+  sectors: SectorLiveMetrics[];
+  selectedSector: SectorLiveMetrics | null;
+  onSelectSector: (sector: SectorLiveMetrics) => void;
   onNavigateTab: (tab: NavTabId) => void;
+  lastUpdatedStr: string;
+}
+
+interface MapMarker {
+  id: string;
+  name: string;
+  xPercent: number;
+  yPercent: number;
+  status: 'Safe' | 'Warning' | 'Critical';
+  waterLevel?: string;
+  showLabel?: boolean;
 }
 
 export const LiveMapView: React.FC<LiveMapViewProps> = ({
-  config,
-  currentState,
-  timeline,
-  currentStep,
-  rainfallDuration,
-  isPlaying,
-  playbackSpeed,
-  onTogglePlay,
-  onReset,
-  onSeek,
-  onSpeedChange,
-  blockedCells,
-  selectedCellId,
-  emergencyMode,
-  isDemoMode,
-  onCellClick,
-  onExitDemoMode,
+  sectors,
+  onSelectSector,
   onNavigateTab,
 }) => {
-  const { safeCells, warningCells, criticalCells, maxWater, affectedPopulation } = currentState.stats;
-  const totalCells = config.rows * config.cols;
-  const isAllSafe = criticalCells === 0 && warningCells === 0;
+  const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [showLayerDropdown, setShowLayerDropdown] = useState(false);
+  const [mapLayer, setMapLayer] = useState<'Map View' | 'Satellite' | 'Drainage'>('Map View');
+
+  // Exact markers and label positions from Screenshot 2
+  const mapMarkers: MapMarker[] = [
+    { id: 'm-yelahanka', name: 'Yelahanka', xPercent: 37.5, yPercent: 21, status: 'Safe' },
+    { id: 'm-warn-ne', name: 'Kalyan Nagar', xPercent: 53.5, yPercent: 22.5, status: 'Warning', waterLevel: '0.28 m' },
+    { id: 'm-hebbal', name: 'Hebbal', xPercent: 43.5, yPercent: 46, status: 'Safe' },
+    { id: 'm-crit-w', name: 'Vijayanagar', xPercent: 26.5, yPercent: 61, status: 'Critical', waterLevel: '0.45 m' },
+    { id: 'm-safe-w', name: 'Chandra Layout', xPercent: 33, yPercent: 55, status: 'Safe' },
+    { id: 'm-marathahalli', name: 'Marathahalli', xPercent: 59.5, yPercent: 56.5, status: 'Critical', waterLevel: '0.42 m' },
+    { id: 'm-warn-s', name: 'BTM Layout', xPercent: 40.5, yPercent: 71, status: 'Warning', waterLevel: '0.31 m' },
+    { id: 'm-hsr', name: 'HSR Layout', xPercent: 50.5, yPercent: 61.5, status: 'Safe' },
+    { id: 'm-bellandur', name: 'Bellandur Gate', xPercent: 54, yPercent: 65.5, status: 'Safe' },
+    { id: 'm-warn-ec', name: 'Kudlu Gate', xPercent: 56.5, yPercent: 82.5, status: 'Warning', waterLevel: '0.29 m' },
+  ];
+
+  // The active popup in Screenshot 2 is on Marathahalli
+  const [activePopup, setActivePopup] = useState<MapMarker | null>(
+    mapMarkers.find((m) => m.name === 'Marathahalli') || mapMarkers[5]
+  );
+
+  const handleZoomIn = () => setZoomLevel((prev) => Math.min(prev + 0.15, 1.6));
+  const handleZoomOut = () => setZoomLevel((prev) => Math.max(prev - 0.15, 0.85));
+  const handleResetZoom = () => setZoomLevel(1);
+
+  const handleOpenSectorDetails = (markerName: string) => {
+    const foundSector = sectors.find((s) => s.name.toLowerCase().includes(markerName.toLowerCase()))
+      || sectors.find((s) => s.name === 'Marathahalli')
+      || sectors[0];
+    onSelectSector(foundSector);
+    onNavigateTab('sector-details');
+  };
 
   return (
-    <div className="space-y-4 max-w-[1440px] mx-auto">
-
-      {/* ─── City Status Hero ─────────────────────────────────────────────────── */}
-      <motion.div
-        initial={{ opacity: 0, y: -10 }}
-        animate={{ opacity: 1, y: 0 }}
-        style={{
-          background: 'var(--bg-surface)',
-          border: `1px solid ${isAllSafe ? 'var(--border-subtle)' : 'var(--status-crit-border)'}`,
-          borderRadius: '1rem',
-          padding: '1rem 1.25rem',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.75rem',
-        }}
-        className="md:flex-row md:items-center md:justify-between shadow-sm backdrop-blur-xl"
-      >
-        <div className="flex items-center gap-3">
-          {/* Status icon — no animate-pulse competing with data */}
-          <div
-            style={{
-              width: '2.75rem',
-              height: '2.75rem',
-              borderRadius: '0.75rem',
-              flexShrink: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: isAllSafe ? 'var(--status-safe-subtle)' : 'var(--status-crit-subtle)',
-              border: `1px solid ${isAllSafe ? 'var(--status-safe-border)' : 'var(--status-crit-border)'}`,
-            }}
-          >
-            {isAllSafe
-              ? <ShieldCheck className="w-5 h-5" style={{ color: 'var(--status-safe)' }} />
-              : <AlertTriangle className="w-5 h-5" style={{ color: 'var(--status-crit)' }} />
-            }
-          </div>
-
-          <div>
-            {/* Primary heading + single status badge (dot OR badge, not both) */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-base sm:text-lg font-bold tracking-tight" style={{ color: 'var(--text-primary)' }}>
-                {isAllSafe
-                  ? 'Bengaluru Urban Catchment — Safe Drainage'
-                  : `Active Inundation Alert — ${criticalCells} Critical Sector${criticalCells !== 1 ? 's' : ''}`
-                }
-              </h2>
-              {/* Single badge — no redundant dot alongside text */}
-              <span
-                className="text-xs font-semibold px-2 py-0.5 rounded-full"
-                style={{
-                  color: isAllSafe ? 'var(--status-safe)' : 'var(--status-crit)',
-                  background: isAllSafe ? 'var(--status-safe-subtle)' : 'var(--status-crit-subtle)',
-                  border: `1px solid ${isAllSafe ? 'var(--status-safe-border)' : 'var(--status-crit-border)'}`,
-                }}
-              >
-                {isAllSafe ? 'All Clear' : 'Inundation Active'}
-              </span>
-            </div>
-
-            {/* Real bound data in the subtext, not static copy */}
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>
-              {isAllSafe
-                ? `${safeCells} of ${totalCells} sectors clear · Peak depth ${maxWater.toFixed(2)}m · Surface runoff within culvert capacity`
-                : `${affectedPopulation.toLocaleString()} residents in ${warningCells + criticalCells} elevated sectors · Peak depth ${maxWater.toFixed(2)}m · Monitor evacuation corridors`
-              }
-            </p>
-          </div>
-        </div>
-
-        {/* Navigation shortcuts */}
-        <div className="flex items-center gap-2 self-end md:self-auto">
-          <button
-            onClick={() => onNavigateTab('weather')}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-            style={{
-              background: 'var(--bg-elevated)',
-              border: '1px solid var(--border-strong)',
-              color: 'var(--text-secondary)',
-            }}
-            onMouseEnter={e => (e.currentTarget.style.color = 'var(--text-primary)')}
-            onMouseLeave={e => (e.currentTarget.style.color = 'var(--text-secondary)')}
-          >
-            <CloudSun className="w-3.5 h-3.5" style={{ color: 'var(--accent)' }} />
-            <span>Radar & Weather</span>
-          </button>
-          <button
-            onClick={() => onNavigateTab('safety')}
-            className="px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer"
-            style={{
-              background: 'var(--accent-subtle)',
-              border: '1px solid var(--accent-border)',
-              color: 'var(--accent)',
-            }}
-          >
-            <LifeBuoy className="w-3.5 h-3.5" />
-            <span>Citizen Safety</span>
-            <ArrowRight className="w-3 h-3" />
-          </button>
-        </div>
-      </motion.div>
-
-      {/* ─── Demo Narrative (When Active) ───────────────────────────────────── */}
-      {isDemoMode && (
-        <DemoNarrative
-          time={currentState.time}
-          rainfallDuration={config.rainfallDuration}
-          criticalCount={currentState.stats.criticalCells}
-          warningCount={currentState.stats.warningCells}
-          onExit={onExitDemoMode}
-        />
-      )}
-
-      {/* ─── Live Metrics Summary Bar ─────────────────────────────────────── */}
-      <LiveStats
-        stats={currentState.stats}
-        totalCells={totalCells}
-      />
-
-      {/* ─── Hydrodynamic Flood Map Grid ──────────────────────────────────── */}
-      <div
-        className="flex flex-col items-center justify-center p-3 rounded-2xl shadow-xl backdrop-blur-xl"
-        style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
-      >
-        <div
-          className="w-full flex items-center justify-between px-2 pb-2 mb-2 text-xs"
-          style={{ borderBottom: '1px solid var(--border-strong)' }}
-        >
-          <div className="flex items-center gap-2">
-            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>8×8 Catchment Grid</span>
-            <span style={{ color: 'var(--text-faint)' }}>·</span>
-            <span style={{ color: 'var(--text-muted)' }}>Click any sector to inspect depth & elevation</span>
-          </div>
-          <div className="hidden sm:flex items-center gap-3" style={{ color: 'var(--text-muted)', fontSize: '11px' }}>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--status-safe)', opacity: 0.5 }} /> Safe (&lt;0.15m)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--status-warn)', opacity: 0.65 }} /> Warning (&gt;0.15m)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="w-2.5 h-2.5 rounded-sm" style={{ background: 'var(--status-crit)', opacity: 0.85 }} /> Critical (&gt;0.5m)
-            </span>
-          </div>
-        </div>
-
-        <FloodGrid
-          cells={currentState.cells}
-          rows={config.rows}
-          cols={config.cols}
-          blockedCells={blockedCells}
-          selectedCellId={selectedCellId}
-          emergencyMode={emergencyMode}
-          onCellClick={onCellClick}
-        />
+    <div className="space-y-3 sm:space-y-4">
+      {/* Title & Subtitle (exact match from Screenshot 2) */}
+      <div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0D1F38] dark:text-white tracking-tight">
+          Live Map
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-0.5">
+          Explore real-time water levels, sector status and risk zones across Bengaluru.
+        </p>
       </div>
 
-      {/* ─── Timeline Playback Controller ─────────────────────────────────── */}
-      <TimelineControls
-        currentStep={currentStep}
-        totalSteps={timeline.length}
-        currentTime={currentState.time}
-        rainfallDuration={rainfallDuration}
-        isPlaying={isPlaying}
-        playbackSpeed={playbackSpeed}
-        onTogglePlay={onTogglePlay}
-        onReset={onReset}
-        onSeek={onSeek}
-        onSpeedChange={onSpeedChange}
-        currentState={currentState}
-      />
+      {/* Main Map Box Container */}
+      <div className="relative w-full h-[520px] sm:h-[580px] rounded-3xl overflow-hidden border border-slate-200/90 dark:border-slate-800 shadow-sm bg-[#EBF1ED] dark:bg-slate-900 select-none">
+        {/* Scalable Map Surface */}
+        <div
+          className="absolute inset-0 transition-transform duration-300 ease-out origin-center"
+          style={{
+            transform: `scale(${zoomLevel})`,
+            backgroundImage: `url('/bengaluru_map_bg.jpg')`,
+            backgroundSize: 'cover',
+            backgroundPosition: 'center',
+          }}
+        >
+          {/* Subtle drainage/satellite layer tints if chosen */}
+          {mapLayer === 'Satellite' && (
+            <div className="absolute inset-0 bg-emerald-950/25 pointer-events-none" />
+          )}
+          {mapLayer === 'Drainage' && (
+            <div className="absolute inset-0 bg-blue-900/20 backdrop-hue-rotate-30 pointer-events-none" />
+          )}
 
-      {/* ─── Bottom Navigation Shortcuts ──────────────────────────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
-        {[
-          {
-            tab: 'weather' as NavTabId,
-            icon: <CloudSun className="w-4 h-4" style={{ color: 'var(--accent)' }} />,
-            label: 'Real-time Weather',
-            heading: 'BBC Weather & 7-Day Radar',
-            body: 'Explore 24-hour rainfall curves, UV ratings, and air quality indices.',
-          },
-          {
-            tab: 'storm-lab' as NavTabId,
-            icon: <FlaskConical className="w-4 h-4" style={{ color: 'var(--accent)' }} />,
-            label: 'Storm Lab',
-            heading: 'Scenario Modeling & Drainage Stress',
-            body: 'Simulate cloudbursts, test drainage failures, and inspect hydrograph curves.',
-          },
-          {
-            tab: 'safety' as NavTabId,
-            icon: <LifeBuoy className="w-4 h-4" style={{ color: 'var(--accent)' }} />,
-            label: 'Citizen Safety',
-            heading: 'Evacuation Routes & Hotline Directory',
-            body: 'Find high-ground shelters, emergency checklists, and state disaster helplines.',
-          },
-        ].map(({ tab, icon, label, heading, body }) => (
-          <div
-            key={tab}
-            onClick={() => onNavigateTab(tab)}
-            className="group cursor-pointer p-3.5 rounded-2xl transition-all"
-            style={{ background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)' }}
-            onMouseEnter={e => {
-              (e.currentTarget as HTMLElement).style.border = '1px solid var(--accent-border)';
-              (e.currentTarget as HTMLElement).style.background = 'var(--bg-elevated)';
-            }}
-            onMouseLeave={e => {
-              (e.currentTarget as HTMLElement).style.border = '1px solid var(--border-subtle)';
-              (e.currentTarget as HTMLElement).style.background = 'var(--bg-surface)';
-            }}
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="flex items-center gap-1.5 text-xs font-semibold" style={{ color: 'var(--accent)' }}>
-                {icon} {label}
-              </span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" style={{ color: 'var(--text-faint)' }} />
-            </div>
-            <p className="text-xs font-semibold" style={{ color: 'var(--text-primary)' }}>{heading}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{body}</p>
+          {/* Exact Bengaluru Geographic Neighborhood Text Labels (matches Screenshot 2) */}
+          <div className="absolute top-[17%] left-[47%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Yelahanka</span>
           </div>
-        ))}
+
+          <div className="absolute top-[40%] left-[42%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Hebbal</span>
+          </div>
+
+          <div className="absolute top-[48%] left-[64%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">KR Puram</span>
+          </div>
+
+          <div className="absolute top-[47%] left-[79%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Whitefield</span>
+          </div>
+
+          {/* Central Bold City Name */}
+          <div className="absolute top-[54%] left-[47%] -translate-x-1/2 pointer-events-none">
+            <span className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-wide">
+              Bengaluru
+            </span>
+          </div>
+
+          <div className="absolute top-[60%] left-[39%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Jayanagar</span>
+          </div>
+
+          <div className="absolute top-[72%] left-[23%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Rajarajeshwari Nagar</span>
+          </div>
+
+          <div className="absolute top-[71%] left-[54%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">HSR Layout</span>
+          </div>
+
+          <div className="absolute top-[77%] left-[63%] -translate-x-1/2 pointer-events-none">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-300">Electronic City</span>
+          </div>
+
+          {/* Interactive Glowing Radar Markers */}
+          {mapMarkers.map((marker) => {
+            const isSelected = activePopup?.id === marker.id;
+
+            let haloBg = 'rgba(74, 222, 128, 0.4)';
+            let dotBg = 'bg-[#16A34A]';
+            let dotBorder = 'border-[#22C55E]';
+
+            if (marker.status === 'Warning') {
+              haloBg = 'rgba(251, 191, 36, 0.45)';
+              dotBg = 'bg-[#EAB308]';
+              dotBorder = 'border-[#FBBF24]';
+            } else if (marker.status === 'Critical') {
+              haloBg = 'rgba(248, 113, 113, 0.5)';
+              dotBg = 'bg-[#DC2626]';
+              dotBorder = 'border-[#EF4444]';
+            }
+
+            return (
+              <div
+                key={marker.id}
+                onClick={() => setActivePopup(marker)}
+                className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer group z-20"
+                style={{
+                  left: `${marker.xPercent}%`,
+                  top: `${marker.yPercent}%`,
+                }}
+              >
+                {/* Outer Glow Halo Ring */}
+                <div
+                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition-all duration-300 group-hover:scale-125"
+                  style={{ backgroundColor: haloBg }}
+                >
+                  {/* Inner Solid Pin */}
+                  <div
+                    className={`w-5 h-5 sm:w-5.5 sm:h-5.5 rounded-full ${dotBg} border-2 ${dotBorder} text-white flex items-center justify-center shadow-md ${
+                      isSelected ? 'ring-2 ring-white scale-110' : ''
+                    }`}
+                  >
+                    <div className="w-1.5 h-1.5 rounded-full bg-white animate-ping opacity-80" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Top-Left Overlay Card: All Sectors (32) (exact match from Screenshot 2) */}
+        <div className="absolute top-4 left-4 z-30 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-slate-200/80 dark:border-slate-800 min-w-[155px]">
+          <div className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white mb-2.5">
+            All Sectors (32)
+          </div>
+          <div className="space-y-2 text-xs">
+            {/* Safe 24 */}
+            <div className="flex items-center justify-between text-slate-700 dark:text-slate-200">
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-3 h-3 rounded-full border-2 border-[#16A34A] flex items-center justify-center text-[8px] text-[#16A34A] font-bold">
+                  ✓
+                </span>
+                Safe
+              </span>
+              <span className="font-bold text-slate-800 dark:text-slate-100">24</span>
+            </div>
+
+            {/* Warning 5 */}
+            <div className="flex items-center justify-between text-slate-700 dark:text-slate-200">
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-3 h-3 rounded-full border-2 border-[#EAB308] flex items-center justify-center text-[8px] text-[#EAB308] font-bold">
+                  !
+                </span>
+                Warning
+              </span>
+              <span className="font-bold text-slate-800 dark:text-slate-100">5</span>
+            </div>
+
+            {/* Critical 3 */}
+            <div className="flex items-center justify-between text-slate-700 dark:text-slate-200">
+              <span className="flex items-center gap-2 font-medium">
+                <span className="w-3 h-3 rounded-full border-2 border-[#DC2626] flex items-center justify-center text-[8px] text-[#DC2626] font-bold">
+                  !
+                </span>
+                Critical
+              </span>
+              <span className="font-bold text-slate-800 dark:text-slate-100">3</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Top-Right Overlay: Map View Dropdown (exact match from Screenshot 2) */}
+        <div className="absolute top-4 right-4 z-30">
+          <div className="relative">
+            <button
+              onClick={() => setShowLayerDropdown(!showLayerDropdown)}
+              className="flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md text-xs font-semibold text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-800 shadow-sm cursor-pointer hover:bg-slate-50 transition-colors"
+            >
+              <span>{mapLayer}</span>
+              <ChevronDown className="w-3.5 h-3.5 text-slate-500" />
+            </button>
+
+            <AnimatePresence>
+              {showLayerDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 4 }}
+                  className="absolute right-0 mt-1.5 w-36 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg py-1 z-40 text-xs"
+                >
+                  {(['Map View', 'Satellite', 'Drainage'] as const).map((layer) => (
+                    <button
+                      key={layer}
+                      onClick={() => {
+                        setMapLayer(layer);
+                        setShowLayerDropdown(false);
+                      }}
+                      className="w-full text-left px-3 py-1.5 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer font-medium"
+                    >
+                      {layer}
+                    </button>
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        {/* Bottom-Right Overlay: Zoom Controls + Compass Icon (matches Screenshot 2) */}
+        <div className="absolute bottom-14 right-4 z-30 flex flex-col gap-2">
+          {/* Zoom In / Out Pill */}
+          <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden">
+            <button
+              onClick={handleZoomIn}
+              className="w-8 h-8 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors border-b border-slate-100 dark:border-slate-800"
+              title="Zoom In"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleZoomOut}
+              className="w-8 h-8 flex items-center justify-center text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer transition-colors"
+              title="Zoom Out"
+            >
+              <Minus className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Compass / Recenter Button */}
+          <button
+            onClick={handleResetZoom}
+            className="w-8 h-8 rounded-full bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-200 flex items-center justify-center shadow-sm hover:bg-slate-100 cursor-pointer transition-colors"
+            title="Recenter"
+          >
+            <Crosshair className="w-4 h-4 text-slate-600 dark:text-slate-300" />
+          </button>
+        </div>
+
+        {/* Sector Popup on Map (exact match for Marathahalli in Screenshot 2) */}
+        <AnimatePresence>
+          {activePopup && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 10 }}
+              className="absolute z-30 bg-white/98 dark:bg-slate-900/98 backdrop-blur-xl rounded-2xl p-4 shadow-xl border border-slate-200/90 dark:border-slate-800 min-w-[220px] max-w-[260px]"
+              style={{
+                left: `${Math.min(Math.max(activePopup.xPercent - 2, 12), 64)}%`,
+                top: `${Math.min(Math.max(activePopup.yPercent - 2, 18), 64)}%`,
+              }}
+            >
+              {/* Header: Red/Yellow/Green Dot + Sector Name */}
+              <div className="flex items-center gap-2 pb-2">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full ${
+                    activePopup.status === 'Critical'
+                      ? 'bg-red-500 ring-2 ring-red-200'
+                      : activePopup.status === 'Warning'
+                      ? 'bg-amber-500 ring-2 ring-amber-200'
+                      : 'bg-emerald-500 ring-2 ring-emerald-200'
+                  }`}
+                />
+                <span className="font-bold text-sm text-slate-900 dark:text-white">
+                  {activePopup.name}
+                </span>
+              </div>
+
+              {/* Data Row: Water Level & Status */}
+              <div className="grid grid-cols-2 gap-2 my-2.5 text-xs">
+                <div>
+                  <div className="text-slate-400 text-[11px]">Water Level</div>
+                  <div className="font-bold text-slate-800 dark:text-slate-100 text-xs sm:text-sm mt-0.5">
+                    {activePopup.waterLevel || '0.42 m'}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-slate-400 text-[11px]">Status</div>
+                  <div
+                    className={`font-bold text-xs sm:text-sm mt-0.5 ${
+                      activePopup.status === 'Critical'
+                        ? 'text-[#DC2626]'
+                        : activePopup.status === 'Warning'
+                        ? 'text-[#D97706]'
+                        : 'text-[#16A34A]'
+                    }`}
+                  >
+                    {activePopup.status}
+                  </div>
+                </div>
+              </div>
+
+              {/* View Details Link */}
+              <button
+                onClick={() => handleOpenSectorDetails(activePopup.name)}
+                className="text-[#1D4ED8] dark:text-blue-400 font-semibold text-xs flex items-center gap-1 hover:underline cursor-pointer pt-1"
+              >
+                <span>View Details</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Map Bottom Footer Bar (matches Screenshot 2) */}
+        <div className="absolute bottom-0 left-0 right-0 h-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200/80 dark:border-slate-800 px-4 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300 z-20">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="font-medium text-slate-700 dark:text-slate-200">Real-time data</span>
+            <span className="text-slate-400">✦</span>
+            <span className="text-slate-500">Updated 2 min ago</span>
+          </div>
+          <div className="hidden sm:block text-slate-400 text-[11px]">
+            Click on a sector to view details
+          </div>
+        </div>
       </div>
     </div>
   );
 };
-
-export default LiveMapView;

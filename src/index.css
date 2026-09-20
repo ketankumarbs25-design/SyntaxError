@@ -1,7 +1,9 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 /* ═══════════════════════════════════════════════════════════════════════════════
    FLOWSHIELD — Global Design System
+
    Theme architecture: CSS custom properties on [data-theme] attribute.
    The anti-flash inline script in index.html sets data-theme before paint.
 ═══════════════════════════════════════════════════════════════════════════════ */
@@ -276,44 +278,134 @@
 .slide-in-from-top-1 { animation-name: slide-in-from-top; }
 .duration-150 { animation-duration: 150ms; }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   BUTTON & INTERACTIVE MICRO-ANIMATIONS
-   Duration: 150–200ms
-   Hover: translateY(-1px), slight brightness increase, subtle shadow
-   Pressed: scale(0.97)
-═══════════════════════════════════════════════════════════════════════════════ */
-button:not(:disabled):not(.no-bounce):not(.leaflet-control *),
-.btn-interactive {
-  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              filter 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
-              color 180ms cubic-bezier(0.16, 1, 0.3, 1);
+/* ─── Production Hydrological Animations ────────────────────────────────────── */
+
+/* Pulsing Severe Station Markers (Orange/Dark Amber) */
+@keyframes severeStationPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0.7);
+    transform: scale(1);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(234, 88, 12, 0);
+    transform: scale(1.08);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(234, 88, 12, 0);
+    transform: scale(1);
+  }
 }
 
-button:not(:disabled):not(.no-bounce):not(.leaflet-control *):hover,
-.btn-interactive:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.02);
+.pulse-severe-marker {
+  animation: severeStationPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
-button:not(:disabled):not(.no-bounce):not(.leaflet-control *):active,
-.btn-interactive:active {
-  transform: scale(0.97);
+/* Pulsing Extreme Station Markers (Red) */
+@keyframes extremeStationPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.85);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(220, 38, 38, 0);
+    transform: scale(1.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 38, 38, 0);
+    transform: scale(1);
+  }
 }
 
-/* ═══════════════════════════════════════════════════════════════════════════════
-   PREFERS-REDUCED-MOTION (Accessibility)
-═══════════════════════════════════════════════════════════════════════════════ */
+.pulse-extreme-marker {
+  animation: extremeStationPulse 1.2s cubic-bezier(0.2, 0, 0.4, 1) infinite;
+}
+
+/* Flowing River Polyline Dash Animation */
+@keyframes riverFlowDash {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+.river-flowing-line {
+  stroke-dasharray: 8 6;
+  animation: riverFlowDash 2.5s linear infinite;
+}
+
+/* Ticker Marquee Animation */
+@keyframes tickerSlide {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-ticker {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: tickerSlide 35s linear infinite;
+}
+
+.animate-ticker:hover {
+  animation-play-state: paused;
+}
+
+/* Gauge Level Rise Animation */
+@keyframes gaugeFillRise {
+  from {
+    height: 0%;
+  }
+}
+
+.gauge-animated-fill {
+  animation: gaugeFillRise 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─── Reduced Motion Support (WCAG 2.1 AAA) ─────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
   *,
-  *::before,
-  *::after {
+  ::before,
+  ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-    transform: none !important;
+  }
+
+  .pulse-severe-marker,
+  .pulse-extreme-marker,
+  .river-flowing-line,
+  .animate-ticker {
+    animation: none !important;
   }
 }
 
+/* ─── Print Stylesheet for Daily Flood Bulletins (@media print) ─────────────── */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  header,
+  nav,
+  .no-print,
+  button,
+  .leaflet-control-container,
+  .map-container {
+    display: none !important;
+  }
+
+  .printable-bulletin-container {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page-break {
+    page-break-after: always;
+  }
+}
