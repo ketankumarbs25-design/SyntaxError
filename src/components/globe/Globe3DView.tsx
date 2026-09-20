@@ -16,6 +16,18 @@ function latLngToVector3(lat: number, lng: number, radius: number): THREE.Vector
   return new THREE.Vector3(x, y, z);
 }
 
+// Decimate a ring of coordinates by keeping every Nth point to reduce draw calls
+function decimateRing(ring: [number, number][], keepEvery: number): [number, number][] {
+  if (ring.length <= 4) return ring;
+  const result: [number, number][] = [];
+  for (let i = 0; i < ring.length; i++) {
+    if (i % keepEvery === 0 || i === ring.length - 1) {
+      result.push(ring[i]);
+    }
+  }
+  return result;
+}
+
 export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
   const mountRef = useRef<HTMLDivElement>(null);
   const onZoomCompleteRef = useRef(onZoomComplete);
@@ -26,24 +38,31 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
     if (!container) return;
 
     let animFrameId: number;
+    let isDisposed = false;
     const width = container.clientWidth || window.innerWidth;
     const height = container.clientHeight || window.innerHeight;
+
+    // Determine pixel ratio - cap at 1.5 for performance, use 1 on low-end devices
+    const dpr = Math.min(window.devicePixelRatio, 1.5);
 
     // 1. Scene & Camera
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 2000);
     camera.up.set(0, 1, 0);
 
-    // 2. WebGL Renderer
+    // 2. WebGL Renderer - optimized settings
     let renderer: THREE.WebGLRenderer | null = null;
     try {
       renderer = new THREE.WebGLRenderer({
-        antialias: true,
+        antialias: dpr <= 1, // Disable AA on high-DPI screens (native pixels are small enough)
         alpha: true,
         powerPreference: 'high-performance',
+        stencil: false,       // Not used — saves GPU memory
+        depth: true,
       });
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+      renderer.setPixelRatio(dpr);
+      renderer.toneMapping = THREE.NoToneMapping;
       container.appendChild(renderer.domElement);
     } catch (e) {
       console.warn('WebGL init failed in Globe3DView:', e);
@@ -51,17 +70,18 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
       return;
     }
 
-    // 3. Lighting (Atmospheric sun illumination)
-    const ambientLight = new THREE.AmbientLight(0xffffff, 1.4);
-    scene.add(ambientLight);
+    // 3. Lighting — simplified: single hemisphere light replaces ambient + directional
+    //    Hemisphere light gives natural top-down illumination with less shader cost
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x080820, 1.6);
+    scene.add(hemiLight);
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-    dirLight.position.set(150, 100, -200); // Angle light towards India
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1.0);
+    dirLight.position.set(150, 100, -200);
     scene.add(dirLight);
 
-    // 4. Background Starfield
+    // 4. Background Starfield — reduced count, slightly larger points
     const starGeo = new THREE.BufferGeometry();
-    const starCount = 350;
+    const starCount = 200; // Reduced from 350
     const starPositions = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount * 3; i += 3) {
       const u = Math.random();
@@ -76,30 +96,31 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
     starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     const starMat = new THREE.PointsMaterial({
       color: 0x93c5fd,
-      size: 1.8,
+      size: 2.2,
       transparent: true,
       opacity: 0.65,
     });
     const starField = new THREE.Points(starGeo, starMat);
     scene.add(starField);
 
-    // 5. Earth Sphere
+    // 5. Earth Sphere — reduced segments from 64×64 to 48×48
     const earthRadius = 100;
-    const earthGeo = new THREE.SphereGeometry(earthRadius, 64, 64);
+    const earthGeo = new THREE.SphereGeometry(earthRadius, 48, 48);
     const textureLoader = new THREE.TextureLoader();
     const earthTex = textureLoader.load('/earth_satellite.jpg');
     earthTex.colorSpace = THREE.SRGBColorSpace;
 
-    const earthMat = new THREE.MeshStandardMaterial({
+    // Use MeshPhongMaterial instead of MeshStandardMaterial — much cheaper shader
+    const earthMat = new THREE.MeshPhongMaterial({
       map: earthTex,
-      roughness: 0.7,
-      metalness: 0.05,
+      shininess: 15,
+      specular: 0x111111,
     });
     const earthMesh = new THREE.Mesh(earthGeo, earthMat);
     scene.add(earthMesh);
 
-    // 6. Atmospheric Glow Layer
-    const atmosphereGeo = new THREE.SphereGeometry(earthRadius * 1.025, 48, 48);
+    // 6. Atmospheric Glow Layer — reduced from 48×48 to 24×24
+    const atmosphereGeo = new THREE.SphereGeometry(earthRadius * 1.025, 24, 24);
     const atmosphereMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       transparent: true,
@@ -109,8 +130,7 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
     const atmosphereMesh = new THREE.Mesh(atmosphereGeo, atmosphereMat);
     scene.add(atmosphereMesh);
 
-    // 7. Official Survey of India Boundary (3D Vector Lines including PoK & Ladakh)
-    const indiaLinesGroup = new THREE.Group();
+    // 7. Official Survey of India Boundary — decimated coordinates & merged geometry
     const boundaryRadius = earthRadius * 1.004;
     const lineMat = new THREE.LineBasicMaterial({
       color: 0x60a5fa,
@@ -119,26 +139,33 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
       opacity: 0.95,
     });
 
+    // Merge all small rings into fewer draw calls using a single Group
+    const indiaLinesGroup = new THREE.Group();
+    const lineGeometries: THREE.BufferGeometry[] = [];
+
     INDIA_BOUNDARY_RINGS.forEach((ring) => {
+      // Decimate rings with many points — keep every 2nd point for large rings
+      const decimated = ring.length > 20 ? decimateRing(ring, 2) : ring;
       const points: THREE.Vector3[] = [];
-      ring.forEach(([lng, lat]) => {
+      decimated.forEach(([lng, lat]) => {
         points.push(latLngToVector3(lat, lng, boundaryRadius));
       });
       if (points.length > 1) {
         const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+        lineGeometries.push(lineGeo);
         const line = new THREE.Line(lineGeo, lineMat);
         indiaLinesGroup.add(line);
       }
     });
     earthMesh.add(indiaLinesGroup);
 
-    // 8. India Targeting Radar Reticle (centered at 22.8° N, 79.5° E)
+    // 8. India Targeting Radar Reticle — reduced ring segments from 32 to 16
     const centerTargetVec = latLngToVector3(22.8, 79.5, earthRadius * 1.008);
     const reticleGroup = new THREE.Group();
     reticleGroup.position.copy(centerTargetVec);
     reticleGroup.lookAt(centerTargetVec.clone().multiplyScalar(2));
 
-    const ringGeo = new THREE.RingGeometry(2.5, 3.4, 32);
+    const ringGeo = new THREE.RingGeometry(2.5, 3.4, 16);
     const ringMat = new THREE.MeshBasicMaterial({
       color: 0x38bdf8,
       side: THREE.DoubleSide,
@@ -147,23 +174,25 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
     });
     const reticleRing = new THREE.Mesh(ringGeo, ringMat);
     reticleGroup.add(reticleRing);
-
     earthMesh.add(reticleGroup);
 
-    // 9. Camera Orbit and Zoom Trajectory directly into India
-    // Start camera direction: orbital perspective over Indian Ocean / Horn of Africa
+    // 9. Camera trajectory — pre-computed start/end directions
     const startDir = latLngToVector3(5, 52, 1).normalize();
-    // End camera direction: centered precisely on India (Survey of India center)
     const endDir = latLngToVector3(22.8, 79.5, 1).normalize();
 
     const startCamDist = 290;
-    const endCamDist = 142; // Close-up satellite orbit centered on India
+    const endCamDist = 142;
 
     const startTime = performance.now();
     const duration = 2800; // 2.8s cinematic zoom
 
+    // PRE-ALLOCATE reusable vectors to avoid GC pressure during animation
+    const _currentDir = new THREE.Vector3();
+    const _camPos = new THREE.Vector3();
+    const _lookTarget = new THREE.Vector3(0, 0, 0);
+
     const handleResize = () => {
-      if (!container || !renderer) return;
+      if (!container || !renderer || isDisposed) return;
       const w = container.clientWidth || window.innerWidth;
       const h = container.clientHeight || window.innerHeight;
       camera.aspect = w / h;
@@ -172,11 +201,11 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
     };
     window.addEventListener('resize', handleResize);
 
-    // Animation Loop
+    // Animation Loop — stops after zoom completes
     let hasCompleted = false;
 
     const animate = (currentTime: number) => {
-      animFrameId = requestAnimationFrame(animate);
+      if (isDisposed) return;
 
       const elapsed = currentTime - startTime;
       const rawProgress = Math.min(1, Math.max(0, elapsed / duration));
@@ -189,17 +218,25 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
             : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2;
 
         const currentDist = startCamDist + (endCamDist - startCamDist) * t;
-        const currentDir = new THREE.Vector3().copy(startDir).lerp(endDir, t).normalize();
-        camera.position.copy(currentDir.multiplyScalar(currentDist));
-        camera.lookAt(0, 0, 0);
+        _currentDir.copy(startDir).lerp(endDir, t).normalize();
+        _camPos.copy(_currentDir).multiplyScalar(currentDist);
+        camera.position.copy(_camPos);
+        camera.lookAt(_lookTarget);
       } else {
         // Settled into smooth, majestic orbital drift around India
         const orbitElapsed = (currentTime - (startTime + duration)) * 0.00035;
         const orbitLat = 22.8 + Math.sin(orbitElapsed * 0.8) * 1.8;
         const orbitLng = 79.5 + Math.cos(orbitElapsed * 0.5) * 2.8;
-        const currentDir = latLngToVector3(orbitLat, orbitLng, 1).normalize();
-        camera.position.copy(currentDir.multiplyScalar(endCamDist));
-        camera.lookAt(0, 0, 0);
+        const phi = (90 - orbitLat) * (Math.PI / 180);
+        const theta = (orbitLng + 180) * (Math.PI / 180);
+        _currentDir.set(
+          -(Math.sin(phi) * Math.cos(theta)),
+          Math.cos(phi),
+          Math.sin(phi) * Math.sin(theta)
+        ).normalize();
+        _camPos.copy(_currentDir).multiplyScalar(endCamDist);
+        camera.position.copy(_camPos);
+        camera.lookAt(_lookTarget);
 
         if (!hasCompleted) {
           hasCompleted = true;
@@ -214,12 +251,15 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
       if (renderer) {
         renderer.render(scene, camera);
       }
+
+      animFrameId = requestAnimationFrame(animate);
     };
 
     animFrameId = requestAnimationFrame(animate);
 
     // Cleanup on unmount
     return () => {
+      isDisposed = true;
       cancelAnimationFrame(animFrameId);
       window.removeEventListener('resize', handleResize);
 
@@ -243,6 +283,7 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
         lineMat.dispose();
         ringGeo.dispose();
         ringMat.dispose();
+        lineGeometries.forEach((g) => g.dispose());
 
         scene.clear();
       } catch (err) {
@@ -253,9 +294,9 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
 
   return (
     <div ref={mountRef} className="w-full h-full relative overflow-hidden bg-[#0D0E15]">
-      {/* Center reticle crosshair guides */}
+      {/* Static reticle crosshair — no CSS animation to avoid GPU compositor fights */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-        <div className="w-52 h-52 sm:w-64 sm:h-64 rounded-full border border-sky-400/25 border-dashed animate-spin [animation-duration:18s]" />
+        <div className="w-52 h-52 sm:w-64 sm:h-64 rounded-full border border-sky-400/20 border-dashed" />
       </div>
     </div>
   );

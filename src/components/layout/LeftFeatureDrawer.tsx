@@ -22,6 +22,7 @@ import {
   Search,
   ChevronRight,
   ShieldCheck,
+  ShieldAlert,
   Globe,
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
@@ -152,6 +153,25 @@ export const LeftFeatureDrawer: React.FC<LeftFeatureDrawerProps> = ({
       {
         title: 'Citizen Safety & Response',
         items: [
+          {
+            isButton: true,
+            action: () => {
+              onClose();
+              if (window.location.hash !== '#/') {
+                window.location.hash = '#/';
+              }
+              setTimeout(() => {
+                const el = document.getElementById('safety-advisory');
+                if (el) {
+                  el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+              }, 150);
+            },
+            label: 'Flood Safety & Precautions',
+            desc: 'NDMA survival protocols, 72h go-bag checklist & hotlines',
+            icon: <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />,
+            badge: 'Life Safety',
+          },
           {
             to: '/contact',
             label: 'Contact & SOS Helpline',
