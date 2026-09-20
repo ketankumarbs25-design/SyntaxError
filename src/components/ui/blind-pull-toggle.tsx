@@ -138,33 +138,23 @@ export default function BlindPullToggle({
     if (animating) return;
     setAnimating(true);
 
-    const pullH = Math.round(sizeRef.current * 0.65);
-    const restH = Math.round(sizeRef.current * 0.3);
-
-    await animate(
-      ".cord-line",
-      { height: pullH },
-      { duration: 0.1, ease: [0.4, 0, 1, 1] },
-    );
-    animate(
-      ".cord-line",
-      { height: restH },
-      { type: "spring", stiffness: 300, damping: 18 },
-    );
-    await animate(
-      ".slat",
-      { scaleY: 0 },
-      { delay: stagger(0.04), duration: 0.1, ease: "easeIn" },
-    );
-
     const nextState = !toggleDark;
     setToggleDark(nextState);
     onToggle?.(nextState);
 
+    const pullH = Math.round(sizeRef.current * 0.65);
+    const restH = Math.round(sizeRef.current * 0.3);
+
+    animate(
+      ".cord-line",
+      { height: [restH, pullH, restH] },
+      { duration: 0.25, ease: "easeOut" },
+    );
+
     await animate(
       ".slat",
-      { scaleY: 1 },
-      { delay: stagger(0.04), duration: 0.13, ease: "easeOut" },
+      { scaleY: [1, 0, 1] },
+      { delay: stagger(0.02), duration: 0.2, ease: "easeInOut" },
     );
 
     setAnimating(false);
