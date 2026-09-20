@@ -18,6 +18,7 @@ import {
   Eye,
   AlertTriangle,
   Globe,
+  Bot,
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { SmoothThemeToggle } from '../ui/SmoothThemeToggle';
@@ -226,6 +227,23 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
 
           {/* Right Group: Live Status Chip, Language, Theme, Sync (Icon-Only), Permanent Red SOS */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* AI Assistant & Command Navigator Trigger (Ctrl+K / ⌘K) */}
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('fs-open-chatbot'));
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--border)] text-[var(--text)] hover:text-[var(--live)] border border-[var(--border)] text-xs font-medium transition-all cursor-pointer shadow-xs active:scale-95"
+              title="Open FlowShield AI Navigator (Ctrl+K / ⌘K)"
+              aria-label="Open AI Assistant & Command Navigator"
+            >
+              <Bot className="w-3.5 h-3.5 text-[var(--live)]" />
+              <span className="hidden sm:inline">AI Nav</span>
+              <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono rounded bg-[var(--surface)] text-[var(--text-muted)] border border-[var(--border)] leading-none">
+                ⌘K
+              </kbd>
+            </button>
+
             {/* 3D Satellite Earth Globe Trigger */}
             <button
               type="button"
@@ -449,6 +467,18 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                 >
                   <Globe className="w-4 h-4 text-[var(--live)] animate-spin [animation-duration:18s]" />
                   <span>3D Satellite Earth</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileSheetOpen(false);
+                    window.dispatchEvent(new CustomEvent('fs-open-chatbot'));
+                  }}
+                  className="flex items-center gap-2.5 p-3 rounded-xl bg-[var(--surface-2)] text-[var(--text)] hover:text-[var(--live)] border border-[var(--border)] text-xs font-medium text-left cursor-pointer col-span-2"
+                >
+                  <Bot className="w-4 h-4 text-[var(--live)]" />
+                  <span>AI Navigator & Command Palette (Ctrl+K)</span>
                 </button>
               </div>
 

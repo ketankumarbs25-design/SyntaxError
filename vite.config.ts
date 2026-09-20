@@ -14,6 +14,7 @@ export default defineConfig({
       '@': path.resolve(import.meta.dirname, './src'),
     },
   },
+  envPrefix: ['VITE_', 'LLM_'],
   worker: {
     format: 'es',
   },
