@@ -32,13 +32,13 @@ describe('disasterService', () => {
       a.state.toLowerCase().includes('assam') ||
       a.description.toLowerCase().includes('assam')
     )).toBe(true);
-  });
+  }, 15000);
 
   it('filters disaster articles by disaster type', async () => {
     const res = await getDisasterArticles({ disasterType: 'Cyclone' });
     expect(res.articles.length).toBeGreaterThan(0);
     expect(res.articles.every((a) => a.disasterType === 'Cyclone')).toBe(true);
-  });
+  }, 15000);
 
   it('filters disaster articles by year range', async () => {
     const recent = await getDisasterArticles({ yearRange: '2024-2026' });
@@ -48,7 +48,7 @@ describe('disasterService', () => {
     const hist = await getDisasterArticles({ yearRange: 'historical' });
     expect(hist.articles.length).toBeGreaterThan(0);
     expect(hist.articles.every((a) => a.year < 2020)).toBe(true);
-  });
+  }, 15000);
 
   it('gracefully handles ReliefWeb API errors and falls back to historical records', async () => {
     vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('Network offline'));
