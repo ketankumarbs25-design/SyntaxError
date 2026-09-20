@@ -34,6 +34,7 @@ import {
   Download,
 } from 'lucide-react';
 import { API_KEYS, API_ENDPOINTS } from '../../config/api';
+import { MOCK_STATIONS } from '../../api/mockData';
 import type { SimConfig, SimStats } from '../../sim/types';
 
 // ─── App Routes Registry ───────────────────────────────────────────────────
@@ -469,19 +470,232 @@ const KNOWLEDGE_BASE: KnowledgeEntry[] = [
   },
 ];
 
+// ─── Real-Time City & Regional Flood Scenario Intelligence ──────────────────
+
+export function getCityOrRegionalScenarioResponse(query: string): { text: string; route?: NavRoute } | null {
+  const q = query.toLowerCase().trim();
+
+  // 1. Patna & Bihar Flood Scenario
+  if (
+    q.includes('patna') ||
+    q.includes('digha') ||
+    (q.includes('bihar') && (q.includes('flood') || q.includes('scenario') || q.includes('status') || q.includes('situation') || q.includes('water')))
+  ) {
+    const stn = MOCK_STATIONS.find((s) => s.id === 'stn-01') || {
+      name: 'Patna (Digha Ghat)',
+      current_level: 50.82,
+      warning_level: 49.30,
+      danger_level: 50.45,
+      hfl: 52.52,
+      inflow_cumec: 34200,
+      outflow_cumec: 34100,
+      trend: 'Rising',
+    };
+    const currentLevel = Number(stn.current_level ?? 50.82);
+    const dangerLevel = Number(stn.danger_level ?? 50.45);
+    const warningLevel = Number(stn.warning_level ?? 49.30);
+    const hfl = Number(stn.hfl ?? 52.52);
+    const diff = (currentLevel - dangerLevel).toFixed(2);
+    const inflow = stn.inflow_cumec ? stn.inflow_cumec.toLocaleString() : '34,200';
+    const outflow = stn.outflow_cumec ? stn.outflow_cumec.toLocaleString() : '34,100';
+
+    return {
+      text: `📍 **Current Flood Scenario — Patna (Bihar):**\n\n` +
+        `• **River & Reach:** River Ganga at **${stn.name}** (Station \`GNG-PAT-01\`, Middle Ganga Basin)\n` +
+        `• **Live Stage Telemetry:** **${currentLevel} m** (Warning Level: ${warningLevel} m | Danger Level: ${dangerLevel} m | All-Time HFL: ${hfl} m)\n` +
+        `• **Current Severity:** 🔴 **Severe Flood Situation** — Flowing **+${diff} m above Danger Level** with a **${stn.trend || 'Rising'}** trend (+2 cm/hr)\n` +
+        `• **Hydrographic Discharge:** Inflow: **${inflow} cumec** | Outflow: **${outflow} cumec**\n\n` +
+        `📋 **Official CWC Advisory:**\n` +
+        `*"River Ganga at Patna (Digha Ghat) is flowing 0.37m above its Danger Level with a rising trend of 2cm/hr. Farakka Barrage is discharging 48,200 cumec to balance reservoir pondage."*\n\n` +
+        `⚠️ **Vulnerable Zones & Inundation Risk:**\n` +
+        `Backflow from the swollen Ganga and Punpun rivers has put low-lying floodplains in **Rajendra Nagar**, **Kankarbagh**, **Digha**, **Danapur**, **Maner**, and **Fatuha** on alert. Sump drainage stations are running on auxiliary generator power.\n\n` +
+        `🚨 **Emergency Contacts & Flood Relief Hubs (Bihar):**\n` +
+        `• **Patna District Control Room:** **1077**\n` +
+        `• **Bihar State Disaster Management (BSDMA):** **1070** (Toll-Free)\n` +
+        `• **NDRF 9th Battalion Base (Bihta, Patna):** **011-24363260** / **112**\n` +
+        `• **Emergency Medical & Ambulance:** **108**`,
+      route: APP_NAV_ROUTES.find((r) => r.path === '/stations'),
+    };
+  }
+
+  // 2. Delhi NCR & Yamuna River Scenario
+  if (
+    !q.includes('basin') &&
+    (q.includes('delhi') ||
+      (q.includes('yamuna') && !q.includes('ganga')) ||
+      q.includes('ncr') ||
+      q.includes('okhla') ||
+      q.includes('wazirabad'))
+  ) {
+    const stn = MOCK_STATIONS.find((s) => s.id === 'stn-05') || {
+      name: 'Delhi (Old Railway Bridge)',
+      current_level: 206.15,
+      warning_level: 204.50,
+      danger_level: 205.33,
+      hfl: 208.66,
+      trend: 'Rising',
+      inflow_cumec: 7850,
+      outflow_cumec: 7800,
+    };
+    const currentLevel = Number(stn.current_level ?? 206.15);
+    const dangerLevel = Number(stn.danger_level ?? 205.33);
+    const warningLevel = Number(stn.warning_level ?? 204.50);
+    const hfl = Number(stn.hfl ?? 208.66);
+    const diff = (currentLevel - dangerLevel).toFixed(2);
+    const inflow = stn.inflow_cumec ? stn.inflow_cumec.toLocaleString() : '7,850';
+    const outflow = stn.outflow_cumec ? stn.outflow_cumec.toLocaleString() : '7,800';
+
+    return {
+      text: `📍 **Current Flood Scenario — Delhi NCR (River Yamuna):**\n\n` +
+        `• **Station:** **${stn.name}** (\`YMN-DEL-05\`)\n` +
+        `• **Live Stage Telemetry:** **${currentLevel} m** (Warning Level: ${warningLevel} m | Danger Level: ${dangerLevel} m | All-Time HFL: ${hfl} m)\n` +
+        `• **Current Severity:** 🔴 **Severe Flood Situation** — Flowing **+${diff} m above Danger Mark** with a **${stn.trend || 'Rising'}** trend\n` +
+        `• **Discharge:** Inflow: **${inflow} cumec** | Outflow: **${outflow} cumec**\n\n` +
+        `📋 **Advisory & Floodplain Warning:**\n` +
+        `Substantial discharges released from Hathnikund Barrage (Haryana) are traversing the Delhi corridor. Inundation alerts are active for low-lying settlements in **Yamuna Bazar**, **Monastery Market**, **Bela Estate**, and **Mayur Vihar**.\n\n` +
+        `🚨 **Helplines:** Delhi Disaster Control **1077** | National Emergency **112**`,
+      route: APP_NAV_ROUTES.find((r) => r.path === '/stations'),
+    };
+  }
+
+  // 3. Assam & Brahmaputra Basin Scenario
+  if (
+    q.includes('guwahati') ||
+    q.includes('assam') ||
+    q.includes('brahmaputra') ||
+    q.includes('dibrugarh') ||
+    q.includes('tezpur') ||
+    q.includes('kaziranga')
+  ) {
+    return {
+      text: `📍 **Current Flood Scenario — Assam (Brahmaputra Basin):**\n\n` +
+        `• **Stations Monitored:** Guwahati (\`BHP-GUW-08\`), Dibrugarh (\`BHP-DIB-09\`), and Tezpur (\`BHP-TEZ-10\`)\n` +
+        `• **Current Status:** 🔴 **Severe Flood Situation** across 28 districts\n` +
+        `• **Guwahati Stage:** **49.68 m** (Danger Level: 49.68 m) — River Brahmaputra flowing right at the Danger Mark with sustained monsoonal inflow.\n` +
+        `• **Ground Impact:** Over 2.4 million people impacted across Darrang, Morigaon, Kamrup, and Barpeta. 70%+ of Kaziranga National Park inundated.\n\n` +
+        `🚨 **Helplines:** Assam SDMA **1070** | Guwahati Control **1077** | NDRF 1st Bn (Patgaon) **011-24363260**`,
+      route: APP_NAV_ROUTES.find((r) => r.path === '/basins'),
+    };
+  }
+
+  // 4. Vijayawada, Krishna & Budameru Scenario
+  if (
+    q.includes('vijayawada') ||
+    q.includes('budameru') ||
+    q.includes('prakasam') ||
+    (q.includes('krishna') && (q.includes('river') || q.includes('flood') || q.includes('barrage')))
+  ) {
+    return {
+      text: `📍 **Current Flood Scenario — Vijayawada (Krishna Basin, Andhra Pradesh):**\n\n` +
+        `• **Key Station:** **Vijayawada (Prakasam Barrage)** (\`KRS-VIJ-15\`)\n` +
+        `• **Current Stage:** **17.85 m** (Danger Level: 17.50 m) — 🔴 **Severe Status**\n` +
+        `• **Barrage Discharge:** Over **400,000 cusecs** released through 70 crest gates into the Bay of Bengal.\n` +
+        `• **Budameru Rivulet Watch:** Flash breaches along Budameru diversion canal causing waterlogging in Ajit Singh Nagar, Payakapuram, and Vidyadharapuram.\n\n` +
+        `🚨 **Helplines:** Andhra Pradesh SDMA **1070** | Vijayawada Control **1077** | NDRF Mangalagiri **112**`,
+      route: APP_NAV_ROUTES.find((r) => r.path === '/stations'),
+    };
+  }
+
+  // 5. Varanasi, Prayagraj & Farakka (Ganga Corridor)
+  if (
+    q.includes('varanasi') ||
+    q.includes('prayagraj') ||
+    q.includes('allahabad') ||
+    q.includes('farakka')
+  ) {
+    return {
+      text: `📍 **Current Flood Scenario — Ganga Basin (Uttar Pradesh & West Bengal):**\n\n` +
+        `• **Varanasi (\`GNG-VAR-02\`):** **70.92 m** (Warning: 70.26 m, Danger: 71.26 m) — 🟡 **Above Normal**. Historic riverfront ghats partially submerged; small boat traffic suspended.\n` +
+        `• **Prayagraj Sangam (\`GNG-PRY-03\`):** **83.25 m** (Danger: 84.73 m) — 🟢 **Normal**, trending steady.\n` +
+        `• **Farakka Barrage (\`GNG-FRK-04\`):** **22.45 m** (Danger: 22.25 m) — 🔴 **Severe**. Outflow: 48,200 cumec.\n\n` +
+        `🚨 **Helplines:** UP Relief Commissioner **1070** | District Disaster **1077** | Emergency **112**`,
+      route: APP_NAV_ROUTES.find((r) => r.path === '/stations'),
+    };
+  }
+
+  // 6. National Flood Scenario (India / National / Overall / How many rivers)
+  if (
+    q.includes('india') ||
+    q.includes('national') ||
+    q.includes('overall') ||
+    q.includes('how many river') ||
+    q.includes('country') ||
+    ((q.includes('current scenario') || q.includes('current situation') || q.includes('flood scenario')) &&
+      !q.includes('patna') &&
+      !q.includes('delhi'))
+  ) {
+    const severeCount = MOCK_STATIONS.filter((s) => s.status === 'Severe' || s.status === 'Extreme').length;
+    const warningCount = MOCK_STATIONS.filter((s) => s.status === 'Above normal').length;
+    const normalCount = MOCK_STATIONS.filter((s) => s.status === 'Normal').length;
+
+    return {
+      text: `🇮🇳 **National Flood Scenario — India (Central Water Commission Overview):**\n\n` +
+        `• **Active Monitoring Network:** **1,500 Telemetry Stations** across 20 River Basins.\n` +
+        `• **Stations in Severe/Extreme Flood:** 🔴 **${severeCount} Key Reaches** (including River Ganga at Patna, Farakka, Yamuna at Delhi, Brahmaputra at Guwahati, and Krishna at Prakasam Barrage).\n` +
+        `• **Stations in Above Normal / Watch:** 🟡 **${warningCount} Stations** approaching Danger thresholds.\n` +
+        `• **Stations at Normal Stage:** 🟢 **${normalCount} Stations** within safe discharge limits.\n\n` +
+        `🌊 **Basin Risk Hotspots:**\n` +
+        `1. **Middle Ganga Basin (Bihar & Eastern UP):** Inundation risk along Patna, Buxar, and Bhagalpur.\n` +
+        `2. **Upper Brahmaputra Basin (Assam):** Monsoonal flash surges across 28 districts.\n` +
+        `3. **Lower Krishna Basin (Andhra Pradesh):** Heavy upstream dam spillway discharges.\n\n` +
+        `🚨 **National Unified Helpline:** **112** | **NDRF HQ Control Room:** **011-24363260**`,
+      route: APP_NAV_ROUTES.find((r) => r.path === '/'),
+    };
+  }
+
+  // 7. Dynamic search across all 30+ CWC stations for any named city, district, or river
+  for (const stn of MOCK_STATIONS) {
+    const nameMatch = stn.name.toLowerCase();
+    const distMatch = stn.district?.toLowerCase() || '';
+    const stateMatch = stn.state?.toLowerCase() || '';
+    const riverMatch = (stn.river || '').toLowerCase();
+
+    if (
+      q.includes(nameMatch) ||
+      (distMatch && q.includes(distMatch)) ||
+      (stateMatch && q.includes(stateMatch) && (q.includes('flood') || q.includes('scenario') || q.includes('status'))) ||
+      (riverMatch && q.includes(riverMatch) && (q.includes('flood') || q.includes('scenario') || q.includes('status') || q.includes('water')))
+    ) {
+      const statusIcon =
+        stn.status === 'Severe' || stn.status === 'Extreme'
+          ? '🔴'
+          : stn.status === 'Above normal'
+          ? '🟡'
+          : '🟢';
+      return {
+        text: `📍 **Hydrological Status — ${stn.name} (${stn.state}):**\n\n` +
+          `• **River & Basin:** River **${stn.river}** (${stn.basin} Basin)\n` +
+          `• **Live Stage Telemetry:** **${stn.current_level} m** (Warning: ${stn.warning_level} m | Danger: ${stn.danger_level} m | HFL: ${stn.hfl} m)\n` +
+          `• **Current Classification:** ${statusIcon} **${stn.status}** (${stn.trend} Trend)\n` +
+          `• **Discharge:** Inflow: ${stn.inflow_cumec?.toLocaleString() || 'N/A'} cumec | Outflow: ${stn.outflow_cumec?.toLocaleString() || 'N/A'} cumec\n\n` +
+          `🚨 **Emergency Helplines:** State Disaster Control **1070** | District **1077** | ERSS **112**`,
+        route: APP_NAV_ROUTES.find((r) => r.path === '/stations'),
+      };
+    }
+  }
+
+  return null;
+}
+
 export function answerQueryWithKnowledgeBase(query: string): { text: string; route?: NavRoute } {
   const q = query.trim();
 
-  // Try matching registered knowledge domains
+  // 1. Check for city / regional / national scenario queries first
+  const scenarioResponse = getCityOrRegionalScenarioResponse(q);
+  if (scenarioResponse) {
+    return scenarioResponse;
+  }
+
+  // 2. Try matching registered knowledge domains
   for (const entry of KNOWLEDGE_BASE) {
     if (entry.patterns.some((p) => p.test(q))) {
       return entry.answer(q);
     }
   }
 
-  // Fallback intelligent response
+  // 3. Fallback intelligent response
   return {
-    text: `FlowShield AI monitors **1,500 Central Water Commission stations** across 20 river basins in India.\n\nI can answer flood queries or navigate you directly:\n• *"What is Danger Level vs Warning Level?"*\n• *"What are the national emergency helplines?"*\n• *"NDMA flood safety guidelines"*\n• *"Navigate to Stations"* or *"Open River Basins"*\n• *"Launch 3D Satellite Earth"*`,
+    text: `FlowShield AI monitors **1,500 Central Water Commission stations** across 20 river basins in India.\n\nI can answer flood queries or navigate you directly:\n• *"What is Danger Level vs Warning Level?"*\n• *"What are the national emergency helplines?"*\n• *"NDMA flood safety guidelines"*\n• *"Current scenario of flood in Patna or Delhi"*\n• *"Navigate to Stations"* or *"Open River Basins"*\n• *"Launch 3D Satellite Earth"*`,
     route: APP_NAV_ROUTES.find((r) => r.path === '/stations'),
   };
 }

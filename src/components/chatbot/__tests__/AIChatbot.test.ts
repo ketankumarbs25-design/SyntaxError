@@ -110,4 +110,28 @@ describe('AIChatbot Local Knowledge Base', () => {
     expect(res.text).toContain('Ganga-Yamuna Basin');
     expect(res.route?.path).toBe('/basins');
   });
+
+  it('answers city-specific flood scenario queries (e.g. Patna, Delhi, National)', () => {
+    // The exact user query
+    const patnaRes = answerQueryWithKnowledgeBase('whats the current scenario of flood in patna');
+    expect(patnaRes.text).toContain('Current Flood Scenario — Patna (Bihar)');
+    expect(patnaRes.text).toContain('Patna (Digha Ghat)');
+    expect(patnaRes.text).toContain('50.82 m');
+    expect(patnaRes.text).toContain('Danger Level');
+    expect(patnaRes.text).toContain('Severe Flood Situation');
+    expect(patnaRes.text).toContain('1077');
+    expect(patnaRes.route?.path).toBe('/stations');
+
+    // Delhi query
+    const delhiRes = answerQueryWithKnowledgeBase('whats the current scenario of flood in delhi');
+    expect(delhiRes.text).toContain('Delhi NCR (River Yamuna)');
+    expect(delhiRes.text).toContain('Delhi (Old Railway Bridge)');
+    expect(delhiRes.text).toContain('206.15 m');
+    expect(delhiRes.route?.path).toBe('/stations');
+
+    // National query
+    const nationalRes = answerQueryWithKnowledgeBase('whats the national flood scenario in india');
+    expect(nationalRes.text).toContain('National Flood Scenario — India');
+    expect(nationalRes.text).toContain('1,500 Telemetry Stations');
+  });
 });
