@@ -172,7 +172,6 @@ export function LandingPage({ onEnter }: { onEnter: () => void }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: containerRef });
   const heroParallax = useTransform(scrollYProgress, [0, 0.4], ['0%', '18%']);
-  const heroOpacity = useTransform(scrollYProgress, [0, 0.35], [1, 0]);
 
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
