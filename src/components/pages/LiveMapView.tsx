@@ -11,12 +11,15 @@ import type { SectorLiveMetrics } from '../../lib/liveDataSource';
 import type { NavTabId } from '../nav/Navbar';
 
 interface LiveMapViewProps {
-  sectors: SectorLiveMetrics[];
-  selectedSector: SectorLiveMetrics | null;
-  onSelectSector: (sector: SectorLiveMetrics) => void;
-  onNavigateTab: (tab: NavTabId) => void;
-  lastUpdatedStr: string;
+  sectors?: SectorLiveMetrics[];
+  selectedSector?: SectorLiveMetrics | null;
+  onSelectSector?: (sector: SectorLiveMetrics) => void;
+  onNavigateTab?: (tab: NavTabId) => void;
+  lastUpdatedStr?: string;
 }
+
+// Lazy-loaded 3D Globe Intro Animation
+const GlobeIntroOverlay = React.lazy(() => import('../globe/GlobeIntroOverlay'));
 
 interface MapMarker {
   id: string;
@@ -29,13 +32,13 @@ interface MapMarker {
 }
 
 export const LiveMapView: React.FC<LiveMapViewProps> = ({
-  sectors,
-  onSelectSector,
-  onNavigateTab,
+  sectors = [],
+  onSelectSector = () => {},
+  onNavigateTab = () => {},
 }) => {
   const [zoomLevel, setZoomLevel] = useState<number>(1);
   const [showLayerDropdown, setShowLayerDropdown] = useState(false);
-  const [mapLayer, setMapLayer] = useState<'Map View' | 'Satellite' | 'Drainage'>('Map View');
+  const [mapLayer, setMapLayer] = useState<'OSM Map' | 'Satellite'>('OSM Map');
 
   // Exact markers and label positions from Screenshot 2
   const mapMarkers: MapMarker[] = [
@@ -70,6 +73,11 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
 
   return (
     <div className="space-y-3 sm:space-y-4">
+      {/* ─── 3D Globe Intro Animation ─── */}
+      <React.Suspense fallback={null}>
+        <GlobeIntroOverlay />
+      </React.Suspense>
+
       {/* Title & Subtitle (exact match from Screenshot 2) */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0D1F38] dark:text-white tracking-tight">
@@ -95,9 +103,6 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
           {/* Subtle drainage/satellite layer tints if chosen */}
           {mapLayer === 'Satellite' && (
             <div className="absolute inset-0 bg-emerald-950/25 pointer-events-none" />
-          )}
-          {mapLayer === 'Drainage' && (
-            <div className="absolute inset-0 bg-blue-900/20 backdrop-hue-rotate-30 pointer-events-none" />
           )}
 
           {/* Exact Bengaluru Geographic Neighborhood Text Labels (matches Screenshot 2) */}
@@ -247,7 +252,7 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
                   exit={{ opacity: 0, y: 4 }}
                   className="absolute right-0 mt-1.5 w-36 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-lg py-1 z-40 text-xs"
                 >
-                  {(['Map View', 'Satellite', 'Drainage'] as const).map((layer) => (
+                  {(['OSM Map', 'Satellite'] as const).map((layer) => (
                     <button
                       key={layer}
                       onClick={() => {

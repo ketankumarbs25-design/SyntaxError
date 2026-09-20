@@ -14,7 +14,7 @@ interface IndiaFloodMapProps {
   heightClass?: string;
 }
 
-export type MapStyleKey = 'osm' | 'voyager' | 'satellite' | 'dark';
+export type MapStyleKey = 'satellite' | 'osm';
 
 interface MapStyleConfig {
   id: MapStyleKey;
@@ -25,36 +25,20 @@ interface MapStyleConfig {
 }
 
 const MAP_STYLES: Record<MapStyleKey, MapStyleConfig> = {
-  osm: {
-    id: 'osm',
-    label: 'Real Map (OSM)',
-    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors | Survey of India Boundary',
-    maxZoom: 19,
-  },
-  voyager: {
-    id: 'voyager',
-    label: 'Detailed Cartography',
-    url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution:
-      '&copy; <a href="https://carto.com/">CARTO</a> | &copy; OpenStreetMap contributors',
-    maxZoom: 19,
-  },
   satellite: {
     id: 'satellite',
-    label: 'Real Satellite (Earth)',
+    label: 'Satellite (Earth)',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution:
       'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
     maxZoom: 18,
   },
-  dark: {
-    id: 'dark',
-    label: 'Dark Tactical',
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+  osm: {
+    id: 'osm',
+    label: 'OpenStreetMap (OSM)',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
     attribution:
-      '&copy; <a href="https://carto.com/">CARTO</a> | &copy; OpenStreetMap contributors',
+      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors | Survey of India Boundary',
     maxZoom: 19,
   },
 };
@@ -81,18 +65,8 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
   const { language, t } = useI18n();
   const navigate = useNavigate();
 
-  // Active map style
-  const [activeStyle, setActiveStyle] = useState<MapStyleKey>(() =>
-    themeMode === 'dark' ? 'dark' : 'osm'
-  );
-  const [isStyleMenuOpen, setIsStyleMenuOpen] = useState(false);
-
-  // Sync style default when theme mode changes if user hasn't explicitly chosen satellite
-  useEffect(() => {
-    if (activeStyle !== 'satellite') {
-      setActiveStyle(themeMode === 'dark' ? 'dark' : 'osm');
-    }
-  }, [themeMode]);
+  // Active map style: Only Satellite or OSM
+  const [activeStyle, setActiveStyle] = useState<MapStyleKey>('satellite');
 
   // Fit map precisely to the official boundaries of India
   const fitToIndia = useCallback(() => {
@@ -170,9 +144,9 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
       geoJsonLayerRef.current = null;
     }
 
-    const isDark = themeMode === 'dark';
-    const borderColor = isDark ? '#38bdf8' : '#1d4ed8';
-    const fillColor = isDark ? '#0284c7' : '#3b82f6';
+    const isDark = themeMode === 'dark' || activeStyle === 'satellite';
+    const borderColor = activeStyle === 'satellite' ? '#60a5fa' : isDark ? '#38bdf8' : '#1d4ed8';
+    const fillColor = activeStyle === 'satellite' ? '#3b82f6' : isDark ? '#0284c7' : '#3b82f6';
 
     const geoJsonLayer = L.geoJSON(INDIA_OFFICIAL_GEOJSON, {
       style: () => ({
@@ -210,7 +184,7 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     }).addTo(map);
 
     geoJsonLayerRef.current = geoJsonLayer;
-  }, [themeMode]);
+  }, [themeMode, activeStyle]);
 
   // Update Station Markers when stations prop changes
   useEffect(() => {
@@ -353,44 +327,32 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
           <span className="hidden sm:inline">Fit India</span>
         </button>
 
-        {/* Map Layer Switcher Dropdown */}
-        <div className="relative">
+        {/* Map Layer Switcher: Satellite vs OSM Map */}
+        <div className="flex items-center p-0.5 bg-white/95 dark:bg-slate-900/95 rounded-xl shadow-md border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md">
           <button
-            onClick={() => setIsStyleMenuOpen((prev) => !prev)}
-            className="flex items-center gap-1.5 px-3 py-2 bg-white/95 dark:bg-slate-900/95 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-md border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md cursor-pointer transition-all active:scale-95"
+            type="button"
+            onClick={() => setActiveStyle('satellite')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeStyle === 'satellite'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
           >
-            <Layers className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span className="hidden sm:inline">{MAP_STYLES[activeStyle].label}</span>
+            <Layers className="w-3.5 h-3.5" />
+            <span>Satellite</span>
           </button>
-
-          {isStyleMenuOpen && (
-            <div className="absolute top-full left-0 mt-1.5 w-48 bg-white dark:bg-slate-900 rounded-xl shadow-xl border border-slate-200 dark:border-slate-800 p-1.5 z-30 animate-in fade-in slide-from-top-1 text-xs">
-              <div className="px-2 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                Cartographic Layer
-              </div>
-              {(Object.keys(MAP_STYLES) as MapStyleKey[]).map((key) => {
-                const style = MAP_STYLES[key];
-                const isActive = activeStyle === key;
-                return (
-                  <button
-                    key={key}
-                    onClick={() => {
-                      setActiveStyle(key);
-                      setIsStyleMenuOpen(false);
-                    }}
-                    className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left font-medium transition-colors cursor-pointer ${
-                      isActive
-                        ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-bold'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                    }`}
-                  >
-                    <span>{style.label}</span>
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-blue-600" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <button
+            type="button"
+            onClick={() => setActiveStyle('osm')}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeStyle === 'osm'
+                ? 'bg-blue-600 text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+            }`}
+          >
+            <Compass className="w-3.5 h-3.5" />
+            <span>OSM Map</span>
+          </button>
         </div>
       </div>
 
