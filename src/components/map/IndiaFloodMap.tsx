@@ -138,15 +138,18 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
 
-    // Remove existing GeoJSON layer if any
-    if (geoJsonLayerRef.current) {
-      map.removeLayer(geoJsonLayerRef.current);
-      geoJsonLayerRef.current = null;
-    }
-
     const isDark = themeMode === 'dark' || activeStyle === 'satellite';
     const borderColor = activeStyle === 'satellite' ? '#60a5fa' : isDark ? '#38bdf8' : '#1d4ed8';
     const fillColor = activeStyle === 'satellite' ? '#3b82f6' : isDark ? '#0284c7' : '#3b82f6';
+
+    // If layer already exists, update style in 0ms without re-parsing thousands of GeoJSON points
+    if (geoJsonLayerRef.current) {
+      geoJsonLayerRef.current.setStyle({
+        color: borderColor,
+        fillColor: fillColor,
+      });
+      return;
+    }
 
     const geoJsonLayer = L.geoJSON(INDIA_OFFICIAL_GEOJSON, {
       style: () => ({

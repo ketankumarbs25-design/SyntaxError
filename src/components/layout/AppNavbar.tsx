@@ -12,10 +12,8 @@ import {
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useI18n } from '../../i18n';
-import { useTheme } from '../../hooks/useTheme';
 import { useAuth } from '../../context/AuthContext';
 import { UserMenu } from '../auth/UserMenu';
-import BlindPullToggle from '../ui/blind-pull-toggle';
 import { SmoothThemeToggle } from '../ui/SmoothThemeToggle';
 import { AuthComponent } from '../ui/sign-up';
 
@@ -31,7 +29,6 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   onOpenHistorical,
 }) => {
   const { language, setLanguage, t } = useI18n();
-  const { setMode: setThemeMode, resolvedDark } = useTheme();
   const { isAuthenticated, isAuthModalOpen, openAuthModal, closeAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [istTimeStr, setIstTimeStr] = useState('');
@@ -163,15 +160,6 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                 <span className="hidden sm:inline text-[11px]">Disaster Intel</span>
               </button>
             )}
-
-            {/* Interactive BlindPullToggle */}
-            <div className="hidden sm:flex items-center justify-center px-1" title="Pull cord to toggle theme">
-              <BlindPullToggle
-                isDark={resolvedDark}
-                onToggle={(nextDark) => setThemeMode(nextDark ? 'dark' : 'light')}
-                size={34}
-              />
-            </div>
 
             {/* User Menu if Authenticated, else OAuth Login Button */}
             {isAuthenticated ? (

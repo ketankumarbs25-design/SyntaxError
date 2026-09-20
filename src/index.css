@@ -176,45 +176,11 @@
   }
 }
 
-/* ─── Smooth theme transition on structural surfaces without thrashing DOM nodes ─── */
+/* ─── Smooth theme transition on root surfaces (snappy 150ms without layout thrashing) ─── */
 html,
-body,
-header,
-nav,
-main,
-footer,
-aside,
-section,
-article,
-.theme-transition {
-  transition: background-color 300ms cubic-bezier(0.4, 0, 0.2, 1),
-              color 250ms cubic-bezier(0.4, 0, 0.2, 1),
-              border-color 300ms cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* ─── Hardware-accelerated View Transition API for Theme Toggling ─── */
-::view-transition-old(root),
-::view-transition-new(root) {
-  animation-duration: 280ms;
-  animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-::view-transition-old(root) {
-  animation-name: theme-crossfade-old;
-}
-
-::view-transition-new(root) {
-  animation-name: theme-crossfade-new;
-}
-
-@keyframes theme-crossfade-old {
-  from { opacity: 1; }
-  to   { opacity: 0; }
-}
-
-@keyframes theme-crossfade-new {
-  from { opacity: 0; }
-  to   { opacity: 1; }
+body {
+  transition: background-color 150ms cubic-bezier(0.4, 0, 0.2, 1),
+              color 150ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* Exclude animation-heavy elements from the transition */

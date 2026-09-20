@@ -78,14 +78,7 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
       const isDark = calculateResolvedDark(nextMode);
       setResolvedDark(isDark);
 
-      // Use View Transitions API if supported for butter-smooth GPU crossfade
-      if (typeof document !== 'undefined' && 'startViewTransition' in document) {
-        (document as any).startViewTransition(() => {
-          applyThemeToDOM(isDark);
-        });
-      } else {
-        applyThemeToDOM(isDark);
-      }
+      applyThemeToDOM(isDark);
     },
     [calculateResolvedDark]
   );
