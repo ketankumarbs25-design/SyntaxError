@@ -1,21 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import {
-  Waves,
   RefreshCw,
   Menu,
   X,
-  Clock,
   History,
-  LogIn,
+  Calendar,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
 import { useI18n } from '../../i18n';
-import { useAuth } from '../../context/AuthContext';
-import { UserMenu } from '../auth/UserMenu';
 import { SmoothThemeToggle } from '../ui/SmoothThemeToggle';
 import { LanguageSelector } from './LanguageSelector';
-import { AuthComponent } from '../ui/sign-up';
 
 interface AppNavbarProps {
   onManualRefresh?: () => void;
@@ -29,246 +23,169 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   onOpenHistorical,
 }) => {
   const { t } = useI18n();
-  const { isAuthenticated, isAuthModalOpen, openAuthModal, closeAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [istTimeStr, setIstTimeStr] = useState('');
+  const [istDateStr, setIstDateStr] = useState('');
 
-  // Live IST Clock
+  // Live IST Date & Time
   useEffect(() => {
     const updateTime = () => {
       try {
         const now = new Date();
         const str = new Intl.DateTimeFormat('en-IN', {
           timeZone: 'Asia/Kolkata',
+          month: 'short',
+          day: 'numeric',
           hour: '2-digit',
           minute: '2-digit',
-          second: '2-digit',
           hour12: false,
         }).format(now);
-        setIstTimeStr(`${str} IST`);
+        setIstDateStr(str);
       } catch {
-        setIstTimeStr('IST');
+        setIstDateStr('Monsoon 2026');
       }
     };
     updateTime();
-    const interval = setInterval(updateTime, 1000);
+    const interval = setInterval(updateTime, 30000);
     return () => clearInterval(interval);
   }, []);
 
   const navLinks = [
-    { to: '/', label: t.navHome },
+    { to: '/', label: 'Overview' },
     { to: '/stations', label: t.navStations },
     { to: '/basins', label: t.navBasins },
     { to: '/bulletins', label: t.navBulletins },
     { to: '/disasters', label: t.navDisasters },
+    { to: '/watchlist', label: 'Watchlist' },
+    { to: '/report-incident', label: 'Ground Report' },
     { to: '/contact', label: 'Contact & SOS' },
-    ...(isAuthenticated
-      ? [
-          { to: '/watchlist', label: 'Watchlist' },
-          { to: '/report-incident', label: 'Report Incident' },
-        ]
-      : []),
     { to: '/help', label: t.navHelp },
   ];
 
   return (
-    <>
-      <header className="sticky top-0 z-50 w-full bg-white/95 dark:bg-[#0E101B]/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 transition-colors shadow-xs">
-        <div className="max-w-[1440px] mx-auto px-4 sm:px-6 py-2 flex items-center justify-between gap-4">
-          {/* Left: FlowShield India Brand */}
-          <NavLink
-            to="/"
-            className="flex items-center gap-3 select-none group shrink-0"
+    <header className="w-full bg-white/80 dark:bg-[#0E101B]/80 backdrop-blur-md border-b border-slate-200/70 dark:border-slate-800/70 transition-colors">
+      <div className="max-w-[1560px] mx-auto px-4 sm:px-6 py-3 flex items-center justify-between gap-4">
+        {/* Left: Modern Zentra-style Logo & Wordmark */}
+        <NavLink
+          to="/"
+          className="flex items-center gap-2.5 select-none group shrink-0"
+        >
+          {/* Sleek geometric gradient icon badge */}
+          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-orange-500 to-amber-400 text-white flex items-center justify-center shadow-xs shadow-orange-500/20 group-hover:scale-105 transition-transform">
+            <div className="w-3.5 h-3.5 border-2 border-white rounded-[3px] rotate-45 flex items-center justify-center">
+              <div className="w-1 h-1 bg-white rounded-full" />
+            </div>
+          </div>
+          <span className="font-bold text-lg tracking-tight text-slate-900 dark:text-white font-sans">
+            flowshield
+          </span>
+        </NavLink>
+
+        {/* Center: Sleek Floating Pill Navigation */}
+        <nav className="hidden xl:flex items-center gap-1 bg-slate-100/70 dark:bg-slate-900/60 p-1 rounded-full border border-slate-200/60 dark:border-slate-800/60">
+          {navLinks.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={({ isActive }) =>
+                `px-3.5 py-1.5 rounded-full text-xs font-medium transition-all select-none ${
+                  isActive
+                    ? 'bg-[#151722] dark:bg-white text-white dark:text-slate-950 font-semibold shadow-xs'
+                    : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-slate-800/50'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </nav>
+
+        {/* Right Controls: Telemetry Date Pill, Sync, Language, Single Theme Toggle */}
+        <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          {/* Dribbble Style Date Range / Status Pill */}
+          <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-700 dark:text-slate-300 shadow-2xs font-medium">
+            <Calendar className="w-3.5 h-3.5 text-slate-400" />
+            <span>{istDateStr} • CWC Stream</span>
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+          </div>
+
+          {/* 3-Minute Refresh Button */}
+          <button
+            type="button"
+            onClick={onManualRefresh}
+            disabled={isRefreshing}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-full bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-semibold border border-slate-200 dark:border-slate-800 transition-colors cursor-pointer shadow-2xs"
+            title="Auto-refreshes every 3 minutes. Click to refresh telemetry now."
           >
-            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              <Waves className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-extrabold text-base sm:text-lg text-slate-900 dark:text-white tracking-tight">
-                  {t.appTitle}
-                </span>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                  LIVE
-                </span>
-              </div>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium hidden md:block">
-                {t.nationalIntelligence}
-              </p>
-            </div>
-          </NavLink>
+            <RefreshCw className={`w-3.5 h-3.5 text-blue-600 dark:text-blue-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline text-[11px]">Sync</span>
+          </button>
 
-          {/* Center: Navigation Links */}
-          <nav className="hidden lg:flex items-center gap-1">
-            {navLinks.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all select-none ${
-                    isActive
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800/60'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-          </nav>
+          {/* Language Selector (10 River Basin Languages) */}
+          <LanguageSelector />
 
-          {/* Right Controls: IST Clock, Auto-Refresh, Language, 1-Click Dark/Light Toggle, BlindPullToggle, Login/UserMenu */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Live IST clock badge */}
-            <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-mono font-medium border border-slate-200/70 dark:border-slate-700/60">
-              <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-              <span>{istTimeStr}</span>
-            </div>
+          {/* Single Smooth Animated Theme Capsule Switcher */}
+          <SmoothThemeToggle size="sm" />
 
-            {/* 3-Minute Refresh Button */}
+          {/* Historical Disaster Intel Trigger */}
+          {onOpenHistorical && (
             <button
-              onClick={onManualRefresh}
-              disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold transition-colors cursor-pointer"
-              title="Auto-refreshes every 3 minutes. Click to refresh telemetry now."
+              type="button"
+              onClick={onOpenHistorical}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold transition-colors cursor-pointer shadow-2xs"
+              title="Open Historical Disaster Intelligence"
             >
-              <RefreshCw className={`w-3.5 h-3.5 text-blue-600 dark:text-blue-400 ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline text-[11px]">3m Sync</span>
+              <History className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline text-[11px]">Intel</span>
             </button>
+          )}
 
-            {/* Language Selector (10 River Basin Languages) */}
-            <LanguageSelector />
+          {/* Mobile menu hamburger toggle */}
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="xl:hidden p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+            aria-label="Toggle navigation menu"
+          >
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+          </button>
+        </div>
+      </div>
 
-            {/* Smooth Animated Theme Capsule Switcher */}
+      {/* Mobile Drawer Menu */}
+      {mobileMenuOpen && (
+        <div className="xl:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E101B] px-4 py-3 flex flex-col gap-1.5 shadow-lg">
+          {navLinks.map((item) => (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              onClick={() => setMobileMenuOpen(false)}
+              className={({ isActive }) =>
+                `px-3 py-2 rounded-xl text-xs font-semibold ${
+                  isActive
+                    ? 'bg-[#151722] dark:bg-white text-white dark:text-slate-950 font-bold'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+
+          {/* Mobile Language Selector */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Language</span>
+            <LanguageSelector isMobile={true} />
+          </div>
+
+          {/* Mobile Theme Toggle Button */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Theme</span>
             <SmoothThemeToggle size="sm" />
-
-            {/* Historical Disaster Intel Trigger */}
-            {onOpenHistorical && (
-              <button
-                onClick={onOpenHistorical}
-                className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-xs font-semibold transition-colors cursor-pointer"
-                title="Open Historical Disaster Intelligence"
-              >
-                <History className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-[11px]">Disaster Intel</span>
-              </button>
-            )}
-
-            {/* User Menu if Authenticated, else OAuth Login Button */}
-            {isAuthenticated ? (
-              <UserMenu />
-            ) : (
-              <button
-                onClick={() => openAuthModal('signin')}
-                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs shadow-blue-500/20 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-                title="Open Login / Sign Up"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Login</span>
-              </button>
-            )}
-
-            {/* Mobile menu hamburger toggle */}
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
-            </button>
           </div>
         </div>
-
-        {/* Mobile Drawer Menu */}
-        {mobileMenuOpen && (
-          <div className="lg:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E101B] px-4 py-3 flex flex-col gap-2 shadow-lg">
-            {navLinks.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-xl text-xs font-semibold ${
-                    isActive
-                      ? 'bg-blue-600 text-white'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-            {onOpenHistorical && (
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  onOpenHistorical();
-                }}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 text-left cursor-pointer"
-              >
-                <History className="w-4 h-4" />
-                <span>Historical Disaster Intel</span>
-              </button>
-            )}
-
-            {/* Mobile Language Selector */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Language</span>
-              <LanguageSelector isMobile={true} />
-            </div>
-
-            {/* Mobile Theme Toggle Button */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Theme</span>
-              <div className="flex items-center gap-3">
-                <SmoothThemeToggle size="sm" />
-                <span className="text-[11px] text-slate-400">{istTimeStr}</span>
-              </div>
-            </div>
-
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-              {isAuthenticated ? (
-                <UserMenu />
-              ) : (
-                <button
-                  onClick={() => {
-                    setMobileMenuOpen(false);
-                    openAuthModal('signin');
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold cursor-pointer"
-                >
-                  <LogIn className="w-3.5 h-3.5" />
-                  <span>Account Login</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-      </header>
-
-      {/* Animated Login Modal Overlay */}
-      <AnimatePresence>
-        {isAuthModalOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-md overflow-y-auto p-0 sm:p-4"
-          >
-            <AuthComponent
-              logo={
-                <div className="bg-blue-600 text-white rounded-lg p-1.5 shadow-md shadow-blue-500/20">
-                  <Waves className="w-4 h-4" />
-                </div>
-              }
-              brandName="FlowShield India"
-              onClose={closeAuthModal}
-              onSuccess={closeAuthModal}
-            />
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
+      )}
+    </header>
   );
 };
+
+export default AppNavbar;

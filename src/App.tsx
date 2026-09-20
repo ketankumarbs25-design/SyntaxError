@@ -17,8 +17,6 @@ import { I18nProvider } from './i18n';
 import { HistoricalDisasterModal } from './components/historical/HistoricalDisasterModal';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { Waves } from 'lucide-react';
-import { AuthComponent } from './components/ui/sign-up';
 
 // Configure TanStack Query client with 3-minute auto-refresh defaults
 const queryClient = new QueryClient({
@@ -42,78 +40,63 @@ const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 dark:bg-[#08090E] text-slate-900 dark:text-slate-100 transition-colors">
-      {/* Top Main Navigation */}
-      <AppNavbar
-        onManualRefresh={handleManualRefresh}
-        onOpenHistorical={() => setIsHistoricalOpen(true)}
-      />
+    <div className="min-h-screen bg-[#EAEBED] dark:bg-[#05060A] text-slate-900 dark:text-slate-100 p-2 sm:p-3.5 lg:p-5 transition-colors">
+      <div className="max-w-[1560px] mx-auto min-h-[calc(100vh-28px)] bg-[#FAFBFD] dark:bg-[#0C0E17] rounded-[24px] sm:rounded-[32px] border border-white/90 dark:border-slate-800/80 shadow-[0_20px_60px_rgba(0,0,0,0.05)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.45)] overflow-hidden flex flex-col">
+        {/* Top Main Navigation */}
+        <AppNavbar
+          onManualRefresh={handleManualRefresh}
+          onOpenHistorical={() => setIsHistoricalOpen(true)}
+        />
 
-      {/* Main Page Content Container */}
-      <main className="flex-1 w-full max-w-[1440px] mx-auto p-4 sm:p-6 lg:p-8">
-        <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/stations" element={<StationsPage />} />
-          <Route path="/stations/:id" element={<StationDetailPage />} />
-          <Route path="/basins" element={<BasinsPage />} />
-          <Route path="/bulletins" element={<BulletinsPage />} />
-          <Route path="/disasters" element={<DisasterHistoryPage />} />
-          <Route path="/contact" element={<ContactPage />} />
-          <Route path="/report-incident" element={<IncidentReporterPage />} />
-          <Route path="/watchlist" element={<WatchlistPage />} />
-          <Route path="/export" element={<ExportPage />} />
-          <Route path="/help" element={<HelpPage />} />
-          <Route
-            path="/login"
-            element={
-              <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-md">
-                <AuthComponent
-                  logo={
-                    <div className="bg-blue-600 text-white rounded-lg p-1.5 shadow-md shadow-blue-500/20">
-                      <Waves className="w-4 h-4" />
-                    </div>
-                  }
-                  brandName="FlowShield India"
-                  onClose={() => (window.location.hash = '#/')}
-                  onSuccess={() => (window.location.hash = '#/')}
-                />
-              </div>
-            }
-          />
-          {/* Catch-all fallback */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+        {/* Main Page Content Container */}
+        <main className="flex-1 w-full p-4 sm:p-6 lg:p-8">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/stations" element={<StationsPage />} />
+            <Route path="/stations/:id" element={<StationDetailPage />} />
+            <Route path="/basins" element={<BasinsPage />} />
+            <Route path="/bulletins" element={<BulletinsPage />} />
+            <Route path="/disasters" element={<DisasterHistoryPage />} />
+            <Route path="/contact" element={<ContactPage />} />
+            <Route path="/report-incident" element={<IncidentReporterPage />} />
+            <Route path="/watchlist" element={<WatchlistPage />} />
+            <Route path="/export" element={<ExportPage />} />
+            <Route path="/help" element={<HelpPage />} />
+            {/* Catch-all fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </main>
 
-      {/* App Footer */}
-      <footer className="no-print w-full bg-white dark:bg-[#0E101B] border-t border-slate-200 dark:border-slate-800 py-6 px-4 sm:px-8 text-xs text-slate-500 dark:text-slate-400">
-        <div className="max-w-[1440px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <span className="font-extrabold text-slate-900 dark:text-white">
-              FlowShield India
-            </span>
-            <span>•</span>
-            <span>National Flood Forecasting Network</span>
-            <span>•</span>
-            <span>Central Water Commission</span>
+        {/* App Footer */}
+        <footer className="no-print w-full bg-white/70 dark:bg-[#0E101B]/70 border-t border-slate-200/80 dark:border-slate-800/80 py-5 px-6 sm:px-8 text-xs text-slate-500 dark:text-slate-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <span className="font-extrabold text-slate-900 dark:text-white">
+                FlowShield India
+              </span>
+              <span>•</span>
+              <span>National Flood Forecasting Network</span>
+              <span>•</span>
+              <span>Central Water Commission</span>
+            </div>
+
+            <div className="flex items-center gap-4 text-[11px]">
+              <span>Auto-refreshes every 3 min</span>
+              <span>•</span>
+              <span>WCAG 2.1 AA Compliant</span>
+              <span>•</span>
+              <span>IST (UTC+05:30)</span>
+            </div>
           </div>
+        </footer>
 
-          <div className="flex items-center gap-4 text-[11px]">
-            <span>Auto-refreshes every 3 min</span>
-            <span>•</span>
-            <span>WCAG 2.1 AA Compliant</span>
-            <span>•</span>
-            <span>IST (UTC+05:30)</span>
-          </div>
-        </div>
-      </footer>
-
-      {/* Historical Disaster Intelligence Modal */}
-      <HistoricalDisasterModal
-        isOpen={isHistoricalOpen}
-        onClose={() => setIsHistoricalOpen(false)}
-        initialCity={historicalCity}
-      />
+        {/* Historical Disaster Intelligence Modal */}
+        <HistoricalDisasterModal
+          isOpen={isHistoricalOpen}
+          onClose={() => setIsHistoricalOpen(false)}
+          initialCity={historicalCity}
+        />
+      </div>
     </div>
   );
 };

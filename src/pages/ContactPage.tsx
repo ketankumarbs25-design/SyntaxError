@@ -10,12 +10,11 @@ import {
   FileText,
   MapPin,
   ExternalLink,
-  LogIn,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export const ContactPage: React.FC = () => {
-  const { user, isAuthenticated, openAuthModal, tickets, submitTicket } = useAuth();
+  const { user, isAuthenticated, tickets, submitTicket } = useAuth();
 
   const [department, setDepartment] = useState<'CWC Telemetry Desk' | 'NDMA Disaster Relief' | 'Basin Inflow Operations' | 'Technical Support'>('CWC Telemetry Desk');
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High' | 'CRITICAL EMERGENCY'>('High');
@@ -156,18 +155,9 @@ export const ContactPage: React.FC = () => {
               </p>
             </div>
 
-            {isAuthenticated ? (
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Authenticated
-              </span>
-            ) : (
-              <button
-                onClick={() => openAuthModal('signin')}
-                className="px-3 py-1.5 rounded-xl text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white flex items-center gap-1.5 cursor-pointer shadow-xs"
-              >
-                <LogIn className="w-3.5 h-3.5" /> Log In with OAuth
-              </button>
-            )}
+            <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
+              <CheckCircle2 className="w-3.5 h-3.5" /> 24x7 Direct Dispatch Active
+            </span>
           </div>
 
           {submittedCode && (

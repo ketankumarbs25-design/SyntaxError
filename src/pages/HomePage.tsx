@@ -3,19 +3,15 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Search,
   RotateCcw,
-  Waves,
-  ShieldCheck,
   AlertTriangle,
-  Flame,
-  ShieldAlert,
   Loader2,
 } from 'lucide-react';
 import { getStations, getBulletins } from '../api/adapter';
 import { IndiaFloodMap } from '../components/map/IndiaFloodMap';
-import { CountUpNumber } from '../components/stats/CountUpNumber';
 import { NeedsAttentionList } from '../components/home/NeedsAttentionList';
 import { AlertTicker } from '../components/common/AlertTicker';
 import { useI18n } from '../i18n';
+import { ZentraAnalyticsHero } from '../components/dashboard/ZentraAnalyticsHero';
 
 // Lazy-loaded 3D Globe Intro Animation to keep main bundle clean
 const GlobeIntroOverlay = React.lazy(() => import('../components/globe/GlobeIntroOverlay'));
@@ -79,29 +75,24 @@ export const HomePage: React.FC = () => {
     });
   }, [stations, selectedType, selectedStatus, selectedBasin, selectedState, searchQuery]);
 
-  // KPI Status Counts
-  const counts = useMemo(() => {
-    let normal = 0;
-    let above = 0;
-    let severe = 0;
-    let extreme = 0;
-
-    stations.forEach((s) => {
-      if (s.status === 'Extreme') extreme++;
-      else if (s.status === 'Severe') severe++;
-      else if (s.status === 'Above normal') above++;
-      else normal++;
-    });
-
-    return { total: stations.length, normal, above, severe, extreme };
-  }, [stations]);
-
   const handleResetFilters = () => {
     setSelectedType('all');
     setSelectedStatus('all');
     setSelectedBasin('all');
     setSelectedState('all');
     setSearchQuery('');
+  };
+
+  const handleHeroSelectTag = (tag: string) => {
+    if (tag.includes('severe')) {
+      setSelectedStatus('Severe');
+    } else if (tag.includes('brahmaputra')) {
+      setSelectedBasin('Brahmaputra');
+    } else if (tag.includes('radar')) {
+      setSearchQuery('radar');
+    } else if (tag.includes('anomaly')) {
+      setSelectedStatus('Extreme');
+    }
   };
 
   const hasActiveFilters =
@@ -151,119 +142,8 @@ export const HomePage: React.FC = () => {
         severeStations={stations.filter((s) => s.status === 'Extreme' || s.status === 'Severe')}
       />
 
-      {/* ─── Real-Time Telemetry & 1,500 CWC Station Network Banner ─────── */}
-      <div className="bg-gradient-to-r from-blue-900 via-indigo-950 to-slate-900 rounded-2xl p-4 sm:p-5 border border-blue-700/40 shadow-lg text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex items-center gap-3.5">
-          <div className="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center shrink-0">
-            <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-extrabold text-sm sm:text-base tracking-tight text-white">
-                Real-Time Indian Hydrological Telemetry Active
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/25 text-emerald-300 border border-emerald-400/40">
-                LIVE REST STREAM
-              </span>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/25 text-blue-300 border border-blue-400/40">
-                1,500 CWC STATIONS
-              </span>
-            </div>
-            <p className="text-xs text-slate-300 mt-1 max-w-3xl">
-              Live river discharge ($m^3/s$) from Open-Meteo Global Flood System + real-time satellite rainfall from OpenWeatherMap across all Indian river basins.
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2.5 shrink-0 text-xs text-slate-300 flex-wrap">
-          <div className="bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400" />
-            <span>Open-Meteo: <strong className="text-emerald-300">Live</strong></span>
-          </div>
-          <div className="bg-slate-800/90 px-3 py-1.5 rounded-xl border border-slate-700 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-400" />
-            <span>OWM Radar: <strong className="text-blue-300">Active</strong></span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Count-Up KPI Metric Cards ───────────────────────────────────── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3.5">
-        {/* Total Stations */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center shrink-0">
-            <Waves className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block leading-tight">
-              {t.totalStations}
-            </span>
-            <div className="text-2xl font-black text-slate-900 dark:text-white mt-0.5">
-              <CountUpNumber value={counts.total} />
-            </div>
-          </div>
-        </div>
-
-        {/* Normal (Green) */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 flex items-center justify-center shrink-0">
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block leading-tight">
-              {t.statusNormal}
-            </span>
-            <div className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
-              <CountUpNumber value={counts.normal} />
-            </div>
-          </div>
-        </div>
-
-        {/* Above Normal (Yellow) */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-yellow-50 dark:bg-yellow-950/60 text-yellow-600 flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block leading-tight">
-              {t.statusAboveNormal}
-            </span>
-            <div className="text-2xl font-black text-yellow-600 dark:text-yellow-400 mt-0.5">
-              <CountUpNumber value={counts.above} />
-            </div>
-          </div>
-        </div>
-
-        {/* Severe (Orange - Pulsing) */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-orange-200 dark:border-orange-900/60 shadow-xs flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-950/60 text-orange-600 flex items-center justify-center shrink-0">
-            <ShieldAlert className="w-5 h-5" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block leading-tight">
-              {t.statusSevere}
-            </span>
-            <div className="text-2xl font-black text-orange-600 dark:text-orange-400 mt-0.5">
-              <CountUpNumber value={counts.severe} />
-            </div>
-          </div>
-        </div>
-
-        {/* Extreme (Red - Ping) */}
-        <div className="col-span-2 sm:col-span-1 bg-white dark:bg-slate-900 rounded-2xl p-4 border border-red-200 dark:border-red-900/60 shadow-xs flex items-center gap-3.5">
-          <div className="w-10 h-10 rounded-xl bg-red-100 dark:bg-red-950/60 text-red-600 flex items-center justify-center shrink-0">
-            <Flame className="w-5 h-5 animate-pulse" />
-          </div>
-          <div>
-            <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 block leading-tight">
-              {t.statusExtreme}
-            </span>
-            <div className="text-2xl font-black text-red-600 dark:text-red-400 mt-0.5">
-              <CountUpNumber value={counts.extreme} />
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* ─── Dribbble Zentra Sleek Analytics Hero (Overview + Striped Bars + 4 Metrics) ─ */}
+      <ZentraAnalyticsHero onSelectTag={handleHeroSelectTag} />
 
       {/* ─── Multi-Facet Filter Bar ────────────────────────────────────────── */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
