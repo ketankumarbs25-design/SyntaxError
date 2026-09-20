@@ -9,7 +9,12 @@ import { BasinsPage } from './pages/BasinsPage';
 import { BulletinsPage } from './pages/BulletinsPage';
 import { DisasterHistoryPage } from './pages/DisasterHistoryPage';
 import { HelpPage } from './pages/HelpPage';
+import { ContactPage } from './pages/ContactPage';
+import { IncidentReporterPage } from './pages/IncidentReporterPage';
+import { WatchlistPage } from './pages/WatchlistPage';
+import { ExportPage } from './pages/ExportPage';
 import { I18nProvider } from './i18n';
+import { AuthProvider } from './context/AuthContext';
 import { Waves } from 'lucide-react';
 import { AuthComponent } from './components/ui/sign-up';
 
@@ -46,6 +51,10 @@ const AppShell: React.FC = () => {
           <Route path="/basins" element={<BasinsPage />} />
           <Route path="/bulletins" element={<BulletinsPage />} />
           <Route path="/disasters" element={<DisasterHistoryPage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="/report-incident" element={<IncidentReporterPage />} />
+          <Route path="/watchlist" element={<WatchlistPage />} />
+          <Route path="/export" element={<ExportPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route
             path="/login"
@@ -58,8 +67,8 @@ const AppShell: React.FC = () => {
                     </div>
                   }
                   brandName="FlowShield India"
-                  onClose={() => window.location.hash = '#/'}
-                  onSuccess={() => window.location.hash = '#/'}
+                  onClose={() => (window.location.hash = '#/')}
+                  onSuccess={() => (window.location.hash = '#/')}
                 />
               </div>
             }
@@ -99,9 +108,11 @@ export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
       <I18nProvider>
-        <HashRouter>
-          <AppShell />
-        </HashRouter>
+        <AuthProvider>
+          <HashRouter>
+            <AppShell />
+          </HashRouter>
+        </AuthProvider>
       </I18nProvider>
     </QueryClientProvider>
   );

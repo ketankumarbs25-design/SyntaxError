@@ -9,7 +9,9 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  Star,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 import { getStations, getStationObservations, getStationForecast } from '../api/adapter';
 import { formatIST } from '../api/status';
 import { HydraulicStaffGauge } from '../components/station/HydraulicStaffGauge';
@@ -21,6 +23,7 @@ import { useI18n } from '../i18n';
 export const StationDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { language, t } = useI18n();
+  const { isStationInWatchlist, toggleWatchlist } = useAuth();
 
   // Fetch all stations to locate current and sibling river stations
   const { data: stations = [], isLoading: isLoadingStations } = useQuery({
@@ -93,6 +96,18 @@ export const StationDetailPage: React.FC = () => {
               <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                 {station.type === 'reservoir-inflow' ? 'Reservoir Inflow Station' : 'River-Level Gauging Station'}
               </span>
+              <button
+                onClick={() => toggleWatchlist(station.id)}
+                className={`inline-flex items-center gap-1.5 px-3 py-0.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                  isStationInWatchlist(station.id)
+                    ? 'bg-amber-50 text-amber-700 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+                    : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                }`}
+                title={isStationInWatchlist(station.id) ? 'Remove from personal watchlist' : 'Add to personal watchlist'}
+              >
+                <Star className={`w-3.5 h-3.5 ${isStationInWatchlist(station.id) ? 'fill-amber-500 text-amber-500' : 'text-slate-400'}`} />
+                <span>{isStationInWatchlist(station.id) ? 'In Watchlist' : 'Add to Watchlist'}</span>
+              </button>
             </div>
 
             <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-2 flex-wrap">

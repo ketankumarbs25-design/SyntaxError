@@ -12,6 +12,8 @@ import {
 import { AnimatePresence, motion } from 'framer-motion';
 import { useI18n } from '../../i18n';
 import { useTheme } from '../../hooks/useTheme';
+import { useAuth } from '../../context/AuthContext';
+import { UserMenu } from '../auth/UserMenu';
 import BlindPullToggle from '../ui/blind-pull-toggle';
 import { AuthComponent } from '../ui/sign-up';
 
@@ -26,8 +28,8 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
 }) => {
   const { language, setLanguage, t } = useI18n();
   const { setMode: setThemeMode, resolvedDark } = useTheme();
+  const { isAuthenticated, isAuthModalOpen, openAuthModal, closeAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showAuthModal, setShowAuthModal] = useState(false);
   const [istTimeStr, setIstTimeStr] = useState('');
 
   // Live IST Clock
@@ -58,6 +60,13 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
     { to: '/basins', label: t.navBasins },
     { to: '/bulletins', label: t.navBulletins },
     { to: '/disasters', label: t.navDisasters },
+    { to: '/contact', label: 'Contact & SOS' },
+    ...(isAuthenticated
+      ? [
+          { to: '/watchlist', label: 'Watchlist' },
+          { to: '/report-incident', label: 'Report Incident' },
+        ]
+      : []),
     { to: '/help', label: t.navHelp },
   ];
 
@@ -107,7 +116,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
             ))}
           </nav>
 
-          {/* Right Controls: IST Clock, Auto-Refresh, Language, BlindPullToggle, Login */}
+          {/* Right Controls: IST Clock, Auto-Refresh, Language, BlindPullToggle, Login/UserMenu */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Live IST clock badge */}
             <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-mono font-medium border border-slate-200/70 dark:border-slate-700/60">
@@ -145,15 +154,19 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
               />
             </div>
 
-            {/* Login / Sign Up Action Button at Start Right Top */}
-            <button
-              onClick={() => setShowAuthModal(true)}
-              className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs shadow-blue-500/20 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
-              title="Open Login / Sign Up"
-            >
-              <LogIn className="w-3.5 h-3.5" />
-              <span>Login</span>
-            </button>
+            {/* User Menu if Authenticated, else OAuth Login Button */}
+            {isAuthenticated ? (
+              <UserMenu />
+            ) : (
+              <button
+                onClick={() => openAuthModal('signin')}
+                className="flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs shadow-blue-500/20 transition-all cursor-pointer hover:scale-[1.02] active:scale-[0.98]"
+                title="Open Login / Sign Up"
+              >
+                <LogIn className="w-3.5 h-3.5" />
+                <span>Login</span>
+              </button>
+            )}
 
             {/* Mobile menu hamburger toggle */}
             <button
@@ -186,16 +199,20 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
               </NavLink>
             ))}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
-              <button
-                onClick={() => {
-                  setMobileMenuOpen(false);
-                  setShowAuthModal(true);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold"
-              >
-                <LogIn className="w-3.5 h-3.5" />
-                <span>Account Login</span>
-              </button>
+              {isAuthenticated ? (
+                <UserMenu />
+              ) : (
+                <button
+                  onClick={() => {
+                    setMobileMenuOpen(false);
+                    openAuthModal('signin');
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold"
+                >
+                  <LogIn className="w-3.5 h-3.5" />
+                  <span>Account Login</span>
+                </button>
+              )}
               <span className="text-[11px] text-slate-400">{istTimeStr}</span>
             </div>
           </div>
@@ -204,7 +221,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
 
       {/* Animated Login Modal Overlay */}
       <AnimatePresence>
-        {showAuthModal && (
+        {isAuthModalOpen && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -219,8 +236,8 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                 </div>
               }
               brandName="FlowShield India"
-              onClose={() => setShowAuthModal(false)}
-              onSuccess={() => setShowAuthModal(false)}
+              onClose={closeAuthModal}
+              onSuccess={closeAuthModal}
             />
           </motion.div>
         )}
