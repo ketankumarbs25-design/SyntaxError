@@ -1,0 +1,17 @@
+feat: flood simulation engine, live alert colors, slider reactivity
+
+- Add /simulate page with physics-based 8x8 flood simulation engine
+- Rainfall, duration, drainage, terrain sliders with debounce auto-rerun
+- 4 preset scenarios: Normal, Heavy Rain, Drainage Failure, Blocked Channel
+- Safe/Warning/Critical cell classification with ETA-to-critical per zone
+- Interactive time slider + Play/Pause/Speed controls for flood progression
+- Scenario comparison modal with peak depth and affected population stats
+- Fixed stale closure bug: runSimulation takes config param directly
+- Fixed critical thresholds: criticalDepth 0.04-0.12m, drainageRate 10x lower
+- Auto-play from step 0 at 8x speed after each simulation run
+- AlertTicker redesign: red/orange bar, EXTREME/SEVERE badges, pulsing dots
+- NeedsAttentionList: danger-tinted cards, severity-colored borders and glow
+- HomePage danger KPI card: red background tint + box-shadow glow
+- AppNavbar: Simulate link added to desktop nav and mobile tab bar
+- Chatbot routes: /simulate added to AI navigation registry
+- chatbotData.ts: fixed TS arithmetic errors with Number() cast

@@ -884,13 +884,195 @@ export const SimulatePage: React.FC = () => {
               )}
             </AnimatePresence>
 
-            {!selectedCell && (
-              <div
-                className="rounded-xl p-3 border text-center text-xs text-[var(--text-muted)]"
-                style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
-              >
-                <Layers className="w-5 h-5 mx-auto mb-1.5 opacity-30" />
-                Click any grid zone to inspect water depth, elevation, ETA to critical, and population at risk
+            {!selectedCell && currentState && (
+              <div className="flex flex-col gap-3">
+                {/* ── Nearest Critical ETA countdown ── */}
+                {(() => {
+                  const eta = currentState.stats.earliestCriticalTime;
+                  const horizon = config.etaHorizon ?? 180;
+                  return (
+                    <motion.div
+                      layout
+                      className="rounded-xl border overflow-hidden"
+                      style={{
+                        background: eta !== null && eta <= 15
+                          ? 'rgba(198,40,40,0.15)'
+                          : eta !== null && eta <= 45
+                          ? 'rgba(240,138,36,0.12)'
+                          : 'var(--surface)',
+                        borderColor: eta !== null && eta <= 15
+                          ? 'rgba(198,40,40,0.7)'
+                          : eta !== null && eta <= 45
+                          ? 'rgba(240,138,36,0.55)'
+                          : 'var(--border)',
+                      }}
+                    >
+                      <div className="px-3 pt-3 pb-1 flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wide"
+                          style={{ color: eta !== null && eta <= 15 ? 'var(--level-danger)' : eta !== null ? 'var(--level-warning)' : 'var(--level-normal)' }}
+                        >
+                          <Clock className="w-3.5 h-3.5" />
+                          Time to Critical
+                        </div>
+                        {eta !== null && (
+                          <span
+                            className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded animate-pulse"
+                            style={{
+                              background: eta <= 15 ? 'rgba(198,40,40,0.25)' : 'rgba(240,138,36,0.2)',
+                              color: eta <= 15 ? 'var(--level-danger)' : 'var(--level-warning)',
+                            }}
+                          >
+                            {eta <= 15 ? '⚠ IMMINENT' : 'ACTIVE'}
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="px-3 pb-3">
+                        {eta === null ? (
+                          <div className="flex items-center gap-2 py-2">
+                            <span className="text-2xl font-bold" style={{ color: 'var(--level-normal)' }}>N/A</span>
+                            <span className="text-xs text-[var(--text-muted)] leading-tight">All zones draining fast enough — no critical threshold predicted</span>
+                          </div>
+                        ) : (
+                          <>
+                            <div className="flex items-baseline gap-1.5 mb-2">
+                              <span
+                                className="text-3xl font-bold tabular-nums"
+                                style={{ color: eta <= 15 ? 'var(--level-danger)' : 'var(--level-warning)' }}
+                              >
+                                {eta.toFixed(0)}
+                              </span>
+                              <span className="text-sm font-medium" style={{ color: 'var(--text-muted)' }}>min</span>
+                              <span className="text-xs text-[var(--text-muted)] ml-1">until next zone floods</span>
+                            </div>
+                            {/* Urgency bar */}
+                            <div className="h-1.5 rounded-full bg-white/8 overflow-hidden">
+                              <motion.div
+                                className="h-full rounded-full"
+                                style={{
+                                  background: eta <= 15
+                                    ? 'var(--level-danger)'
+                                    : 'var(--level-warning)',
+                                }}
+                                animate={{ width: `${Math.max(4, 100 - (eta / horizon) * 100)}%` }}
+                                transition={{ duration: 0.4 }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-[9px] text-[var(--text-muted)] mt-0.5">
+                              <span>Critical now</span>
+                              <span>{horizon} min horizon</span>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })()}
+
+                {/* ── Ranked ETA list: Warning zones sorted by soonest ── */}
+                {(() => {
+                  const etaZones = currentState.cells
+                    .filter((c) => c.risk !== 'SAFE')
+                    .map((c) => ({
+                      ...c,
+                      zoneName: String.fromCharCode(65 + c.row) + (c.col + 1),
+                      ratio: c.criticalDepth > 0 ? c.water / c.criticalDepth : 0,
+                    }))
+                    .sort((a, b) => {
+                      // CRITICAL first, then WARNING sorted by ETA asc, null last
+                      if (a.risk === 'CRITICAL' && b.risk !== 'CRITICAL') return -1;
+                      if (b.risk === 'CRITICAL' && a.risk !== 'CRITICAL') return 1;
+                      if (a.eta === null && b.eta === null) return 0;
+                      if (a.eta === null) return 1;
+                      if (b.eta === null) return -1;
+                      return a.eta - b.eta;
+                    })
+                    .slice(0, 8);
+
+                  if (etaZones.length === 0) return (
+                    <div
+                      className="rounded-xl p-3 border text-center text-xs text-[var(--text-muted)]"
+                      style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+                    >
+                      <Layers className="w-5 h-5 mx-auto mb-1.5 opacity-30" />
+                      All zones currently safe — no flooding detected
+                    </div>
+                  );
+
+                  return (
+                    <div
+                      className="rounded-xl border overflow-hidden"
+                      style={{ background: 'var(--surface)', borderColor: 'var(--border)' }}
+                    >
+                      <div className="px-3 pt-2.5 pb-1.5 border-b flex items-center justify-between"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">Zones at Risk</span>
+                        <span className="text-[10px] text-[var(--text-muted)]">{etaZones.length} zones · sorted by ETA</span>
+                      </div>
+
+                      <div className="divide-y" style={{ borderColor: 'var(--border)' }}>
+                        {etaZones.map((z) => {
+                          const isCrit = z.risk === 'CRITICAL';
+                          const color = isCrit ? 'var(--level-danger)' : 'var(--level-warning)';
+                          const pct = Math.min(100, z.ratio * 100);
+
+                          return (
+                            <div
+                              key={z.id}
+                              className="px-3 py-2 flex items-center gap-3 cursor-pointer hover:bg-white/5 transition-colors"
+                              onClick={() => setSelectedCell(z)}
+                            >
+                              {/* Zone badge */}
+                              <div
+                                className="w-7 h-7 rounded-lg flex items-center justify-center text-[10px] font-bold shrink-0"
+                                style={{ background: color + '20', color, border: `1px solid ${color}50` }}
+                              >
+                                {z.zoneName}
+                              </div>
+
+                              {/* Progress + ETA */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex justify-between items-center mb-1">
+                                  <span className="text-[10px] font-medium" style={{ color }}>
+                                    {isCrit ? '🔴 BREACHED' : `🟡 ${pct.toFixed(0)}% of critical`}
+                                  </span>
+                                  <span
+                                    className="text-[10px] font-mono font-bold tabular-nums"
+                                    style={{ color }}
+                                  >
+                                    {isCrit
+                                      ? 'Flooding now'
+                                      : z.eta === null
+                                      ? 'Draining ↓'
+                                      : z.eta === 0
+                                      ? 'Critical now!'
+                                      : `ETA ${z.eta.toFixed(0)} min`
+                                    }
+                                  </span>
+                                </div>
+                                <div className="h-1 rounded-full overflow-hidden bg-white/8">
+                                  <motion.div
+                                    className="h-full rounded-full"
+                                    style={{ background: color }}
+                                    animate={{ width: `${pct}%` }}
+                                    transition={{ duration: 0.3 }}
+                                  />
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="px-3 py-1.5 text-[9px] text-[var(--text-muted)] text-center border-t"
+                        style={{ borderColor: 'var(--border)' }}
+                      >
+                        Click any zone to inspect · ETA from least-squares water trend
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
