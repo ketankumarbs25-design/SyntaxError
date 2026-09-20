@@ -19,6 +19,7 @@ import {
   AlertTriangle,
   Globe,
   Bot,
+  Zap,
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { SmoothThemeToggle } from '../ui/SmoothThemeToggle';
@@ -84,6 +85,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
     { to: '/', label: 'Overview' },
     { to: '/stations', label: t.navStations },
     { to: '/basins', label: t.navBasins },
+    { to: '/simulate', label: '⚡ Simulate' },
     { to: '/bulletins', label: t.navBulletins },
     { to: '/disasters', label: t.navDisasters },
     { to: '/watchlist', label: 'Watchlist' },
@@ -93,6 +95,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   const mobileTabItems = [
     { to: '/', label: 'Overview', icon: Home },
     { to: '/stations', label: 'Stations', icon: Radio },
+    { to: '/simulate', label: 'Simulate', icon: Zap },
     { to: '/basins', label: 'Basins', icon: Waves },
     { to: '/bulletins', label: 'Bulletins', icon: Bell },
   ];

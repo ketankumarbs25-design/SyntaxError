@@ -5,7 +5,7 @@ import {
   findCommandNavigationIntent,
   isExplicitQuestion,
   answerQueryWithKnowledgeBase,
-} from '../AIChatbot';
+} from '../chatbotData';
 
 describe('AIChatbot Navigation & Command Parser', () => {
   it('contains all essential FlowShield routes in registry', () => {
@@ -133,5 +133,14 @@ describe('AIChatbot Local Knowledge Base', () => {
     const nationalRes = answerQueryWithKnowledgeBase('whats the national flood scenario in india');
     expect(nationalRes.text).toContain('National Flood Scenario — India');
     expect(nationalRes.text).toContain('1,500 Telemetry Stations');
+  });
+
+  it('answers greetings with warm welcoming persona instead of generic fallback', () => {
+    const helloRes = answerQueryWithKnowledgeBase('hello');
+    expect(helloRes.text).toContain('Namaste! Hello!');
+    expect(helloRes.text).toContain('FlowShield AI');
+
+    const hiRes = answerQueryWithKnowledgeBase('hi');
+    expect(hiRes.text).toContain('Namaste! Hello!');
   });
 });

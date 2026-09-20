@@ -159,12 +159,13 @@ export function createGrid(config: SimConfig): Cell[] {
       const popNoise = 0.5 + rng() * 0.5; // 0.5–1.0 random variation
       const population = Math.round(100 + popFactor * popNoise * 4900);
 
-      // Critical depth: lower in populated areas (infrastructure is sensitive)
-      // Range: 0.3 – 0.8 m
-      const criticalDepth = 0.3 + (1 - popFactor) * 0.4 + rng() * 0.1;
+      // Critical depth: realistic urban flood thresholds (5–12 cm of standing water)
+      // Lower-elevation populated areas flood at shallower depths
+      const criticalDepth = 0.04 + (1 - popFactor) * 0.06 + rng() * 0.02;
 
-      // Drainage rate: base 0.001 m/min, better drainage at higher elevation
-      const drainageRate = 0.001 + rawElevation * 0.002 + rng() * 0.0005;
+      // Drainage rate: realistic urban drainage ~0.0001–0.0005 m/min
+      // (was 10x too high, causing water to drain faster than it accumulated)
+      const drainageRate = 0.0001 + rawElevation * 0.0003 + rng() * 0.0001;
 
       // Ground capacity (for future saturation modelling)
       const groundCapacity = 0.05 + rawElevation * 0.1 + rng() * 0.02;

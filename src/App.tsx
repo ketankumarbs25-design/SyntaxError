@@ -22,6 +22,7 @@ const IncidentReporterPage = React.lazy(() => import('./pages/IncidentReporterPa
 const WatchlistPage = React.lazy(() => import('./pages/WatchlistPage').then((m) => ({ default: m.WatchlistPage })));
 const ExportPage = React.lazy(() => import('./pages/ExportPage').then((m) => ({ default: m.ExportPage })));
 const HelpPage = React.lazy(() => import('./pages/HelpPage').then((m) => ({ default: m.HelpPage })));
+const SimulatePage = React.lazy(() => import('./pages/SimulatePage').then((m) => ({ default: m.SimulatePage })));
 
 // Global 3D Satellite Earth Intro Overlay (lazy-loaded so Three.js stays in separate chunk)
 const GlobeIntroOverlay = React.lazy(() => import('./components/globe/GlobeIntroOverlay'));
@@ -74,6 +75,7 @@ const AnimatedPageRoutes: React.FC = () => {
           <Route path="/watchlist" element={<WatchlistPage />} />
           <Route path="/export" element={<ExportPage />} />
           <Route path="/help" element={<HelpPage />} />
+          <Route path="/simulate" element={<SimulatePage />} />
           {/* Catch-all fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

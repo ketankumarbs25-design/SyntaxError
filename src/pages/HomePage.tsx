@@ -214,7 +214,20 @@ export const HomePage: React.FC = () => {
           </span>
         </div>
 
-        <div className="bg-[var(--surface)] rounded-xl p-4 sm:p-5 border border-[var(--border)] shadow-xs flex flex-col justify-between h-full">
+        <div
+          className="rounded-xl p-4 sm:p-5 border shadow-sm flex flex-col justify-between h-full relative overflow-hidden"
+          style={{
+            background: counts.severe + counts.extreme > 0
+              ? 'rgba(198,40,40,0.12)'
+              : 'var(--surface)',
+            borderColor: counts.severe + counts.extreme > 0
+              ? 'rgba(198,40,40,0.6)'
+              : 'var(--border)',
+            boxShadow: counts.severe + counts.extreme > 0
+              ? '0 0 0 1px rgba(198,40,40,0.3), 0 4px 16px rgba(198,40,40,0.15)'
+              : undefined,
+          }}
+        >
           <div>
             <div className="flex items-center justify-between">
               <span className="text-xs font-medium text-[var(--text-muted)]">

@@ -37,19 +37,42 @@ export const NeedsAttentionList: React.FC<NeedsAttentionListProps> = ({ stations
     );
   }
 
+  const hasExtreme = attentionStations.some((s) => s.status === 'Extreme');
+
   return (
-    <div className="bg-[var(--surface)] rounded-xl p-4 sm:p-5 border border-[var(--border)] shadow-xs flex flex-col h-full">
+    <div
+      className="rounded-xl p-4 sm:p-5 border shadow-sm flex flex-col h-full"
+      style={{
+        background: hasExtreme ? 'rgba(198,40,40,0.07)' : 'var(--surface)',
+        borderColor: hasExtreme ? 'rgba(198,40,40,0.45)' : 'var(--border)',
+      }}
+    >
       <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-[var(--surface-2)] text-[var(--danger)] flex items-center justify-center border border-[var(--border)]">
+          <div
+            className="w-6 h-6 rounded-lg flex items-center justify-center border"
+            style={{
+              background: hasExtreme ? 'rgba(198,40,40,0.18)' : 'var(--surface-2)',
+              borderColor: hasExtreme ? 'rgba(198,40,40,0.5)' : 'var(--border)',
+              color: 'var(--danger)',
+            }}
+          >
             <ShieldAlert className="w-3.5 h-3.5" />
           </div>
           <h2 className="font-semibold text-sm text-[var(--text)]">
             {t.needsAttention} ({attentionStations.length})
           </h2>
         </div>
-        <span className="text-[11px] font-medium text-[var(--danger)]">
-          Live threat level
+        <span
+          className="text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"
+          style={{
+            background: hasExtreme ? 'rgba(198,40,40,0.2)' : 'rgba(240,138,36,0.15)',
+            color: hasExtreme ? 'var(--danger)' : 'var(--warning)',
+            border: `1px solid ${hasExtreme ? 'rgba(198,40,40,0.4)' : 'rgba(240,138,36,0.35)'}`,
+          }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: hasExtreme ? 'var(--danger)' : 'var(--warning)' }} />
+          {hasExtreme ? 'Extreme threat' : 'Active warnings'}
         </span>
       </div>
 
@@ -67,13 +90,24 @@ export const NeedsAttentionList: React.FC<NeedsAttentionListProps> = ({ stations
             >
               <NavLink
                 to={`/stations/${stn.id}`}
-                className={`block p-3 rounded-xl border transition-all hover:translate-y-[-1px] cursor-pointer group bg-[var(--surface-2)] ${
-                  isExtreme
-                    ? 'border-[var(--danger)]/50 hover:border-[var(--danger)]'
+                className="block p-3 rounded-xl border transition-all hover:translate-y-[-1px] cursor-pointer group"
+                style={{
+                  background: isExtreme
+                    ? 'rgba(198,40,40,0.1)'
                     : isSevere
-                    ? 'border-[var(--warning)]/50 hover:border-[var(--warning)]'
-                    : 'border-[var(--watch)]/50 hover:border-[var(--watch)]'
-                }`}
+                    ? 'rgba(240,138,36,0.08)'
+                    : 'var(--surface-2)',
+                  borderColor: isExtreme
+                    ? 'rgba(198,40,40,0.55)'
+                    : isSevere
+                    ? 'rgba(240,138,36,0.45)'
+                    : 'rgba(242,194,48,0.4)',
+                  boxShadow: isExtreme
+                    ? '0 0 0 1px rgba(198,40,40,0.2)'
+                    : isSevere
+                    ? '0 0 0 1px rgba(240,138,36,0.15)'
+                    : undefined,
+                }}
               >
                 <div className="flex items-start justify-between gap-2">
                   <div>
