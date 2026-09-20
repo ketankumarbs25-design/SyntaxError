@@ -1,6 +1,17 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { LogOut, User as UserIcon, Shield, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  LogOut,
+  User as UserIcon,
+  Shield,
+  ChevronDown,
+  CheckCircle2,
+  PhoneCall,
+  AlertTriangle,
+  Star,
+  DownloadCloud,
+} from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 // Google G Icon
@@ -25,10 +36,18 @@ const GoogleMiniIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h
   </svg>
 );
 
+// GitHub Mini Icon
+const GitHubMiniIcon: React.FC<{ className?: string }> = ({ className = 'w-3.5 h-3.5' }) => (
+  <svg className={className} viewBox="0 0 16 16" fill="currentColor">
+    <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+  </svg>
+);
+
 export const UserMenu: React.FC = () => {
-  const { user, isAuthenticated, openAuthModal, logout } = useAuth();
+  const { user, isAuthenticated, openAuthModal, logout, watchlist } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -45,29 +64,34 @@ export const UserMenu: React.FC = () => {
     return (
       <button
         onClick={() => openAuthModal('signin')}
-        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-cyan-500/20 to-blue-500/20 hover:from-cyan-500/30 hover:to-blue-500/30 border border-cyan-500/40 text-cyan-300 hover:text-white text-xs font-semibold shadow-sm transition-all cursor-pointer active:scale-95"
+        className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold shadow-xs transition-all cursor-pointer active:scale-95"
       >
         <UserIcon className="w-3.5 h-3.5" />
-        <span>Sign In</span>
+        <span>Login</span>
       </button>
     );
   }
+
+  const handleNavigate = (path: string) => {
+    setIsOpen(false);
+    navigate(path);
+  };
 
   return (
     <div className="relative" ref={menuRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800/90 border border-slate-700/60 transition-all cursor-pointer select-none"
+        className="flex items-center gap-2.5 p-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-700/70 transition-all cursor-pointer select-none shadow-xs"
       >
         <div className="relative">
           {user.avatar ? (
             <img
               src={user.avatar}
               alt={user.name}
-              className="w-7 h-7 rounded-lg object-cover border border-cyan-500/30"
+              className="w-7 h-7 rounded-lg object-cover border border-blue-400/40"
             />
           ) : (
-            <div className="w-7 h-7 rounded-lg bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-xs font-bold text-cyan-300">
+            <div className="w-7 h-7 rounded-lg bg-blue-600/30 border border-blue-400/50 flex items-center justify-center text-xs font-bold text-blue-300">
               {user.name.charAt(0).toUpperCase()}
             </div>
           )}
@@ -75,15 +99,15 @@ export const UserMenu: React.FC = () => {
         </div>
 
         <div className="hidden sm:block text-left">
-          <p className="text-xs font-semibold text-white leading-none truncate max-w-28">
+          <p className="text-xs font-bold text-white leading-none truncate max-w-28">
             {user.name}
           </p>
-          <p className="text-[10px] text-cyan-400 leading-none mt-1 truncate max-w-28">
-            {user.role}
+          <p className="text-[10px] text-blue-400 leading-none mt-1 truncate max-w-28 font-medium">
+            {user.provider === 'github' ? 'GitHub OAuth' : user.provider === 'google' ? 'Google SSO' : 'Verified Analyst'}
           </p>
         </div>
 
-        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+        <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
       </button>
 
       {/* Dropdown Menu */}
@@ -93,33 +117,38 @@ export const UserMenu: React.FC = () => {
             initial={{ opacity: 0, scale: 0.95, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 8 }}
-            transition={{ duration: 0.18, ease: 'easeOut' }}
-            className="absolute right-0 mt-2 w-64 rounded-2xl bg-slate-950/95 border border-slate-700/60 p-3 shadow-2xl backdrop-blur-2xl z-50 text-slate-200 overflow-hidden"
+            transition={{ duration: 0.16, ease: 'easeOut' }}
+            className="absolute right-0 mt-2 w-72 rounded-2xl bg-slate-950/98 border border-slate-700/80 p-3 shadow-2xl backdrop-blur-2xl z-[9999] text-slate-200 overflow-hidden"
           >
             {/* User Header */}
-            <div className="flex items-start gap-3 p-2 rounded-xl bg-slate-900/80 border border-slate-800">
+            <div className="flex items-start gap-3 p-2.5 rounded-xl bg-slate-900/90 border border-slate-800">
               {user.avatar ? (
                 <img
                   src={user.avatar}
                   alt={user.name}
-                  className="w-9 h-9 rounded-xl object-cover border border-cyan-500/40"
+                  className="w-10 h-10 rounded-xl object-cover border border-blue-500/40"
                 />
               ) : (
-                <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-sm font-bold text-cyan-300">
+                <div className="w-10 h-10 rounded-xl bg-blue-600/20 border border-blue-500/40 flex items-center justify-center text-sm font-bold text-blue-300">
                   {user.name.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold text-white truncate">{user.name}</p>
                 <p className="text-[11px] text-slate-400 truncate">{user.email}</p>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  {user.provider === 'google' ? (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[10px] text-blue-300">
+                <div className="flex items-center gap-1.5 mt-1">
+                  {user.provider === 'github' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 border border-slate-700 text-[10px] font-semibold text-slate-200">
+                      <GitHubMiniIcon />
+                      GitHub OAuth
+                    </span>
+                  ) : user.provider === 'google' ? (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-500/10 border border-blue-500/20 text-[10px] font-semibold text-blue-300">
                       <GoogleMiniIcon />
                       Google SSO
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-slate-800 text-[10px] text-slate-300">
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-slate-800 text-[10px] font-semibold text-slate-300">
                       Email & Password
                     </span>
                   )}
@@ -128,14 +157,63 @@ export const UserMenu: React.FC = () => {
             </div>
 
             {/* Privileges Badge */}
-            <div className="my-2.5 px-2.5 py-2 rounded-xl bg-cyan-500/5 border border-cyan-500/20 text-cyan-300 text-[11px] flex items-center gap-2">
-              <Shield className="w-4 h-4 text-cyan-400 shrink-0" />
+            <div className="my-2.5 px-2.5 py-2 rounded-xl bg-blue-950/40 border border-blue-800/40 text-blue-300 text-[11px] flex items-center gap-2">
+              <Shield className="w-4 h-4 text-blue-400 shrink-0" />
               <div>
-                <p className="font-semibold text-cyan-200">{user.role}</p>
-                <p className="text-[10px] text-cyan-400/80 flex items-center gap-1 mt-0.5">
-                  <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Full Hydrodynamic Telemetry Access
+                <p className="font-semibold text-blue-200">{user.role}</p>
+                <p className="text-[10px] text-blue-300/80 flex items-center gap-1 mt-0.5">
+                  <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Full CWC 1,500 Telemetry & SOS Rights
                 </p>
               </div>
+            </div>
+
+            {/* Unlocked Features Navigation */}
+            <div className="space-y-1 py-1 border-t border-b border-slate-800/80 my-2">
+              <button
+                onClick={() => handleNavigate('/contact')}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-white transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <PhoneCall className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Contact Us & SOS Control</span>
+                </div>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-emerald-950/60 text-emerald-300 border border-emerald-800/60 font-bold">24x7</span>
+              </button>
+
+              <button
+                onClick={() => handleNavigate('/report-incident')}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-white transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Report Flood Incident</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-normal">Ground truth</span>
+              </button>
+
+              <button
+                onClick={() => handleNavigate('/watchlist')}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-white transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <Star className="w-3.5 h-3.5 text-yellow-400" />
+                  <span>My Station Watchlist</span>
+                </div>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-blue-900/40 text-blue-300 font-bold">
+                  {watchlist.length} saved
+                </span>
+              </button>
+
+              <button
+                onClick={() => handleNavigate('/export')}
+                className="w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-semibold text-slate-200 hover:bg-slate-800/80 hover:text-white transition-colors cursor-pointer text-left"
+              >
+                <div className="flex items-center gap-2.5">
+                  <DownloadCloud className="w-3.5 h-3.5 text-cyan-400" />
+                  <span>Export Telemetry (CSV)</span>
+                </div>
+                <span className="text-[10px] text-slate-400 font-normal">Reports</span>
+              </button>
             </div>
 
             {/* Logout button */}
@@ -144,7 +222,7 @@ export const UserMenu: React.FC = () => {
                 logout();
                 setIsOpen(false);
               }}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-medium text-red-400 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 transition-all cursor-pointer mt-1"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
