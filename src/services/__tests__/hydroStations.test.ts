@@ -2,6 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   STATION_COORDS,
   owmProvider,
+  openMeteoFloodProvider,
   wrisProvider,
   getSyntheticReadings,
   getStationReadings,
@@ -112,9 +113,35 @@ describe('Hydro Station Multi-Provider Integration (hydroStations)', () => {
     });
   });
 
-  describe('5. getStationReadings Fanout & Fallback', () => {
+  describe('5. Open-Meteo Flood Provider', () => {
+    it('fetches and maps river discharge without requiring an API key', async () => {
+      const mockFloodRes = {
+        latitude: 25.63,
+        longitude: 85.1,
+        daily: {
+          time: ['2026-09-20'],
+          river_discharge: [1800.5],
+        },
+      };
+
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => mockFloodRes,
+      } as unknown as Response);
+
+      const readings = await openMeteoFloodProvider.fetchReadings(['stn-01']);
+      expect(readings.length).toBe(1);
+      expect(readings[0].stationId).toBe('stn-01');
+      expect(readings[0].source).toBe('openmeteo');
+      expect(readings[0].riverLevel_m).toBeGreaterThan(0);
+    });
+  });
+
+  describe('6. getStationReadings Fanout & Fallback', () => {
     it('falls back to synthetic data when providers fail (guaranteeing zero blank screen)', async () => {
-      // Force OWM provider to fail
+      // Force both providers to fail
+      vi.spyOn(openMeteoFloodProvider, 'fetchReadings').mockRejectedValue(new Error('OpenMeteo down'));
       vi.spyOn(owmProvider, 'fetchReadings').mockRejectedValue(new Error('Network down'));
 
       const readings = await getStationReadings(['stn-01', 'stn-02']);
@@ -126,6 +153,7 @@ describe('Hydro Station Multi-Provider Integration (hydroStations)', () => {
     });
 
     it('returns live OWM data when provider succeeds', async () => {
+      vi.spyOn(openMeteoFloodProvider, 'fetchReadings').mockResolvedValue([]);
       const mockLiveReading: StationReading = {
         stationId: 'stn-01',
         name: 'Patna Live',

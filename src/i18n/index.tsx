@@ -14,6 +14,7 @@ export interface Translations {
   navStations: string;
   navBasins: string;
   navBulletins: string;
+  navDisasters: string;
   navHelp: string;
 
   // Statuses
@@ -103,6 +104,7 @@ const en: Translations = {
   navStations: 'Stations',
   navBasins: 'Basins',
   navBulletins: 'Daily Bulletins',
+  navDisasters: 'Disaster History',
   navHelp: 'Help & Data',
 
   statusAll: 'All Statuses',
@@ -184,6 +186,7 @@ const hi: Translations = {
   navStations: 'स्टेशन सूची',
   navBasins: 'नदी बेसिन',
   navBulletins: 'दैनिक बुलेटिन',
+  navDisasters: 'आपदा इतिहास',
   navHelp: 'सहायता एवं डेटा',
 
   statusAll: 'सभी स्थितियां',

@@ -20,7 +20,7 @@ export interface StationReading {
   rainfall_mm_hr?: number;
   riverLevel_m?: number;
   timestamp: string;
-  source: 'openweathermap' | 'wris' | 'synthetic';
+  source: 'openweathermap' | 'wris' | 'synthetic' | 'openmeteo';
 }
 
 export interface StationProvider {
@@ -128,7 +128,61 @@ export const owmProvider: StationProvider = {
   },
 };
 
-// ─── 4. WRIS Provider (India Water Resources Info System — Edge Proxy Ready) ─
+// ─── 4. Open-Meteo Flood API Provider (High-Res River Discharge, No Key Needed) ─
+
+export const openMeteoFloodProvider: StationProvider = {
+  name: 'openmeteo',
+  async fetchReadings(stationIds: string[]): Promise<StationReading[]> {
+    const coords = stationIds
+      .map((id) => STATION_COORDS[id])
+      .filter((c): c is StationCoordEntry => Boolean(c));
+
+    if (coords.length === 0) return [];
+
+    const results = await Promise.all(
+      coords.map(async ({ id, name, lat, lon, riverLevel_m }) => {
+        try {
+          const url = `https://flood-api.open-meteo.com/v1/flood?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&daily=river_discharge&forecast_days=1`;
+          const res = await fetch(url);
+          if (!res.ok) throw new Error(`Open-Meteo Flood failed: ${res.status}`);
+          const data = await res.json();
+          const discharge = data.daily?.river_discharge?.[0];
+
+          let dynamicLevel = riverLevel_m;
+          if (typeof discharge === 'number' && riverLevel_m) {
+            // Dynamic hydrologic scaling based on discharge variation
+            const delta = Math.min(Math.max((discharge - 600) / 3000, -1.2), 2.0);
+            dynamicLevel = Number((riverLevel_m + delta).toFixed(2));
+          }
+
+          return {
+            stationId: id,
+            name,
+            lat,
+            lon,
+            riverLevel_m: dynamicLevel,
+            timestamp: new Date().toISOString(),
+            source: 'openmeteo' as const,
+          };
+        } catch {
+          return {
+            stationId: id,
+            name,
+            lat,
+            lon,
+            riverLevel_m,
+            timestamp: new Date().toISOString(),
+            source: 'synthetic' as const,
+          };
+        }
+      })
+    );
+
+    return results;
+  },
+};
+
+// ─── 5. WRIS Provider (India Water Resources Info System — Edge Proxy Ready) ─
 
 export const wrisProvider: StationProvider = {
   name: 'wris',
@@ -140,7 +194,7 @@ export const wrisProvider: StationProvider = {
   },
 };
 
-// ─── 5. Synthetic / Grid Engine Fallback ──────────────────────────────────────
+// ─── 6. Synthetic / Grid Engine Fallback ──────────────────────────────────────
 
 export function getSyntheticReadings(stationIds: string[]): StationReading[] {
   const targetIds = stationIds.length > 0 ? stationIds : Object.keys(STATION_COORDS);
@@ -165,13 +219,13 @@ export function getSyntheticReadings(stationIds: string[]): StationReading[] {
   return results;
 }
 
-// ─── 6. Multi-Provider Fanout with Resilient Fallback ─────────────────────────
+// ─── 7. Multi-Provider Fanout with Resilient Fallback ─────────────────────────
 
 export async function getStationReadings(stationIds: string[] = []): Promise<StationReading[]> {
   const targetIds =
     stationIds.length > 0 ? stationIds : Object.keys(STATION_COORDS).slice(0, 10);
 
-  const providers: StationProvider[] = [owmProvider, wrisProvider];
+  const providers: StationProvider[] = [openMeteoFloodProvider, owmProvider, wrisProvider];
 
   const settled = await Promise.allSettled(
     providers.map((p) => p.fetchReadings(targetIds))
@@ -179,7 +233,8 @@ export async function getStationReadings(stationIds: string[] = []): Promise<Sta
 
   const live = settled
     .filter((r): r is PromiseFulfilledResult<StationReading[]> => r.status === 'fulfilled')
-    .flatMap((r) => r.value);
+    .flatMap((r) => r.value)
+    .filter((reading) => reading.source !== 'synthetic');
 
   if (live.length === 0) {
     // Fall back to existing synthetic data so the demo never shows a blank screen

@@ -57,6 +57,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
     { to: '/stations', label: t.navStations },
     { to: '/basins', label: t.navBasins },
     { to: '/bulletins', label: t.navBulletins },
+    { to: '/disasters', label: t.navDisasters },
     { to: '/help', label: t.navHelp },
   ];
 

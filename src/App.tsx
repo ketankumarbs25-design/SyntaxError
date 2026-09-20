@@ -7,6 +7,7 @@ import { StationsPage } from './pages/StationsPage';
 import { StationDetailPage } from './pages/StationDetailPage';
 import { BasinsPage } from './pages/BasinsPage';
 import { BulletinsPage } from './pages/BulletinsPage';
+import { DisasterHistoryPage } from './pages/DisasterHistoryPage';
 import { HelpPage } from './pages/HelpPage';
 import { I18nProvider } from './i18n';
 import { Waves } from 'lucide-react';
@@ -44,6 +45,7 @@ const AppShell: React.FC = () => {
           <Route path="/stations/:id" element={<StationDetailPage />} />
           <Route path="/basins" element={<BasinsPage />} />
           <Route path="/bulletins" element={<BulletinsPage />} />
+          <Route path="/disasters" element={<DisasterHistoryPage />} />
           <Route path="/help" element={<HelpPage />} />
           <Route
             path="/login"
