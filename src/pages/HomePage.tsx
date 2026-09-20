@@ -79,12 +79,14 @@ export const HomePage: React.FC = () => {
 
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchesName = stn.name.toLowerCase().includes(q);
-        const matchesHi = stn.hindiName?.toLowerCase().includes(q);
-        const matchesRiver = stn.river.toLowerCase().includes(q);
+        const matchesName     = stn.name.toLowerCase().includes(q);
+        const matchesHi       = stn.hindiName?.toLowerCase().includes(q) ?? false;
+        const matchesRiver    = stn.river.toLowerCase().includes(q);
         const matchesDistrict = stn.district.toLowerCase().includes(q);
-        const matchesCode = stn.code.toLowerCase().includes(q);
-        return matchesName || matchesHi || matchesRiver || matchesDistrict || matchesCode;
+        const matchesState    = stn.state.toLowerCase().includes(q);
+        const matchesBasin    = stn.basin.toLowerCase().includes(q);
+        const matchesCode     = stn.code.toLowerCase().includes(q);
+        return matchesName || matchesHi || matchesRiver || matchesDistrict || matchesState || matchesBasin || matchesCode;
       }
 
       return true;
