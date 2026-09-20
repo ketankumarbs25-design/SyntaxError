@@ -9,15 +9,20 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;600;700&family=Inter:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Anti-flash: default to light theme for pristine FlowShield UI matching designs -->
+    <!-- Anti-flash: synchronize data-theme and dark class before paint -->
     <script>
       (function(){
         var k='flowshield-theme';
         var s;
         try{s=localStorage.getItem(k)}catch(e){}
-        if(s!=='light'&&s!=='dark'&&s!=='auto')s='light';
-        var dark=s==='dark';
-        document.documentElement.setAttribute('data-theme',dark?'dark':'light');
+        if(s!=='light'&&s!=='dark'&&s!=='auto')s='dark';
+        var isDark = s === 'dark' || (s === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', isDark ? 'dark' : 'light');
+        if (isDark) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
       })();
     </script>
   </head>

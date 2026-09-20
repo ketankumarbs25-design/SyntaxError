@@ -8,6 +8,8 @@ import {
   X,
   Clock,
   LogIn,
+  Sun,
+  Moon,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useI18n } from '../../i18n';
@@ -27,7 +29,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   isRefreshing = false,
 }) => {
   const { language, setLanguage, t } = useI18n();
-  const { setMode: setThemeMode, resolvedDark } = useTheme();
+  const { setMode: setThemeMode, resolvedDark, toggleTheme } = useTheme();
   const { isAuthenticated, isAuthModalOpen, openAuthModal, closeAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [istTimeStr, setIstTimeStr] = useState('');
@@ -116,7 +118,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
             ))}
           </nav>
 
-          {/* Right Controls: IST Clock, Auto-Refresh, Language, BlindPullToggle, Login/UserMenu */}
+          {/* Right Controls: IST Clock, Auto-Refresh, Language, 1-Click Dark/Light Toggle, BlindPullToggle, Login/UserMenu */}
           <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* Live IST clock badge */}
             <div className="hidden xl:flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs font-mono font-medium border border-slate-200/70 dark:border-slate-700/60">
@@ -145,8 +147,28 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
               <span>{language === 'en' ? 'हिन्दी' : 'EN'}</span>
             </button>
 
-            {/* Animated BlindPullToggle for Light/Dark Mode */}
-            <div className="flex items-center justify-center px-1" title="Pull cord to toggle dark/light theme">
+            {/* Prominent 1-Click Dark/Light Mode Switcher */}
+            <button
+              onClick={toggleTheme}
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-amber-300 text-xs font-bold border border-slate-200/80 dark:border-slate-700/80 transition-all cursor-pointer shadow-xs active:scale-95 select-none"
+              title={`Currently in ${resolvedDark ? 'Dark' : 'Light'} Mode. Click to switch to ${resolvedDark ? 'Light' : 'Dark'} Mode.`}
+              aria-label={`Toggle theme, current is ${resolvedDark ? 'dark' : 'light'}`}
+            >
+              {resolvedDark ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
+                  <span className="text-[11px] font-bold text-amber-300">Light</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-blue-600 fill-blue-600" />
+                  <span className="text-[11px] font-bold text-slate-700">Dark</span>
+                </>
+              )}
+            </button>
+
+            {/* Interactive BlindPullToggle */}
+            <div className="hidden sm:flex items-center justify-center px-1" title="Pull cord to toggle theme">
               <BlindPullToggle
                 isDark={resolvedDark}
                 onToggle={(nextDark) => setThemeMode(nextDark ? 'dark' : 'light')}
@@ -198,6 +220,28 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                 {item.label}
               </NavLink>
             ))}
+
+            {/* Mobile Theme Toggle Button */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <button
+                onClick={toggleTheme}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-800 dark:text-amber-300 border border-slate-200 dark:border-slate-700 cursor-pointer"
+              >
+                {resolvedDark ? (
+                  <>
+                    <Sun className="w-4 h-4 text-amber-400 fill-amber-400" />
+                    <span>Switch to Light Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Moon className="w-4 h-4 text-blue-600 fill-blue-600" />
+                    <span>Switch to Dark Mode</span>
+                  </>
+                )}
+              </button>
+              <span className="text-[11px] text-slate-400">{istTimeStr}</span>
+            </div>
+
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
               {isAuthenticated ? (
                 <UserMenu />
@@ -207,13 +251,12 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                     setMobileMenuOpen(false);
                     openAuthModal('signin');
                   }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 text-white text-xs font-semibold cursor-pointer"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>Account Login</span>
                 </button>
               )}
-              <span className="text-[11px] text-slate-400">{istTimeStr}</span>
             </div>
           </div>
         )}

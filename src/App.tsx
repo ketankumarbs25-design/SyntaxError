@@ -15,6 +15,7 @@ import { WatchlistPage } from './pages/WatchlistPage';
 import { ExportPage } from './pages/ExportPage';
 import { I18nProvider } from './i18n';
 import { AuthProvider } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Waves } from 'lucide-react';
 import { AuthComponent } from './components/ui/sign-up';
 
@@ -107,13 +108,15 @@ const AppShell: React.FC = () => {
 export const App: React.FC = () => {
   return (
     <QueryClientProvider client={queryClient}>
-      <I18nProvider>
-        <AuthProvider>
-          <HashRouter>
-            <AppShell />
-          </HashRouter>
-        </AuthProvider>
-      </I18nProvider>
+      <ThemeProvider>
+        <I18nProvider>
+          <AuthProvider>
+            <HashRouter>
+              <AppShell />
+            </HashRouter>
+          </AuthProvider>
+        </I18nProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
