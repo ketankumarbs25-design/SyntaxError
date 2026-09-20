@@ -16,7 +16,7 @@ export const GlobeStaticFallback: React.FC<GlobeStaticFallbackProps> = ({ onZoom
   return (
     <div className="w-full h-full relative flex items-center justify-center bg-[#0D0E15] overflow-hidden">
       {/* Satellite Earth globe with smooth CSS zoom animation */}
-      <div className="relative w-[340px] h-[340px] sm:w-[480px] sm:h-[480px] rounded-full border border-sky-400/40 shadow-[0_0_90px_rgba(56,189,248,0.25)] flex items-center justify-center animate-[scaleUp_2.8s_cubic-bezier(0.25,1,0.5,1)_forwards]">
+      <div className="relative w-[320px] h-[320px] sm:w-[460px] sm:h-[460px] rounded-full border border-sky-400/40 shadow-[0_0_90px_rgba(56,189,248,0.3)] flex items-center justify-center animate-scaleUp">
         {/* Satellite Earth Surface */}
         <div
           className="absolute inset-0 rounded-full overflow-hidden border border-sky-300/30"
@@ -37,7 +37,7 @@ export const GlobeStaticFallback: React.FC<GlobeStaticFallbackProps> = ({ onZoom
         >
           {/* Orbital rings */}
           <ellipse cx="200" cy="200" rx="195" ry="195" className="stroke-sky-400/40 fill-none stroke-[1.2]" />
-          <ellipse cx="200" cy="200" rx="195" ry="135" strokeDasharray="4 4" className="stroke-sky-400/30 fill-none stroke-[1.2]" />
+          <ellipse cx="200" cy="200" rx="195" ry="135" strokeDasharray="4 4" className="stroke-sky-400/30 fill-none stroke-[1.2] origin-center animate-globeOrbit" />
 
           {/* Authentic Official Survey of India boundary including PoK, Gilgit-Baltistan and Ladakh */}
           <path

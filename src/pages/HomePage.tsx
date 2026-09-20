@@ -13,9 +13,6 @@ import { AlertTicker } from '../components/common/AlertTicker';
 import { useI18n } from '../i18n';
 import { ZentraAnalyticsHero } from '../components/dashboard/ZentraAnalyticsHero';
 
-// Lazy-loaded 3D Globe Intro Animation to keep main bundle clean
-const GlobeIntroOverlay = React.lazy(() => import('../components/globe/GlobeIntroOverlay'));
-
 export const HomePage: React.FC = () => {
   const { t } = useI18n();
 
@@ -131,11 +128,6 @@ export const HomePage: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* ─── 3D Globe Intro Animation (plays once per session) ────────────── */}
-      <React.Suspense fallback={null}>
-        <GlobeIntroOverlay />
-      </React.Suspense>
-
       {/* ─── Top Live Flood Warning Marquee Ticker ────────────────────────── */}
       <AlertTicker
         bulletins={bulletins}

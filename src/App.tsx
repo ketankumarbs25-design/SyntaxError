@@ -18,6 +18,9 @@ import { HistoricalDisasterModal } from './components/historical/HistoricalDisas
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 
+// Global 3D Satellite Earth Intro Overlay (lazy-loaded so Three.js stays in separate chunk)
+const GlobeIntroOverlay = React.lazy(() => import('./components/globe/GlobeIntroOverlay'));
+
 // Configure TanStack Query client with 3-minute auto-refresh defaults
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -41,6 +44,11 @@ const AppShell: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#EAEBED] dark:bg-[#05060A] text-slate-900 dark:text-slate-100 p-2 sm:p-3.5 lg:p-5 transition-colors">
+      {/* 3D Satellite Earth Globe Intro Animation (once per session or on replay) */}
+      <React.Suspense fallback={null}>
+        <GlobeIntroOverlay />
+      </React.Suspense>
+
       <div className="max-w-[1560px] mx-auto min-h-[calc(100vh-28px)] bg-[#FAFBFD] dark:bg-[#0C0E17] rounded-[24px] sm:rounded-[32px] border border-white/90 dark:border-slate-800/80 shadow-[0_20px_60px_rgba(0,0,0,0.05)] dark:shadow-[0_25px_70px_rgba(0,0,0,0.45)] overflow-hidden flex flex-col">
         {/* Top Main Navigation */}
         <AppNavbar

@@ -16,22 +16,25 @@ export const GlobeIntroOverlay: React.FC<GlobeIntroOverlayProps> = ({ onComplete
   const [shouldRender, setShouldRender] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
 
-    // Check query parameter or hash to force replay for testing/review (?intro=true or #intro)
-    const urlParams = new URLSearchParams(window.location.search);
-    const forceReplay = urlParams.get('intro') === 'true' || window.location.hash.includes('intro');
-
-    // Check prefers-reduced-motion: if set, skip straight to 2D view (unless forced)
-    const prefersReducedMotion =
-      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (prefersReducedMotion && !forceReplay) {
-      try {
-        sessionStorage.setItem(STORAGE_KEY, 'true');
-      } catch {}
-      return false;
-    }
+    // Check query parameter in search or hash to force replay (?intro=true, #/?intro=true, or #intro)
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashPart = window.location.hash || '';
+    const hashQueryIdx = hashPart.indexOf('?');
+    const hashParams = hashQueryIdx !== -1 ? new URLSearchParams(hashPart.slice(hashQueryIdx)) : null;
+    const forceReplay =
+      searchParams.get('intro') === 'true' ||
+      (hashParams && hashParams.get('intro') === 'true') ||
+      hashPart.includes('intro');
 
     if (forceReplay) {
       return true;
+    }
+
+    // Check prefers-reduced-motion: if set, skip straight to 2D view (unless forced replay)
+    const prefersReducedMotion =
+      window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) {
+      return false;
     }
 
     // Check sessionStorage: only play once per session
@@ -49,13 +52,27 @@ export const GlobeIntroOverlay: React.FC<GlobeIntroOverlayProps> = ({ onComplete
     if (typeof window === 'undefined') return false;
     try {
       const canvas = document.createElement('canvas');
-      const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+      const gl = canvas.getContext('webgl2') || canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (!gl) return true;
     } catch {
       return true;
     }
     return false;
   });
+
+  // Replay event listener for manual trigger from UI / Menu Drawer
+  useEffect(() => {
+    const handleReplay = () => {
+      try {
+        sessionStorage.removeItem(STORAGE_KEY);
+      } catch {}
+      setIsFadingOut(false);
+      setShouldRender(true);
+    };
+
+    window.addEventListener('fs-replay-intro', handleReplay);
+    return () => window.removeEventListener('fs-replay-intro', handleReplay);
+  }, []);
 
   // Crossfade opacity state
   const [isFadingOut, setIsFadingOut] = useState(false);

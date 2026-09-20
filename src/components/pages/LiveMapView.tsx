@@ -18,9 +18,6 @@ interface LiveMapViewProps {
   lastUpdatedStr?: string;
 }
 
-// Lazy-loaded 3D Globe Intro Animation
-const GlobeIntroOverlay = React.lazy(() => import('../globe/GlobeIntroOverlay'));
-
 interface MapMarker {
   id: string;
   name: string;
@@ -73,11 +70,6 @@ export const LiveMapView: React.FC<LiveMapViewProps> = ({
 
   return (
     <div className="space-y-3 sm:space-y-4">
-      {/* ─── 3D Globe Intro Animation ─── */}
-      <React.Suspense fallback={null}>
-        <GlobeIntroOverlay />
-      </React.Suspense>
-
       {/* Title & Subtitle (exact match from Screenshot 2) */}
       <div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0D1F38] dark:text-white tracking-tight">
