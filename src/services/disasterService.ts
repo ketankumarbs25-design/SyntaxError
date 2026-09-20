@@ -229,11 +229,72 @@ export const HISTORICAL_INDIAN_DISASTERS: DisasterArticle[] = [
     economicLoss: '₹5,500+ Crore',
     keyRiversAffected: ['Mithi', 'Ulhas', 'Vashishti'],
   },
+  {
+    id: 'dis-2024-remal',
+    title: '2024 Severe Cyclonic Storm Remal & Bengal Coastal Deluge',
+    disasterType: 'Cyclone',
+    state: 'West Bengal',
+    year: 2024,
+    date: '2024-05-27',
+    source: 'IMD / West Bengal Disaster Management',
+    sourceUrl: 'https://pib.gov.in/PressReleasePage.aspx?PRID=2021876',
+    description: 'Remal made landfall with 135 km/h winds, driving extensive storm surges into the Sundarbans and causing massive river embankment breaches across South 24 Parganas and East Midnapore.',
+    severity: 'Critical',
+    affectedCount: '1,200,000+ residents impacted',
+    economicLoss: '₹6,000+ Crore',
+    keyRiversAffected: ['Matla', 'Bidyadhari', 'Hooghly'],
+  },
+  {
+    id: 'dis-2024-gujarat',
+    title: '2024 Gujarat & Vadodara Severe Inundation',
+    disasterType: 'Flood',
+    state: 'Gujarat',
+    year: 2024,
+    date: '2024-08-28',
+    source: 'Gujarat State Disaster Management Authority (GSDMA)',
+    sourceUrl: 'https://gsdma.org',
+    description: 'The Vishwamitri River in Vadodara breached its danger level of 26 feet to reach 37 feet after torrential downpours and discharges from Ajwa Dam, flooding over 60% of the city.',
+    severity: 'Critical',
+    affectedCount: '350,000+ people affected',
+    economicLoss: '₹2,500+ Crore',
+    keyRiversAffected: ['Vishwamitri', 'Dhadhar', 'Narmada'],
+  },
+  {
+    id: 'dis-2023-sikkim',
+    title: '2023 Sikkim South Lhonak Glacial Lake Outburst (GLOF)',
+    disasterType: 'Flash Flood',
+    state: 'Sikkim',
+    year: 2023,
+    date: '2023-10-04',
+    source: 'NDMA India / Central Water Commission',
+    sourceUrl: 'https://reliefweb.int/report/india/sikkim-flash-floods-situation-report-oct-2023',
+    description: 'Sudden breach of the South Lhonak glacial lake triggered a devastating flash flood surge down the Teesta basin, washing away the Chungthang Dam (Teesta III HEP) and severing NH-10.',
+    severity: 'Critical',
+    affectedCount: '88,000+ impacted across 4 districts',
+    economicLoss: '₹4,000+ Crore',
+    keyRiversAffected: ['Teesta', 'Lachen Chu', 'Lachung Chu'],
+  },
+  {
+    id: 'dis-1999-odisha',
+    title: '1999 Odisha Super Cyclone (05B)',
+    disasterType: 'Cyclone',
+    state: 'Odisha',
+    year: 1999,
+    date: '1999-10-29',
+    source: 'Government of Odisha / IMD',
+    sourceUrl: 'https://osdma.org',
+    description: 'The most intense recorded tropical cyclone in the North Indian Ocean struck near Paradip with sustained winds of 260 km/h, generating a 6-meter storm surge that travelled 35 km inland.',
+    severity: 'Critical',
+    affectedCount: '15,000,000+ people impacted',
+    economicLoss: '₹20,000+ Crore',
+    keyRiversAffected: ['Mahanadi', 'Brahmani', 'Baitarani', 'Devi'],
+  },
 ];
 
 // ─── STRICT RELEVANCE & ANTI-SLOP FILTER ─────────────────────────────────────
 const BANNED_PATTERNS = [
   /\bbigg?\s*boss\b/i,
+  /\b(trump|donald\s*trump|biden|white\s*house|us\s*politics|capitol|congressman|senator|republican|democrat)\b/i,
   /\b(bollywood|hollywood|cinema|movie|film|trailer|teaser)\b/i,
   /\b(actor|actress|celebrity|model)\b/i,
   /\bbox\s*office\b/i,
@@ -251,12 +312,23 @@ const DISASTER_KEYWORDS = [
   'evacuat', 'displaced', 'calamity', 'hazard'
 ];
 
+const INDIA_REGIONS = [
+  'india', 'bharat', 'assam', 'bihar', 'kerala', 'uttarakhand', 'himachal',
+  'odisha', 'west bengal', 'bengal', 'gujarat', 'tamil nadu', 'chennai',
+  'maharashtra', 'mumbai', 'delhi', 'yamuna', 'ganga', 'ganges', 'brahmaputra',
+  'godavari', 'krishna', 'narmada', 'tapi', 'mahanadi', 'cauvery', 'kaveri',
+  'jhelum', 'chenab', 'sutlej', 'beas', 'kosi', 'wayanad', 'sikkim', 'teesta',
+  'sundarbans', 'vadodara', 'patna', 'srinagar', 'cwc', 'ndma', 'imd'
+];
+
 export function isGenuineDisasterArticle(title: string, desc: string = ''): boolean {
   const text = `${title} ${desc}`.toLowerCase();
   for (const banned of BANNED_PATTERNS) {
     if (banned.test(text)) return false;
   }
-  return DISASTER_KEYWORDS.some((kw) => text.includes(kw));
+  const hasDisasterKw = DISASTER_KEYWORDS.some((kw) => text.includes(kw));
+  if (!hasDisasterKw) return false;
+  return INDIA_REGIONS.some((r) => text.includes(r));
 }
 
 // ─── 2. GDACS (Global Disaster Alert & Coordination System — UN / EC) ────────

@@ -55,6 +55,7 @@ describe('disasterService', () => {
     expect(isGenuineDisasterArticle('Bigg Boss 18 contestant elimination causes disaster inside house')).toBe(false);
     expect(isGenuineDisasterArticle('Bollywood movie trailer creates flood of comments on cinema page')).toBe(false);
     expect(isGenuineDisasterArticle('India cricket team scores massive win in storm match')).toBe(false);
+    expect(isGenuineDisasterArticle('Trump discusses flood relief in campaign speech on US politics')).toBe(false);
     expect(isGenuineDisasterArticle('Assam Brahmaputra river water level breaches danger mark in flood alert')).toBe(true);
     expect(isGenuineDisasterArticle('Kerala heavy monsoon rain causes flash flood in Wayanad')).toBe(true);
   });
