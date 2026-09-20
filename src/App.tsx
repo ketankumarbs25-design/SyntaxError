@@ -43,7 +43,7 @@ const AppShell: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-[#0B0F17] text-slate-900 dark:text-slate-100 flex flex-col transition-colors">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--text)] flex flex-col transition-colors">
       {/* 3D Satellite Earth Globe Intro Animation (once per session or on replay) */}
       <React.Suspense fallback={null}>
         <GlobeIntroOverlay />

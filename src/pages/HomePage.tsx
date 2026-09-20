@@ -142,95 +142,95 @@ export const HomePage: React.FC = () => {
       {/* ─── Clean Professional Header & Real Telemetry Status ───────────── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-1">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-[var(--text)]">
             National Flood Telemetry
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
             Real-time stage and reservoir inflow monitoring across 1,500 Central Water Commission stations
           </p>
         </div>
         <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-700 dark:text-emerald-400 text-xs font-semibold">
-            <Radio className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--surface)] border border-[var(--border)] text-[var(--live)] text-xs font-semibold">
+            <Radio className="w-3.5 h-3.5 text-[var(--live)] animate-pulse" />
             <span>Live REST Stream</span>
           </div>
-          <span className="text-xs text-slate-400">·</span>
-          <span className="text-xs text-slate-500 dark:text-slate-400">3-min auto sync</span>
+          <span className="text-xs text-[var(--border)]">·</span>
+          <span className="text-xs text-[var(--text-muted)]">3-min auto sync</span>
         </div>
       </div>
 
-      {/* ─── 4 Clean Real KPI Metric Cards (No AI fluff, No emojis) ──────── */}
+      {/* ─── 4 Clean Real KPI Metric Cards (Themed with Exact Tokens) ────── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
-          <span className="text-xs font-medium text-slate-500 dark:text-slate-400 block">
+        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
+          <span className="text-xs font-medium text-[var(--text-muted)] block">
             {t.totalStations}
           </span>
-          <div className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white mt-1">
+          <div className="text-2xl sm:text-3xl font-bold text-[var(--text)] mt-1">
             {counts.total.toLocaleString()}
           </div>
-          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+          <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
             Across {basins.length} river basins
           </span>
         </div>
 
-        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
+        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium text-[var(--text-muted)]">
               {t.statusNormal}
             </span>
-            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--level-normal)] shadow-xs" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-emerald-600 dark:text-emerald-400 mt-1">
+          <div className="text-2xl sm:text-3xl font-bold text-[var(--level-normal)] mt-1">
             {counts.normal.toLocaleString()}
           </div>
-          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+          <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
             Below warning thresholds
           </span>
         </div>
 
-        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
+        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium text-[var(--text-muted)]">
               {t.statusAboveNormal}
             </span>
-            <span className="w-2 h-2 rounded-full bg-amber-500" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--level-watch)] shadow-xs" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-amber-600 dark:text-amber-400 mt-1">
+          <div className="text-2xl sm:text-3xl font-bold text-[var(--level-watch)] mt-1">
             {counts.above.toLocaleString()}
           </div>
-          <span className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 block">
+          <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
             Approaching warning stage
           </span>
         </div>
 
-        <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs">
+        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-medium text-[var(--text-muted)]">
               High Flood Threat
             </span>
-            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--level-danger)] animate-pulse shadow-xs" />
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-red-600 dark:text-red-400 mt-1">
+          <div className="text-2xl sm:text-3xl font-bold text-[var(--level-danger)] mt-1">
             {(counts.severe + counts.extreme).toLocaleString()}
           </div>
-          <span className="text-[11px] text-red-600/80 dark:text-red-400/80 mt-1 block">
+          <span className="text-[11px] text-[var(--level-warning)] mt-1 block font-medium">
             {counts.severe} Severe · {counts.extreme} Extreme
           </span>
         </div>
       </div>
 
-      {/* ─── Multi-Facet Filter Bar (No Emojis) ───────────────────────────── */}
-      <div className="bg-white dark:bg-[#111827] rounded-xl p-4 border border-slate-200 dark:border-slate-800 shadow-2xs space-y-3">
+      {/* ─── Multi-Facet Filter Bar (No Emojis, Exact Themed Tokens) ───────── */}
+      <div className="bg-[var(--surface)] rounded-xl p-4 border border-[var(--border)] shadow-xs space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2.5">
           {/* Search Input */}
           <div className="relative md:col-span-1">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)]" />
             <input
               type="text"
               placeholder={t.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 transition-all"
+              className="w-full pl-9 pr-3 py-2 text-xs rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] focus:ring-1 focus:ring-[var(--primary)] transition-all"
             />
           </div>
 
@@ -239,7 +239,7 @@ export const HomePage: React.FC = () => {
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--primary)]"
             >
               <option value="all">{t.typeAll}</option>
               <option value="river-level">River Level Gauge</option>
@@ -252,7 +252,7 @@ export const HomePage: React.FC = () => {
             <select
               value={selectedStatus}
               onChange={(e) => setSelectedStatus(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--primary)]"
             >
               <option value="all">{t.statusAll}</option>
               <option value="Normal">{t.statusNormal}</option>
@@ -267,7 +267,7 @@ export const HomePage: React.FC = () => {
             <select
               value={selectedBasin}
               onChange={(e) => setSelectedBasin(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--primary)]"
             >
               <option value="all">{t.allBasins}</option>
               {basins.map((b) => (
@@ -283,7 +283,7 @@ export const HomePage: React.FC = () => {
             <select
               value={selectedState}
               onChange={(e) => setSelectedState(e.target.value)}
-              className="w-full px-3 py-2 text-xs rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
+              className="w-full px-3 py-2 text-xs rounded-lg bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] focus:outline-none focus:border-[var(--primary)]"
             >
               <option value="all">{t.allStates}</option>
               {states.map((st) => (
@@ -297,13 +297,13 @@ export const HomePage: React.FC = () => {
 
         {/* Filter Summary & Reset Button */}
         {hasActiveFilters && (
-          <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-            <span className="text-slate-500 dark:text-slate-400">
-              Showing <span className="font-bold text-slate-900 dark:text-white">{filteredStations.length}</span> of {stations.length} stations
+          <div className="flex items-center justify-between pt-2 border-t border-[var(--border)] text-xs">
+            <span className="text-[var(--text-muted)]">
+              Showing <span className="font-bold text-[var(--text)]">{filteredStations.length}</span> of {stations.length} stations
             </span>
             <button
               onClick={handleResetFilters}
-              className="inline-flex items-center gap-1.5 text-blue-600 hover:text-blue-700 font-semibold cursor-pointer"
+              className="inline-flex items-center gap-1.5 text-[var(--live)] hover:underline font-semibold cursor-pointer"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>{t.resetFilters}</span>
@@ -318,15 +318,15 @@ export const HomePage: React.FC = () => {
         <div className="lg:col-span-2 space-y-2">
           <div className="flex items-center justify-between px-1">
             <div className="flex items-center gap-2">
-              <h2 className="font-bold text-sm sm:text-base text-slate-900 dark:text-white">
+              <h2 className="font-bold text-sm sm:text-base text-[var(--text)]">
                 Live National Hydrographic Map
               </h2>
-              <span className="text-xs text-slate-500 dark:text-slate-400">
+              <span className="text-xs text-[var(--text-muted)]">
                 ({filteredStations.length} stations displayed)
               </span>
             </div>
-            <div className="text-[11px] text-slate-400 flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <div className="text-[11px] text-[var(--text-muted)] flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-[var(--live)] animate-pulse" />
               <span>Auto-refreshing (3m)</span>
             </div>
           </div>

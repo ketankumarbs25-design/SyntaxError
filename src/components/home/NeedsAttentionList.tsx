@@ -37,17 +37,17 @@ export const NeedsAttentionList: React.FC<NeedsAttentionListProps> = ({ stations
   }
 
   return (
-    <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-full">
-      <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-3">
+    <div className="bg-[var(--surface)] rounded-xl p-4 sm:p-5 border border-[var(--border)] shadow-xs flex flex-col h-full">
+      <div className="flex items-center justify-between pb-3 border-b border-[var(--border)] mb-3">
         <div className="flex items-center gap-2">
-          <div className="w-6 h-6 rounded-lg bg-red-100 dark:bg-red-950/50 text-red-600 flex items-center justify-center">
+          <div className="w-6 h-6 rounded-lg bg-[var(--bg)] text-[var(--level-danger)] flex items-center justify-center border border-[var(--border)]">
             <ShieldAlert className="w-3.5 h-3.5" />
           </div>
-          <h2 className="font-bold text-sm text-slate-900 dark:text-white">
+          <h2 className="font-bold text-sm text-[var(--text)]">
             {t.needsAttention} ({attentionStations.length})
           </h2>
         </div>
-        <span className="text-[11px] font-semibold text-red-600 dark:text-red-400">
+        <span className="text-[11px] font-semibold text-[var(--level-danger)]">
           Live Threat Level
         </span>
       </div>
@@ -61,57 +61,57 @@ export const NeedsAttentionList: React.FC<NeedsAttentionListProps> = ({ stations
             <NavLink
               key={stn.id}
               to={`/stations/${stn.id}`}
-              className={`block p-3 rounded-xl border transition-all hover:shadow-md cursor-pointer group ${
+              className={`block p-3 rounded-lg border transition-all hover:brightness-110 cursor-pointer group bg-[var(--bg)] ${
                 isExtreme
-                  ? 'bg-red-50/70 dark:bg-red-950/30 border-red-200 dark:border-red-900/60 hover:border-red-400'
+                  ? 'border-[var(--level-danger)]/70 hover:border-[var(--level-danger)]'
                   : isSevere
-                  ? 'bg-amber-50/60 dark:bg-amber-950/20 border-amber-200 dark:border-amber-900/60 hover:border-amber-400'
-                  : 'bg-yellow-50/40 dark:bg-yellow-950/20 border-yellow-200 dark:border-yellow-900/50 hover:border-yellow-400'
+                  ? 'border-[var(--level-warning)]/70 hover:border-[var(--level-warning)]'
+                  : 'border-[var(--level-watch)]/70 hover:border-[var(--level-watch)]'
               }`}
             >
               <div className="flex items-start justify-between gap-2">
                 <div>
                   <div className="flex items-center gap-1.5 flex-wrap">
-                    <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    <span className="font-bold text-xs sm:text-sm text-[var(--text)] group-hover:text-[var(--live)] transition-colors">
                       {language === 'hi' && stn.hindiName ? stn.hindiName : stn.name}
                     </span>
                     <span
-                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full ${
+                      className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md text-white ${
                         isExtreme
-                          ? 'bg-red-600 text-white animate-pulse'
+                          ? 'bg-[var(--level-danger)] animate-pulse'
                           : isSevere
-                          ? 'bg-orange-600 text-white'
-                          : 'bg-amber-500 text-white'
+                          ? 'bg-[var(--level-warning)]'
+                          : 'bg-[var(--level-watch)] text-slate-900'
                       }`}
                     >
                       {stn.status.toUpperCase()}
                     </span>
                   </div>
 
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  <p className="text-[11px] text-[var(--text-muted)] mt-0.5">
                     River {stn.river} • {stn.state} ({stn.basin} Basin)
                   </p>
                 </div>
 
-                <ArrowUpRight className="w-4 h-4 text-slate-400 group-hover:text-blue-600 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
+                <ArrowUpRight className="w-4 h-4 text-[var(--text-muted)] group-hover:text-[var(--live)] group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0" />
               </div>
 
               {/* Data Row: Current Level vs Danger Level */}
-              <div className="mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs">
+              <div className="mt-2.5 pt-2 border-t border-[var(--border)]/70 flex items-center justify-between text-xs">
                 <div>
-                  <span className="text-[10px] text-slate-400 block">Level / Danger</span>
-                  <span className="font-extrabold text-slate-900 dark:text-white text-xs">
+                  <span className="text-[10px] text-[var(--text-muted)] block">Level / Danger</span>
+                  <span className="font-extrabold text-[var(--text)] text-xs">
                     {stn.currentLevel.toFixed(2)}m / {stn.dangerLevel.toFixed(2)}m
                   </span>
                 </div>
 
                 <div className="text-right">
-                  <span className="text-[10px] text-slate-400 block">Threat Delta</span>
+                  <span className="text-[10px] text-[var(--text-muted)] block">Threat Delta</span>
                   <span
                     className={`font-black text-xs ${
                       stn.deltaToDangerM >= 0
-                        ? 'text-red-600 dark:text-red-400'
-                        : 'text-amber-600 dark:text-amber-400'
+                        ? 'text-[var(--level-danger)]'
+                        : 'text-[var(--level-warning)]'
                     }`}
                   >
                     {stn.deltaToDangerM >= 0
@@ -123,17 +123,17 @@ export const NeedsAttentionList: React.FC<NeedsAttentionListProps> = ({ stations
                 {/* Trend icon */}
                 <div className="flex items-center gap-1 font-semibold text-[11px]">
                   {stn.trend === 'Rising' ? (
-                    <span className="text-red-600 flex items-center gap-0.5">
+                    <span className="text-[var(--level-danger)] flex items-center gap-0.5">
                       <TrendingUp className="w-3.5 h-3.5" />
                       Rising
                     </span>
                   ) : stn.trend === 'Falling' ? (
-                    <span className="text-emerald-600 flex items-center gap-0.5">
+                    <span className="text-[var(--level-normal)] flex items-center gap-0.5">
                       <TrendingDown className="w-3.5 h-3.5" />
                       Falling
                     </span>
                   ) : (
-                    <span className="text-slate-500 flex items-center gap-0.5">
+                    <span className="text-[var(--text-muted)] flex items-center gap-0.5">
                       <Minus className="w-3.5 h-3.5" />
                       Steady
                     </span>

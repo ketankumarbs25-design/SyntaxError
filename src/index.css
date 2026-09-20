@@ -10,127 +10,158 @@
    The anti-flash inline script in index.html sets data-theme before paint.
 ═══════════════════════════════════════════════════════════════════════════════ */
 
-/* ─── Dark Theme (default) ──────────────────────────────────────────────────── */
+/* ─── Oceanic Hydrological Engineering Theme ────────────────────────────── */
 :root,
-[data-theme="dark"] {
-  /* ── Backgrounds — warm-neutral dark (slight purple-gray shift, not cold blue) */
-  --bg-base:              #0D0E15;
-  --bg-surface:           #171924;
-  --bg-elevated:          #1F2135;
-  --bg-hover:             #272A42;
-  --bg-glass:             rgba(23, 25, 36, 0.88);
+[data-theme="dark"],
+[data-theme="light"] {
+  --bg: #0B1F33;
+  --surface: #1E3A52;
+  --primary: #1F6FB2;
+  --live: #22B8CF;
+  --text: #F3F7FA;
+  --text-muted: #B8C7D6;
+  --border: #5B7085;
 
-  /* ── Borders */
-  --border-subtle:        #1F2135;   /* nearly flush with bg-elevated */
-  --border-strong:        #292D48;
+  --level-normal: #1E7F4A;
+  --level-watch: #F2C230;
+  --level-warning: #F08A24;
+  --level-danger: #C62828;
 
-  /* ── Foreground / text */
-  --text-primary:         #EDF0F8;
-  --text-secondary:       #98A0BA;
-  --text-muted:           #5C6485;
-  --text-faint:           #3B3F5A;
+  /* Aliased for full codebase backward compatibility */
+  --bg-base: #0B1F33;
+  --bg-surface: #1E3A52;
+  --bg-elevated: #244662;
+  --bg-hover: #2B5274;
+  --bg-glass: rgba(30, 58, 82, 0.94);
 
-  /* ── Brand accent — custom indigo-blue, not a Tailwind-preset value */
-  --accent:               #627AEB;
-  --accent-subtle:        rgba(98, 122, 235, 0.10);
-  --accent-border:        rgba(98, 122, 235, 0.28);
+  --border-subtle: #5B7085;
+  --border-strong: #7890A8;
 
-  /* ── Semantic status — tuned, slightly desaturated. "Serious," not "traffic light" */
-  --status-safe:          #38B27A;   /* muted sage-green, not vivid green-500 */
-  --status-safe-subtle:   rgba(56, 178, 122, 0.08);
-  --status-safe-border:   rgba(56, 178, 122, 0.25);
+  --text-primary: #F3F7FA;
+  --text-secondary: #B8C7D6;
+  --text-muted: #8FA4B8;
+  --text-faint: #6A8298;
 
-  --status-warn:          #CB8C35;   /* warm amber-brown, not fluorescent */
-  --status-warn-subtle:   rgba(203, 140, 53, 0.09);
-  --status-warn-border:   rgba(203, 140, 53, 0.28);
+  --accent: #1F6FB2;
+  --accent-subtle: rgba(31, 111, 178, 0.15);
+  --accent-border: #5B7085;
 
-  --status-crit:          #D64F4F;   /* desaturated red, not pure traffic-light red */
-  --status-crit-subtle:   rgba(214, 79, 79, 0.09);
-  --status-crit-border:   rgba(214, 79, 79, 0.28);
+  --status-safe: #1E7F4A;
+  --status-safe-subtle: rgba(30, 127, 74, 0.15);
+  --status-safe-border: #1E7F4A;
 
-  /* ── Header */
-  --header-bg:            rgba(13, 14, 21, 0.93);
-  --header-border:        #1F2135;
+  --status-warn: #F2C230;
+  --status-warn-subtle: rgba(242, 194, 48, 0.15);
+  --status-warn-border: #F2C230;
 
-  /* ── Scrollbar */
-  --scrollbar-track:      rgba(13, 14, 21, 0.7);
-  --scrollbar-thumb:      #1F2135;
-  --scrollbar-thumb-hover:#292D48;
+  --status-crit: #C62828;
+  --status-crit-subtle: rgba(198, 40, 40, 0.15);
+  --status-crit-border: #C62828;
 
-  /* ── Theme-switcher dropdown */
-  --dropdown-bg:          #171924;
-  --dropdown-border:      #1F2135;
-  --dropdown-shadow:      0 24px 64px -8px rgba(0, 0, 0, 0.72);
-  --option-active-bg:     rgba(98, 122, 235, 0.10);
-  --option-active-text:   #8FA0F5;
-  --option-idle-bg:       transparent;
-  --option-idle-label:    #EDF0F8;
-  --option-idle-sub:      #5C6485;
-  --option-hover-bg:      rgba(255, 255, 255, 0.04);
-  --dropdown-footer-border: rgba(255, 255, 255, 0.06);
-  --btn-idle-bg:          transparent;
-  --btn-idle-text:        #98A0BA;
+  --header-bg: #0B1F33;
+  --header-border: #5B7085;
+
+  --scrollbar-track: #0B1F33;
+  --scrollbar-thumb: #5B7085;
+  --scrollbar-thumb-hover: #7890A8;
+
+  --dropdown-bg: #1E3A52;
+  --dropdown-border: #5B7085;
+  --dropdown-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+  --option-active-bg: #1F6FB2;
+  --option-active-text: #F3F7FA;
+  --option-idle-bg: transparent;
+  --option-idle-label: #F3F7FA;
+  --option-idle-sub: #B8C7D6;
+  --option-hover-bg: rgba(91, 112, 133, 0.3);
+  --dropdown-footer-border: #5B7085;
+  --btn-idle-bg: transparent;
+  --btn-idle-text: #B8C7D6;
 }
 
-/* ─── Light Theme ────────────────────────────────────────────────────────────── */
+@theme {
+  --color-bg: #0B1F33;
+  --color-surface: #1E3A52;
+  --color-primary: #1F6FB2;
+  --color-live: #22B8CF;
+  --color-text: #F3F7FA;
+  --color-text-muted: #B8C7D6;
+  --color-border: #5B7085;
+
+  --color-level-normal: #1E7F4A;
+  --color-level-watch: #F2C230;
+  --color-level-warning: #F08A24;
+  --color-level-danger: #C62828;
+}
+
+html, body {
+  background-color: var(--bg);
+  color: var(--text);
+}
+
+/* ─── Light Mode Alternative Palette (Hydrological Marine Slate) ──────────── */
 [data-theme="light"] {
-  /* ── Backgrounds */
-  --bg-base:              #F3F4F9;   /* slightly cool off-white, not stark white */
-  --bg-surface:           #FFFFFF;
-  --bg-elevated:          #ECEEF5;
-  --bg-hover:             #E2E4EF;
-  --bg-glass:             rgba(255, 255, 255, 0.90);
+  --bg: #F0F4F8;
+  --surface: #FFFFFF;
+  --primary: #1F6FB2;
+  --live: #0E9AAC;
+  --text: #0B1F33;
+  --text-muted: #5B7085;
+  --border: #C2D1DE;
 
-  /* ── Borders */
-  --border-subtle:        #DDE0EE;
-  --border-strong:        #C8CCDE;
+  --level-normal: #1E7F4A;
+  --level-watch: #D9A404;
+  --level-warning: #E07010;
+  --level-danger: #C62828;
 
-  /* ── Foreground / text */
-  --text-primary:         #0F1022;
-  --text-secondary:       #374162;
-  --text-muted:           #6B7291;
-  --text-faint:           #9BA2BF;
+  --bg-base: #F0F4F8;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #E4ECF3;
+  --bg-hover: #D7E3ED;
+  --bg-glass: rgba(255, 255, 255, 0.94);
 
-  /* ── Accent (slightly deeper for light-mode contrast) */
-  --accent:               #4A68E0;
-  --accent-subtle:        rgba(74, 104, 224, 0.09);
-  --accent-border:        rgba(74, 104, 224, 0.25);
+  --border-subtle: #C2D1DE;
+  --border-strong: #9CB2C5;
 
-  /* ── Semantic status */
-  --status-safe:          #1E9160;
-  --status-safe-subtle:   rgba(30, 145, 96, 0.08);
-  --status-safe-border:   rgba(30, 145, 96, 0.22);
+  --text-primary: #0B1F33;
+  --text-secondary: #3D556B;
+  --text-muted: #5B7085;
+  --text-faint: #8AA0B4;
 
-  --status-warn:          #AE6E15;
-  --status-warn-subtle:   rgba(174, 110, 21, 0.08);
-  --status-warn-border:   rgba(174, 110, 21, 0.22);
+  --accent: #1F6FB2;
+  --accent-subtle: rgba(31, 111, 178, 0.1);
+  --accent-border: #C2D1DE;
 
-  --status-crit:          #C03939;
-  --status-crit-subtle:   rgba(192, 57, 57, 0.07);
-  --status-crit-border:   rgba(192, 57, 57, 0.20);
+  --status-safe: #1E7F4A;
+  --status-safe-subtle: rgba(30, 127, 74, 0.1);
+  --status-safe-border: #1E7F4A;
 
-  /* ── Header */
-  --header-bg:            rgba(243, 244, 249, 0.94);
-  --header-border:        #DDE0EE;
+  --status-warn: #D9A404;
+  --status-warn-subtle: rgba(217, 164, 4, 0.1);
+  --status-warn-border: #D9A404;
 
-  /* ── Scrollbar */
-  --scrollbar-track:      #ECEEF5;
-  --scrollbar-thumb:      #C8CCDE;
-  --scrollbar-thumb-hover:#9BA2BF;
+  --status-crit: #C62828;
+  --status-crit-subtle: rgba(198, 40, 40, 0.1);
+  --status-crit-border: #C62828;
 
-  /* ── Theme-switcher dropdown */
-  --dropdown-bg:          #FFFFFF;
-  --dropdown-border:      #DDE0EE;
-  --dropdown-shadow:      0 24px 64px -8px rgba(15, 16, 34, 0.18);
-  --option-active-bg:     rgba(74, 104, 224, 0.10);
-  --option-active-text:   #3A56C8;
-  --option-idle-bg:       transparent;
-  --option-idle-label:    #0F1022;
-  --option-idle-sub:      #6B7291;
-  --option-hover-bg:      rgba(0, 0, 0, 0.04);
-  --dropdown-footer-border: rgba(0, 0, 0, 0.08);
-  --btn-idle-bg:          transparent;
-  --btn-idle-text:        #6B7291;
+  --header-bg: #FFFFFF;
+  --header-border: #C2D1DE;
+  --scrollbar-track: #F0F4F8;
+  --scrollbar-thumb: #C2D1DE;
+  --scrollbar-thumb-hover: #9CB2C5;
+
+  --dropdown-bg: #FFFFFF;
+  --dropdown-border: #C2D1DE;
+  --dropdown-shadow: 0 16px 40px rgba(11, 31, 51, 0.12);
+  --option-active-bg: #1F6FB2;
+  --option-active-text: #FFFFFF;
+  --option-idle-bg: transparent;
+  --option-idle-label: #0B1F33;
+  --option-idle-sub: #5B7085;
+  --option-hover-bg: rgba(194, 209, 222, 0.3);
+  --dropdown-footer-border: #C2D1DE;
+  --btn-idle-bg: transparent;
+  --btn-idle-text: #5B7085;
 }
 
 /* ─── Font Stacks ────────────────────────────────────────────────────────────── */
