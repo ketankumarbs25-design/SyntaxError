@@ -20,6 +20,8 @@ export const ContactPage: React.FC = () => {
   const [department, setDepartment] = useState<'CWC Telemetry Desk' | 'NDMA Disaster Relief' | 'Basin Inflow Operations' | 'Technical Support'>('CWC Telemetry Desk');
   const [priority, setPriority] = useState<'Low' | 'Medium' | 'High' | 'CRITICAL EMERGENCY'>('High');
   const [basin, setBasin] = useState('Brahmaputra');
+  const [customName, setCustomName] = useState('');
+  const [customEmail, setCustomEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [submittedCode, setSubmittedCode] = useState<string | null>(null);
@@ -190,9 +192,11 @@ export const ContactPage: React.FC = () => {
                 </label>
                 <input
                   type="text"
-                  disabled={isAuthenticated}
-                  value={user ? user.name : 'Field Observer'}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
+                  readOnly={isAuthenticated}
+                  value={isAuthenticated ? (user?.name || 'Verified Observer') : customName}
+                  onChange={(e) => setCustomName(e.target.value)}
+                  placeholder="e.g. Rahul Sharma"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -202,9 +206,11 @@ export const ContactPage: React.FC = () => {
                 </label>
                 <input
                   type="email"
-                  disabled={isAuthenticated}
-                  value={user ? user.email : 'observer@flowshield.org'}
-                  className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none"
+                  readOnly={isAuthenticated}
+                  value={isAuthenticated ? (user?.email || 'observer@flowshield.org') : customEmail}
+                  onChange={(e) => setCustomEmail(e.target.value)}
+                  placeholder="e.g. observer@flowshield.org"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-800 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
             </div>
