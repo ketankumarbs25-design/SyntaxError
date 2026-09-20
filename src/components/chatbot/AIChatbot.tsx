@@ -1,17 +1,16 @@
 /**
-* FLOWSHIELD — AI Chatbot powered by Gemini
-*
-* A floating chat assistant that can:
-* - Answer questions about floods, weather, the simulation
-* - Control the simulation (change rainfall, play/pause, presets, etc.)
-* - Explain what's happening in the current state
-* - Search weather for locations
-*
-* Uses Gemini 2.0 Flash with function calling for website control.
-*/
+ * FLOWSHIELD — AI Chatbot powered by Gemini
+ *
+ * A floating flood intelligence assistant that can:
+ * - Answer questions about floods, weather, and disaster safety
+ * - Provide instant emergency helplines & CWC telemetry updates
+ * - Control the simulation when active
+ * - Fallback gracefully with curated disaster intelligence if offline
+ */
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Bot, X, Send } from 'lucide-react';
 import { API_KEYS, API_ENDPOINTS } from '../../config/api';
 import type { SimConfig, SimStats } from '../../sim/types';
 
@@ -44,7 +43,7 @@ interface ChatMessage {
   timestamp: number;
 }
 
-interface SimulationContext {
+export interface SimulationContext {
   config: SimConfig;
   stats: SimStats;
   currentTime: number;
@@ -56,10 +55,36 @@ interface SimulationContext {
   blockedCellsCount: number;
 }
 
-interface AIChatbotProps {
-  context: SimulationContext;
-  onAction: (action: ChatAction) => void;
+export interface AIChatbotProps {
+  context?: SimulationContext;
+  onAction?: (action: ChatAction) => void;
 }
+
+const DEFAULT_SIM_CONTEXT: SimulationContext = {
+  config: {
+    rainfallIntensity: 40,
+    rainfallDuration: 60,
+    drainageEfficiency: 0.75,
+    elevationMultiplier: 1.0,
+    rows: 8,
+    cols: 8,
+  } as any,
+  stats: {
+    safeCells: 58,
+    warningCells: 4,
+    criticalCells: 2,
+    maxWater: 1.25,
+    avgWater: 0.18,
+    affectedPopulation: 14500,
+  } as any,
+  currentTime: 15,
+  totalSteps: 120,
+  isPlaying: false,
+  playbackSpeed: 1,
+  isDemoMode: false,
+  emergencyMode: false,
+  blockedCellsCount: 0,
+};
 
 // ─── Gemini Function Definitions ────────────────────────────────────────────
 
@@ -100,17 +125,6 @@ const GEMINI_TOOLS = [
         },
       },
       {
-        name: 'change_terrain_steepness',
-        description: 'Change how steep/hilly the terrain is. 0.2 = flat, 1.0 = normal, 2.5 = very steep.',
-        parameters: {
-          type: 'object',
-          properties: {
-            multiplier: { type: 'number', description: 'Terrain steepness multiplier (0.2-2.5)' },
-          },
-          required: ['multiplier'],
-        },
-      },
-      {
         name: 'set_storm_preset',
         description: 'Apply a predefined storm scenario. Options: "light" (20 mm/hr), "heavy" (80 mm/hr), "extreme" (160 mm/hr).',
         parameters: {
@@ -120,16 +134,6 @@ const GEMINI_TOOLS = [
           },
           required: ['preset'],
         },
-      },
-      {
-        name: 'toggle_emergency_mode',
-        description: 'Toggle emergency mode which highlights only flooding zones and dims safe zones.',
-        parameters: { type: 'object', properties: {} },
-      },
-      {
-        name: 'start_demo',
-        description: 'Start the 90-second automated demo that shows all flood phases from rain to recovery.',
-        parameters: { type: 'object', properties: {} },
       },
       {
         name: 'play_simulation',
@@ -148,7 +152,7 @@ const GEMINI_TOOLS = [
       },
       {
         name: 'search_location',
-        description: 'Search for real-time weather data for a specific city/location. This will populate the weather panel.',
+        description: 'Search for real-time weather data for a specific city/location.',
         parameters: {
           type: 'object',
           properties: {
@@ -157,90 +161,57 @@ const GEMINI_TOOLS = [
           required: ['city'],
         },
       },
-      {
-        name: 'select_zone',
-        description: 'Select and highlight a specific zone on the flood map. Zones are named like A1, A2, B1, B2, etc. (A-H rows, 1-8 columns).',
-        parameters: {
-          type: 'object',
-          properties: {
-            zone: { type: 'string', description: 'Zone name like A1, B3, H8' },
-          },
-          required: ['zone'],
-        },
-      },
-      {
-        name: 'open_auth',
-        description: 'Open the authentication sign in / sign up dialog for users to login with Google or email.',
-        parameters: {
-          type: 'object',
-          properties: {
-            mode: { type: 'string', description: 'Mode to open: "signin" for existing users or "signup" for new users' },
-          },
-        },
-      },
     ],
   },
 ];
 
-function buildSystemPrompt(ctx: SimulationContext): string {
-  const statusEmoji =
-    ctx.stats.criticalCells > 0
-      ? '🚨 FLOODING'
-      : ctx.stats.warningCells > 0
-        ? '⚠️ AT RISK'
-        : '✅ ALL SAFE';
+function buildSystemPrompt(_ctx: SimulationContext): string {
+  return `You are FlowShield AI — the flood intelligence and disaster assistant for FlowShield India (monitoring 1,500 Central Water Commission stations).
+## Your Capabilities:
+- Answer questions on flood warnings, flood preparedness, river basin telemetry, emergency numbers (NDRF: 011-24363260, State: 1070, District: 1077, National: 112).
+- Help citizens and operators interpret water stage levels, warning thresholds, and dam discharges.
+- Be concise, calm, actionable, and authoritative.`;
+}
 
-  return `You are FlowShield AI — a friendly, helpful assistant for the FlowShield flood simulation system.
+function getLocalKnowledgeResponse(query: string): string {
+  const q = query.toLowerCase();
 
-## Your Role
-- Help users understand flood risks and what the simulation shows
-- Answer questions about floods, weather, drainage, and water management
-- Control the simulation when users ask (use the provided functions)
-- Give clear, simple explanations — avoid technical jargon
-- Be conversational and friendly, use emojis when appropriate
-- Keep responses concise (2-4 sentences usually)
+  if (q.includes('help') && (q.includes('number') || q.includes('line') || q.includes('contact') || q.includes('sos') || q.includes('emergency'))) {
+    return `🚨 **National Emergency Flood Helplines (India):**\n\n• **112** — Single National Emergency Number\n• **1070** — State Disaster Management Authority (Toll-Free)\n• **1077** — District Disaster Management Control Room\n• **011-24363260** — National Disaster Response Force (NDRF HQ)\n• **1072** — Indian Railways Disaster Relief Helpline\n\nFor real-time local contacts by state, navigate to the **Contact & SOS** tab.`;
+  }
 
-## Current Simulation State
-- Status: ${statusEmoji}
-- Simulation Time: ${ctx.currentTime.toFixed(0)} minutes (of ${ctx.totalSteps - 1} total)
-- Rainfall: ${ctx.config.rainfallIntensity} mm/hr for ${ctx.config.rainfallDuration} minutes
-- ${ctx.currentTime < ctx.config.rainfallDuration ? '🌧️ Currently raining' : '☀️ Rain has stopped'}
-- Safe Zones: ${ctx.stats.safeCells} | At Risk: ${ctx.stats.warningCells} | Flooding: ${ctx.stats.criticalCells}
-- Deepest Water: ${ctx.stats.maxWater.toFixed(2)}m | Average: ${ctx.stats.avgWater.toFixed(3)}m
-- People Affected: ${ctx.stats.affectedPopulation.toLocaleString()}
-- Grid: ${ctx.config.rows}×${ctx.config.cols} (zones A1 through H8)
-- Drainage Quality: ${Math.round(ctx.config.drainageEfficiency * 100)}%
-- Terrain Steepness: ${ctx.config.elevationMultiplier.toFixed(1)}x
-- Playback: ${ctx.isPlaying ? 'Playing' : 'Paused'} at ${ctx.playbackSpeed}x speed
-- Emergency Mode: ${ctx.emergencyMode ? 'ON' : 'OFF'}
-- Demo Mode: ${ctx.isDemoMode ? 'Active' : 'OFF'}
-- Blocked Zones: ${ctx.blockedCellsCount}
+  if (q.includes('safety') || q.includes('precaution') || q.includes('what to do') || q.includes('advice')) {
+    return `🛡️ **Official Flood Safety Guidelines (NDMA):**\n\n1. **High Ground:** Move immediately to elevated structures or designated relief shelters.\n2. **Avoid Moving Water:** Never walk, swim, or drive through flood waters (just 15 cm of moving water can knock an adult down; 30 cm can float a vehicle).\n3. **Power Isolation:** Switch off all electricity main breakers and LPG gas regulators before leaving.\n4. **Emergency Kit:** Keep drinking water, battery torch, first-aid kit, ORS, dry rations, and ID documents wrapped in waterproof bags.\n5. **Boil Water:** Drink only boiled or chlorinated water to prevent waterborne epidemics.`;
+  }
 
-## About FlowShield
-FlowShield is a flood simulation that models rainfall, water flow between terrain zones, and drainage. It uses an 8×8 grid where each zone has different elevation, drainage, and population. Users can:
-- Adjust storm settings (intensity, duration)
-- Watch the simulation play over time
-- See real-time weather for any city
-- Compare light/heavy/extreme storm scenarios
-- Click zones to inspect details
-- Block drainage channels to test scenarios
+  if (q.includes('station') || q.includes('gauge') || q.includes('cwc') || q.includes('telemetry') || q.includes('basin')) {
+    return `🌊 **CWC Hydrographic Network Telemetry:**\n\n• FlowShield tracks **1,500 active hydrological telemetry stations** across India's 20 major river basins.\n• Stations measure stage level (in meters) and reservoir storage inflow (in cusecs / cumecs).\n• Flood alert tiers: **Normal** (below warning), **Above Normal** (within 0.5m of warning), **Severe** (breached warning stage), and **Extreme** (surpassed Highest Flood Level / HFL).\n• Check the live **Stations** or **Basins** page for real-time stage hydrographs.`;
+  }
 
-## Important Rules
-- If the user asks to do something, use the appropriate function — don't just describe what to do
-- If asked about a specific zone, explain its status based on the simulation data
-- If asked for recommendations, consider the current flood status
-- Always be helpful and action-oriented`;
+  if (q.includes('disaster') || q.includes('history') || q.includes('kedarnath') || q.includes('kerala') || q.includes('wayanad')) {
+    return `📜 **Indian Natural Disaster Archives:**\n\nFlowShield provides verified documentation on landmark events including:\n• **2024 Wayanad Catastrophe** (Kerala mudslides & flash deluge)\n• **2024 Assam & Brahmaputra Floods** (2.4M people affected)\n• **2023 Yamuna Historic Breach** (208.66m all-time record in Delhi)\n• **2018 Great Kerala Floods** (Centennial deluge, 35 dams opened)\n• **2013 Kedarnath Himalayan Deluge** (Chorabari moraine outburst)\n\nView complete situation reports under the **Disasters** tab.`;
+  }
+
+  if (q.includes('globe') || q.includes('3d') || q.includes('satellite') || q.includes('earth')) {
+    return `🌍 **3D Satellite Earth Globe:**\n\nYou can launch the 3D Satellite Earth Globe anytime by clicking the **3D Globe** button in the top navigation bar or the **3D Earth** button in the map controls! It renders a 60fps orbital perspective centered on the Survey of India boundary.`;
+  }
+
+  return `FlowShield monitors real-time flood telemetry across 1,500 Central Water Commission stations in India.\n\nHow can I assist you today?\n• Check **emergency helplines (112 / 1070)**\n• Review **flood safety & evacuation guidelines**\n• Understand **CWC station warning thresholds**\n• Explore **landmark disaster archives**`;
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
 
-export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
+export const AIChatbot: React.FC<AIChatbotProps> = ({
+  context = DEFAULT_SIM_CONTEXT,
+  onAction = () => {},
+}) => {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(() => [
     {
       id: 'welcome',
       role: 'assistant',
-      content: "👋 Hi! I'm FlowShield AI. I can answer your questions about floods and control the simulation for you.\n\nTry asking:\n• \"Set extreme storm\"\n• \"What's happening right now?\"\n• \"Check weather in Mumbai\"\n• \"Start the demo\"",
+      content:
+        "Hello! I am FlowShield AI — your national flood intelligence assistant.\n\nI can answer questions on flood warnings, CWC telemetry, NDMA safety protocols, and emergency contacts.\n\nHow can I help you today?",
       timestamp: Date.now(),
     },
   ]);
@@ -252,257 +223,161 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [messages, isThinking]);
 
   // Focus input when chat opens
   useEffect(() => {
     if (isOpen) {
-      setTimeout(() => inputRef.current?.focus(), 100);
+      setTimeout(() => inputRef.current?.focus(), 120);
     }
   }, [isOpen]);
 
   const executeFunctionCall = useCallback(
-    (name: string, args: any): { result: string; action?: ChatAction } => {
+    (name: string, args: Record<string, any>): { result: string; action?: ChatAction } => {
       switch (name) {
-        case 'change_rainfall_intensity': {
-          const intensity = Math.min(200, Math.max(0, args.intensity));
+        case 'change_rainfall_intensity':
           return {
-            result: `Rainfall intensity set to ${intensity} mm/hr.`,
-            action: { type: 'CHANGE_RAINFALL', payload: intensity },
+            result: `Rainfall intensity set to ${args.intensity} mm/hr.`,
+            action: { type: 'CHANGE_RAINFALL', payload: args.intensity },
           };
-        }
-        case 'change_storm_duration': {
-          const mins = Math.min(180, Math.max(15, args.minutes));
+        case 'change_storm_duration':
           return {
-            result: `Storm duration set to ${mins} minutes.`,
-            action: { type: 'CHANGE_DURATION', payload: mins },
+            result: `Storm duration updated to ${args.minutes} minutes.`,
+            action: { type: 'CHANGE_DURATION', payload: args.minutes },
           };
-        }
-        case 'change_drainage_quality': {
-          const pct = Math.min(100, Math.max(0, args.percent));
+        case 'change_drainage_quality':
           return {
-            result: `Drainage quality set to ${pct}%.`,
-            action: { type: 'CHANGE_DRAINAGE', payload: pct },
+            result: `Drainage efficiency adjusted to ${args.percent}%.`,
+            action: { type: 'CHANGE_DRAINAGE', payload: args.percent / 100 },
           };
-        }
-        case 'change_terrain_steepness': {
-          const mult = Math.min(2.5, Math.max(0.2, args.multiplier));
+        case 'set_storm_preset':
           return {
-            result: `Terrain steepness set to ${mult}x.`,
-            action: { type: 'CHANGE_TERRAIN', payload: mult },
-          };
-        }
-        case 'set_storm_preset': {
-          const presetMap: Record<string, number> = { light: 20, heavy: 80, extreme: 160 };
-          const intensity = presetMap[args.preset?.toLowerCase()] || 80;
-          return {
-            result: `Applied ${args.preset} storm preset (${intensity} mm/hr).`,
-            action: { type: 'SET_PRESET', payload: intensity },
-          };
-        }
-        case 'toggle_emergency_mode':
-          return {
-            result: `Emergency mode toggled.`,
-            action: { type: 'TOGGLE_EMERGENCY' },
-          };
-        case 'start_demo':
-          return {
-            result: `Starting 90-second flood demo.`,
-            action: { type: 'START_DEMO' },
+            result: `Storm scenario preset "${args.preset}" applied.`,
+            action: { type: 'SET_PRESET', payload: args.preset },
           };
         case 'play_simulation':
-          return {
-            result: 'Simulation playback started.',
-            action: { type: 'PLAY' },
-          };
+          return { result: 'Simulation playback started.', action: { type: 'PLAY' } };
         case 'pause_simulation':
-          return {
-            result: 'Simulation paused.',
-            action: { type: 'PAUSE' },
-          };
+          return { result: 'Simulation playback paused.', action: { type: 'PAUSE' } };
         case 'reset_simulation':
-          return {
-            result: 'Simulation reset to beginning.',
-            action: { type: 'RESET' },
-          };
+          return { result: 'Simulation reset to t=0.', action: { type: 'RESET' } };
         case 'search_location':
           return {
-            result: `Searching weather for "${args.city}"...`,
+            result: `Searching meteorological conditions for ${args.city}...`,
             action: { type: 'SEARCH_LOCATION', payload: args.city },
           };
-        case 'select_zone':
-          return {
-            result: `Selected zone ${args.zone}.`,
-            action: { type: 'SELECT_ZONE', payload: args.zone },
-          };
-        case 'open_auth':
-          return {
-            result: 'Opening authentication dialog...',
-            action: { type: 'OPEN_AUTH', payload: args.mode === 'signup' ? 'signup' : 'signin' },
-          };
         default:
-          return { result: `Unknown function: ${name}` };
+          return { result: `Command accepted: ${name}` };
       }
     },
     []
   );
 
-  const sendMessage = useCallback(async () => {
-    const text = input.trim();
-    if (!text || isThinking) return;
+  const sendMessage = useCallback(
+    async (textOverride?: string) => {
+      const text = (textOverride || input).trim();
+      if (!text || isThinking) return;
 
-    const userMsg: ChatMessage = {
-      id: `user-${Date.now()}`,
-      role: 'user',
-      content: text,
-      timestamp: Date.now(),
-    };
+      const userMsg: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: 'user',
+        content: text,
+        timestamp: Date.now(),
+      };
 
-    setMessages((prev) => [...prev, userMsg]);
-    setInput('');
-    setIsThinking(true);
+      setMessages((prev) => [...prev, userMsg]);
+      if (!textOverride) setInput('');
+      setIsThinking(true);
 
-    try {
-      // Build conversation history (last 10 messages for context window)
-      const recentMessages = [...messages.slice(-10), userMsg];
-      const contents = recentMessages
-        .filter((m) => m.role !== 'system')
-        .map((m) => ({
-          role: m.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: m.content }],
-        }));
-
-      // Call Gemini API
-      const response = await fetch(`${API_ENDPOINTS.GEMINI}?key=${API_KEYS.GEMINI}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          system_instruction: {
-            parts: [{ text: buildSystemPrompt(context) }],
-          },
-          contents,
-          tools: GEMINI_TOOLS,
-          generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 1024,
-          },
-        }),
-      });
-
-      if (!response.ok) {
-        const errData = await response.json().catch(() => ({}));
-        throw new Error(errData?.error?.message || `API error ${response.status}`);
-      }
-
-      const data = await response.json();
-      const candidate = data.candidates?.[0];
-
-      if (!candidate?.content?.parts) {
-        throw new Error('No response from AI');
-      }
-
-      const parts = candidate.content.parts;
-      const allActions: ChatAction[] = [];
-      const functionResponses: any[] = [];
-      let responseText = '';
-
-      // Process parts — may contain text and/or function calls
-      for (const part of parts) {
-        if (part.text && !part.thought) {
-          responseText += part.text;
-        }
-        if (part.functionCall) {
-          const { name, args } = part.functionCall;
-          const { result, action } = executeFunctionCall(name, args || {});
-
-          if (action) {
-            action.description = action.description || result;
-            allActions.push(action);
-            onAction(action);
-          }
-
-          functionResponses.push({
-            functionResponse: {
-              name,
-              response: { result },
-            },
-          });
-        }
-      }
-
-      // If there were function calls and no text response was generated yet,
-      // send the follow-up call with the exact model parts (preserving thought_signature for Gemini 3.6)
-      if (functionResponses.length > 0 && !responseText) {
+      // If Gemini API key is configured, invoke Gemini 2.0 Flash
+      if (API_KEYS.GEMINI) {
         try {
-          const followUp = await fetch(`${API_ENDPOINTS.GEMINI}?key=${API_KEYS.GEMINI}`, {
+          const recentMessages = [...messages.slice(-8), userMsg];
+          const contents = recentMessages
+            .filter((m) => m.role !== 'system')
+            .map((m) => ({
+              role: m.role === 'assistant' ? 'model' : 'user',
+              parts: [{ text: m.content }],
+            }));
+
+          const response = await fetch(`${API_ENDPOINTS.GEMINI}?key=${API_KEYS.GEMINI}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               system_instruction: {
                 parts: [{ text: buildSystemPrompt(context) }],
               },
-              contents: [
-                ...contents,
-                {
-                  role: 'model',
-                  parts: candidate.content.parts,
-                },
-                {
-                  role: 'user',
-                  parts: functionResponses,
-                },
-              ],
+              contents,
               tools: GEMINI_TOOLS,
               generationConfig: {
-                temperature: 0.7,
-                maxOutputTokens: 512,
+                temperature: 0.6,
+                maxOutputTokens: 800,
               },
             }),
           });
 
-          if (followUp.ok) {
-            const followData = await followUp.json();
-            const followParts = followData.candidates?.[0]?.content?.parts;
-            if (followParts) {
-              for (const fp of followParts) {
-                if (fp.text && !fp.thought) responseText += fp.text;
+          if (response.ok) {
+            const data = await response.json();
+            const candidate = data.candidates?.[0];
+            const parts = candidate?.content?.parts || [];
+
+            let responseText = '';
+            const allActions: ChatAction[] = [];
+
+            for (const part of parts) {
+              if (part.text && !part.thought) responseText += part.text;
+              if (part.functionCall) {
+                const { name, args } = part.functionCall;
+                const { result, action } = executeFunctionCall(name, args || {});
+                if (action) {
+                  action.description = action.description || result;
+                  allActions.push(action);
+                  onAction(action);
+                }
               }
             }
+
+            if (!responseText && allActions.length > 0) {
+              responseText = `Operation completed: ${allActions.map((a) => a.description).join(', ')}`;
+            }
+
+            if (responseText) {
+              setMessages((prev) => [
+                ...prev,
+                {
+                  id: `ai-${Date.now()}`,
+                  role: 'assistant',
+                  content: responseText,
+                  actions: allActions.length > 0 ? allActions : undefined,
+                  timestamp: Date.now(),
+                },
+              ]);
+              setIsThinking(false);
+              return;
+            }
           }
-        } catch {
-          // If follow-up fails, fallback to action descriptions below
+        } catch (e) {
+          console.info('[AIChatbot] Gemini service offline, using verified fallback:', e);
         }
       }
 
-      if (!responseText) {
-        if (allActions.length > 0) {
-          responseText = `✅ Completed: ${allActions.map((a) => a.description || a.type).join(', ')}`;
-        } else {
-          responseText = "I'm not sure how to help with that. Try asking about the simulation or flood risks!";
-        }
-      }
-
-      const assistantMsg: ChatMessage = {
-        id: `ai-${Date.now()}`,
-        role: 'assistant',
-        content: responseText,
-        actions: allActions.length > 0 ? allActions : undefined,
-        timestamp: Date.now(),
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-    } catch (err: any) {
-      const errorMsg: ChatMessage = {
-        id: `err-${Date.now()}`,
-        role: 'assistant',
-        content: `⚠️ Sorry, I ran into an issue: ${err.message || 'Unknown error'}. Please try again!`,
-        timestamp: Date.now(),
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsThinking(false);
-    }
-  }, [input, isThinking, messages, context, onAction, executeFunctionCall]);
+      // Offline / Instant Curated Knowledge Fallback
+      setTimeout(() => {
+        const responseText = getLocalKnowledgeResponse(text);
+        setMessages((prev) => [
+          ...prev,
+          {
+            id: `ai-${Date.now()}`,
+            role: 'assistant',
+            content: responseText,
+            timestamp: Date.now(),
+          },
+        ]);
+        setIsThinking(false);
+      }, 350);
+    },
+    [input, isThinking, messages, context, onAction, executeFunctionCall]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
@@ -513,80 +388,93 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
 
   return (
     <>
-      {/* Floating Chat Button */}
+      {/* Floating Chatbot Launcher Button (Bottom-Right, Clears Mobile Nav) */}
       <AnimatePresence>
         {!isOpen && (
           <motion.button
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0, opacity: 0 }}
-            transition={{ type: 'spring', stiffness: 260, damping: 20 }}
+            transition={{ type: 'spring', stiffness: 280, damping: 22 }}
             onClick={() => setIsOpen(true)}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-2xl shadow-cyan-500/30 flex items-center justify-center text-2xl hover:scale-110 transition-transform"
-            title="Chat with FlowShield AI"
+            className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 flex items-center gap-2 px-3.5 py-3 rounded-full bg-[var(--primary)] hover:brightness-110 text-white shadow-xl border border-[var(--border)] cursor-pointer group active:scale-95 transition-transform select-none"
+            title="Open FlowShield Flood Intelligence Assistant"
+            aria-label="Open Flood Intelligence Assistant"
           >
-            🤖
+            <div className="relative flex items-center justify-center">
+              <Bot className="w-5 h-5 text-white" />
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[var(--live)] animate-ping" />
+            </div>
+            <span className="hidden sm:inline font-semibold text-xs text-white pr-1">
+              AI Assistant
+            </span>
           </motion.button>
         )}
       </AnimatePresence>
 
-      {/* Chat Panel */}
+      {/* Chat Window Dialog */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            initial={{ opacity: 0, y: 16, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 20, scale: 0.95 }}
-            transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
-            className="fixed bottom-4 right-4 z-50 w-[400px] max-w-[calc(100vw-2rem)] h-[560px] max-h-[calc(100vh-6rem)] flex flex-col rounded-2xl bg-slate-950 border border-slate-700/60 shadow-2xl shadow-black/40 overflow-hidden"
+            exit={{ opacity: 0, y: 16, scale: 0.96 }}
+            transition={{ duration: 0.2, ease: 'easeOut' }}
+            className="fixed bottom-20 right-4 lg:bottom-6 lg:right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] h-[580px] max-h-[calc(100vh-6.5rem)] flex flex-col rounded-2xl bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] shadow-2xl overflow-hidden"
+            role="dialog"
+            aria-label="FlowShield AI Assistant Dialog"
           >
-            {/* Chat Header */}
-            <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border-b border-slate-800/60">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 py-3 bg-[var(--surface-2)] border-b border-[var(--border)]">
               <div className="flex items-center gap-2.5">
-                <span className="text-xl">🤖</span>
+                <div className="p-1.5 rounded-lg bg-[var(--primary)]/15 border border-[var(--primary)]/30 text-[var(--live)]">
+                  <Bot className="w-4 h-4" />
+                </div>
                 <div>
-                  <h3 className="font-bold text-sm text-white">FlowShield AI</h3>
-                  <p className="text-[10px] text-cyan-400">Powered by Gemini • Can control simulation</p>
+                  <h3 className="font-semibold text-xs sm:text-sm text-[var(--text)]">
+                    FlowShield AI
+                  </h3>
+                  <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--live)] animate-pulse" />
+                    <span>Hydrological Intelligence</span>
+                  </div>
                 </div>
               </div>
+
               <button
+                type="button"
                 onClick={() => setIsOpen(false)}
-                className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-800/60 hover:bg-slate-700/60 text-slate-400 hover:text-white transition-colors text-sm"
+                className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text)] transition-colors cursor-pointer"
+                title="Close chat"
               >
-                ✕
+                <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-3 space-y-3">
+            {/* Messages Scroll Area */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-3.5 text-xs sm:text-sm">
               {messages.map((msg) => (
                 <div
                   key={msg.id}
                   className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
                 >
                   <div
-                    className={`max-w-[85%] px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed ${msg.role === 'user'
-                        ? 'bg-cyan-600/20 border border-cyan-500/30 text-white rounded-br-md'
-                        : 'bg-slate-800/60 border border-slate-700/40 text-slate-200 rounded-bl-md'
-                      }`}
+                    className={`max-w-[88%] px-3.5 py-2.5 rounded-2xl leading-relaxed whitespace-pre-wrap select-text ${
+                      msg.role === 'user'
+                        ? 'bg-[var(--primary)] text-white rounded-br-xs'
+                        : 'bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)] rounded-bl-xs'
+                    }`}
                   >
-                    {/* Render text with newlines */}
-                    {msg.content.split('\n').map((line, i) => (
-                      <React.Fragment key={i}>
-                        {line}
-                        {i < msg.content.split('\n').length - 1 && <br />}
-                      </React.Fragment>
-                    ))}
+                    {msg.content}
 
-                    {/* Action badges */}
                     {msg.actions && msg.actions.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {msg.actions.map((action, i) => (
+                      <div className="flex flex-wrap gap-1 mt-2 pt-2 border-t border-[var(--border)]">
+                        {msg.actions.map((act, i) => (
                           <span
                             key={i}
-                            className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 border border-cyan-500/20"
+                            className="text-[10px] px-2 py-0.5 rounded-md bg-[var(--live)]/15 text-[var(--live)] font-mono"
                           >
-                            ⚡ {action.type.replace(/_/g, ' ').toLowerCase()}
+                            {act.description || act.type}
                           </span>
                         ))}
                       </div>
@@ -595,18 +483,16 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
                 </div>
               ))}
 
-              {/* Thinking indicator */}
+              {/* Thinking Indicator */}
               {isThinking && (
                 <div className="flex justify-start">
-                  <div className="px-4 py-3 rounded-2xl rounded-bl-md bg-slate-800/60 border border-slate-700/40">
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                        <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                        <span className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                      </div>
-                      <span className="text-xs text-slate-400">Thinking...</span>
+                  <div className="px-3.5 py-2.5 rounded-2xl rounded-bl-xs bg-[var(--surface-2)] border border-[var(--border)] flex items-center gap-2 text-xs text-[var(--text-muted)]">
+                    <div className="flex gap-1">
+                      <span className="w-1.5 h-1.5 bg-[var(--live)] rounded-full animate-bounce" />
+                      <span className="w-1.5 h-1.5 bg-[var(--live)] rounded-full animate-bounce [animation-delay:150ms]" />
+                      <span className="w-1.5 h-1.5 bg-[var(--live)] rounded-full animate-bounce [animation-delay:300ms]" />
                     </div>
+                    <span>Analyzing hydrological intelligence...</span>
                   </div>
                 </div>
               )}
@@ -614,43 +500,46 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Quick Actions */}
-            <div className="px-3 pb-1 flex gap-1.5 overflow-x-auto">
+            {/* Quick Prompts */}
+            <div className="px-3 py-1.5 bg-[var(--surface-2)] border-t border-[var(--border)] flex gap-1.5 overflow-x-auto scrollbar-none">
               {[
-                { label: '▶ Play', action: () => { onAction({ type: 'PLAY' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '▶ Playing simulation!', timestamp: Date.now() }]); } },
-                { label: '⏸ Pause', action: () => { onAction({ type: 'PAUSE' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '⏸ Paused!', timestamp: Date.now() }]); } },
-                { label: '⛈️ Extreme', action: () => { onAction({ type: 'SET_PRESET', payload: 160 }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '⛈️ Set to extreme storm (160 mm/hr)!', timestamp: Date.now() }]); } },
-                { label: '🎬 Demo', action: () => { onAction({ type: 'START_DEMO' }); setMessages(prev => [...prev, { id: `qa-${Date.now()}`, role: 'assistant', content: '🎬 Starting demo mode!', timestamp: Date.now() }]); } },
-              ].map((qa) => (
+                { label: 'Emergency Helplines', prompt: 'What are the emergency flood helpline numbers in India?' },
+                { label: 'Safety Checklist', prompt: 'What are the official flood safety precautions from NDMA?' },
+                { label: 'CWC Telemetry', prompt: 'How does CWC monitor flood stages across river basins?' },
+                { label: 'Historical Deluges', prompt: 'Tell me about the major historical floods in India' },
+              ].map((qp) => (
                 <button
-                  key={qa.label}
-                  onClick={qa.action}
-                  className="flex-shrink-0 text-[11px] px-2.5 py-1.5 rounded-lg bg-slate-800/60 hover:bg-slate-700/60 text-slate-300 border border-slate-700/40 transition-colors"
+                  key={qp.label}
+                  type="button"
+                  onClick={() => sendMessage(qp.prompt)}
+                  className="shrink-0 text-[11px] px-2.5 py-1 rounded-lg bg-[var(--surface)] text-[var(--text-muted)] hover:text-[var(--text)] border border-[var(--border)] transition-all cursor-pointer whitespace-nowrap"
                 >
-                  {qa.label}
+                  {qp.label}
                 </button>
               ))}
             </div>
 
-            {/* Input */}
-            <div className="px-3 py-3 border-t border-slate-800/60">
-              <div className="flex gap-2">
+            {/* Chat Input */}
+            <div className="p-3 bg-[var(--surface)] border-t border-[var(--border)]">
+              <div className="flex items-center gap-2">
                 <input
                   ref={inputRef}
                   type="text"
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask anything or give a command..."
+                  placeholder="Ask about flood stages, safety, or helplines..."
                   disabled={isThinking}
-                  className="flex-1 px-3.5 py-2.5 rounded-xl bg-slate-800/80 border border-slate-700/60 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 focus:border-cyan-500/50 transition-all disabled:opacity-50"
+                  className="flex-1 px-3.5 py-2 text-xs rounded-xl bg-[var(--bg)] border border-[var(--border)] text-[var(--text)] placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[var(--primary)] transition-all disabled:opacity-50"
                 />
                 <button
-                  onClick={sendMessage}
+                  type="button"
+                  onClick={() => sendMessage()}
                   disabled={isThinking || !input.trim()}
-                  className="px-4 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-600 text-slate-950 text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-lg shadow-cyan-500/20"
+                  className="p-2 rounded-xl bg-[var(--primary)] hover:opacity-90 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer shadow-xs shrink-0"
+                  title="Send message"
                 >
-                  {isThinking ? '...' : '→'}
+                  <Send className="w-3.5 h-3.5" />
                 </button>
               </div>
             </div>
@@ -660,3 +549,5 @@ export const AIChatbot: React.FC<AIChatbotProps> = ({ context, onAction }) => {
     </>
   );
 };
+
+export default AIChatbot;

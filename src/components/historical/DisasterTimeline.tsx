@@ -6,6 +6,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { Search, Clock } from 'lucide-react';
 import type { HistoricalDisasterEvent, DisasterType } from '../../types/disaster';
 import { EventCard } from './EventCard';
 
@@ -42,13 +43,13 @@ export const DisasterTimeline: React.FC<DisasterTimelineProps> = ({
 
   if (filteredEvents.length === 0) {
     return (
-      <div className="p-8 rounded-2xl bg-slate-900/40 border border-slate-800 text-center space-y-2">
-        <span className="text-3xl block">🔍</span>
-        <h4 className="text-sm font-semibold text-slate-300">
+      <div className="p-8 rounded-xl bg-[var(--surface-2)] border border-[var(--border)] text-center space-y-2">
+        <Search className="w-8 h-8 mx-auto text-[var(--text-muted)] opacity-60" />
+        <h4 className="text-sm font-semibold text-[var(--text)]">
           No events found for category: {selectedCategory}
         </h4>
-        <p className="text-xs text-slate-500">
-          Try selecting "All Events" or a different disaster category above.
+        <p className="text-xs text-[var(--text-muted)]">
+          Try selecting "All events" or a different disaster category above.
         </p>
       </div>
     );
@@ -57,11 +58,11 @@ export const DisasterTimeline: React.FC<DisasterTimelineProps> = ({
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold tracking-wider text-slate-400 uppercase flex items-center gap-1.5">
-          <span>⏳</span>
-          <span>Historical Timeline</span>
+        <h3 className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-1.5">
+          <Clock className="w-3.5 h-3.5 text-[var(--primary)]" />
+          <span>Historical timeline</span>
         </h3>
-        <span className="text-[11px] text-slate-500 font-mono">
+        <span className="text-[11px] text-[var(--text-muted)] font-mono">
           Showing {filteredEvents.length} event{filteredEvents.length !== 1 ? 's' : ''}
         </span>
       </div>

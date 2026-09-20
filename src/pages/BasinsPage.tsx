@@ -1,11 +1,8 @@
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { NavLink } from 'react-router-dom';
-import {
-  Waves,
-  ArrowRight,
-  Loader2,
-} from 'lucide-react';
+import { motion } from 'framer-motion';
+import { Waves, ArrowRight, Loader2 } from 'lucide-react';
 import { getStations, aggregateBasins } from '../api/adapter';
 import { useI18n } from '../i18n';
 
@@ -23,8 +20,10 @@ export const BasinsPage: React.FC = () => {
   if (isLoading) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-sm font-semibold text-slate-500">Loading river basins summary...</p>
+        <Loader2 className="w-8 h-8 text-[var(--live)] animate-spin" />
+        <p className="text-xs font-medium text-[var(--text-muted)]">
+          Loading river basins summary...
+        </p>
       </div>
     );
   }
@@ -33,57 +32,82 @@ export const BasinsPage: React.FC = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight">
           {t.navBasins}
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-          Aggregated flood risk, gauging telemetry, and reservoir storage across India's major river basins.
+        <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
+          Aggregated flood risk, gauging telemetry, and reservoir storage across India's major river basins
         </p>
       </div>
 
-      {/* Basins Grid */}
+      {/* Basins Grid with Framer Motion Stagger and Hover Lift */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-        {basins.map((basin) => {
+        {basins.map((basin, index) => {
           const hasExtreme = basin.extremeCount > 0;
           const hasSevere = basin.severeCount > 0;
           const hasAbove = basin.aboveNormalCount > 0;
 
-          let riskBadge = 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300 border-emerald-200';
-          let riskLabel = 'Normal Status';
+          let riskBadgeBg = 'var(--normal)';
+          let riskBadgeText = '#FFFFFF';
+          let riskLabel = 'Normal status';
 
           if (hasExtreme) {
-            riskBadge = 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300 border-red-200 animate-pulse';
-            riskLabel = 'Extreme Flood Warning';
+            riskBadgeBg = 'var(--danger)';
+            riskBadgeText = '#FFFFFF';
+            riskLabel = 'Extreme flood warning';
           } else if (hasSevere) {
-            riskBadge = 'bg-orange-50 text-orange-700 dark:bg-orange-950/40 dark:text-orange-300 border-orange-200';
-            riskLabel = 'Severe Flood Situation';
+            riskBadgeBg = 'var(--warning)';
+            riskBadgeText = '#FFFFFF';
+            riskLabel = 'Severe flood situation';
           } else if (hasAbove) {
-            riskBadge = 'bg-yellow-50 text-yellow-700 dark:bg-yellow-950/40 dark:text-yellow-300 border-yellow-200';
-            riskLabel = 'Above Normal Flood';
+            riskBadgeBg = 'var(--watch)';
+            riskBadgeText = '#0B1F33';
+            riskLabel = 'Above normal flood';
           }
 
+          // Proportional percentages for stacked bar
+          const total = Math.max(basin.totalStations, 1);
+          const normPct = (basin.normalCount / total) * 100;
+          const abovePct = (basin.aboveNormalCount / total) * 100;
+          const severePct = (basin.severeCount / total) * 100;
+          const extremePct = (basin.extremeCount / total) * 100;
+
           return (
-            <div
+            <motion.div
               key={basin.name}
-              className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col justify-between gap-4 hover:shadow-md transition-all"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{
+                duration: 0.25,
+                delay: Math.min(index * 0.04, 0.4),
+                ease: 'easeOut',
+              }}
+              whileHover={{ y: -2 }}
+              className="bg-[var(--surface)] rounded-xl p-5 border border-[var(--border)] shadow-xs flex flex-col justify-between gap-4 transition-colors hover:border-[var(--live)]/60"
             >
               <div>
-                <div className="flex items-center justify-between gap-2 mb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 flex items-center justify-center">
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-2)] text-[var(--live)] flex items-center justify-center shrink-0 border border-[var(--border)]">
                       <Waves className="w-4 h-4" />
                     </div>
                     <div>
-                      <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                        {language === 'hi' ? basin.hindiName : `${basin.name} Basin`}
+                      <h3 className="font-semibold text-sm sm:text-base text-[var(--text)]">
+                        {language === 'hi' ? basin.hindiName : `${basin.name} basin`}
                       </h3>
-                      <span className="text-[10px] text-slate-400">
-                        {basin.totalStations} Monitoring Stations
+                      <span className="text-[11px] text-[var(--text-muted)] font-normal">
+                        {basin.totalStations} monitoring stations
                       </span>
                     </div>
                   </div>
 
-                  <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${riskBadge}`}>
+                  <span
+                    className="px-2.5 py-0.5 rounded-full text-[10px] font-medium whitespace-nowrap shrink-0 shadow-2xs"
+                    style={{
+                      backgroundColor: riskBadgeBg,
+                      color: riskBadgeText,
+                    }}
+                  >
                     {riskLabel}
                   </span>
                 </div>
@@ -93,7 +117,7 @@ export const BasinsPage: React.FC = () => {
                   {basin.majorRivers.map((r) => (
                     <span
                       key={r}
-                      className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] font-medium"
+                      className="px-2 py-0.5 rounded-md bg-[var(--surface-2)] text-[var(--text-muted)] text-[11px] font-normal"
                     >
                       {r}
                     </span>
@@ -101,46 +125,99 @@ export const BasinsPage: React.FC = () => {
                 </div>
               </div>
 
-              {/* Station Breakdown Bar */}
-              <div className="space-y-2 pt-3 border-t border-slate-100 dark:border-slate-800 text-xs">
-                <div className="grid grid-cols-4 gap-1 text-center font-bold">
-                  <div className="bg-emerald-50 dark:bg-emerald-950/40 p-2 rounded-xl text-emerald-600">
-                    <span className="text-[10px] text-slate-400 block font-normal">Normal</span>
-                    {basin.normalCount}
+              {/* Proportional Stacked Status Bar */}
+              <div className="space-y-2.5 pt-3 border-t border-[var(--border)] text-xs">
+                <div>
+                  <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] mb-1.5">
+                    <span>Station severity breakdown</span>
+                    <span className="font-mono tabular-nums">{basin.totalStations} stations</span>
                   </div>
-                  <div className="bg-yellow-50 dark:bg-yellow-950/40 p-2 rounded-xl text-yellow-600">
-                    <span className="text-[10px] text-slate-400 block font-normal">Above</span>
-                    {basin.aboveNormalCount}
-                  </div>
-                  <div className="bg-orange-50 dark:bg-orange-950/40 p-2 rounded-xl text-orange-600">
-                    <span className="text-[10px] text-slate-400 block font-normal">Severe</span>
-                    {basin.severeCount}
-                  </div>
-                  <div className="bg-red-50 dark:bg-red-950/40 p-2 rounded-xl text-red-600">
-                    <span className="text-[10px] text-slate-400 block font-normal">Extreme</span>
-                    {basin.extremeCount}
+
+                  {/* The Proportional Stacked Bar */}
+                  <div
+                    className="w-full h-2.5 rounded-full bg-[var(--surface-2)] overflow-hidden flex shadow-inner"
+                    title={`Normal: ${basin.normalCount}, Above: ${basin.aboveNormalCount}, Severe: ${basin.severeCount}, Extreme: ${basin.extremeCount}`}
+                  >
+                    {normPct > 0 && (
+                      <div
+                        style={{ width: `${normPct}%`, backgroundColor: 'var(--normal)' }}
+                        className="h-full transition-all"
+                      />
+                    )}
+                    {abovePct > 0 && (
+                      <div
+                        style={{ width: `${abovePct}%`, backgroundColor: 'var(--watch)' }}
+                        className="h-full transition-all"
+                      />
+                    )}
+                    {severePct > 0 && (
+                      <div
+                        style={{ width: `${severePct}%`, backgroundColor: 'var(--warning)' }}
+                        className="h-full transition-all"
+                      />
+                    )}
+                    {extremePct > 0 && (
+                      <div
+                        style={{ width: `${extremePct}%`, backgroundColor: 'var(--danger)' }}
+                        className="h-full transition-all"
+                      />
+                    )}
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                  <span>High Risk Station:</span>
-                  <span className="font-bold text-slate-800 dark:text-slate-200">
+                {/* Legend Below Stacked Bar with High-Contrast Tokens */}
+                <div className="grid grid-cols-4 gap-1 text-center font-mono text-[11px] pt-1">
+                  <div className="p-1.5 rounded-lg bg-[var(--surface-2)] text-[var(--text)]">
+                    <span className="text-[10px] text-[var(--text-muted)] block font-sans">
+                      Normal
+                    </span>
+                    <span className="font-medium">{basin.normalCount}</span>
+                  </div>
+
+                  <div className="p-1.5 rounded-lg bg-[var(--surface-2)] text-[var(--text)]">
+                    <span className="text-[10px] text-[var(--text-muted)] block font-sans">
+                      Above
+                    </span>
+                    <span className="font-medium">{basin.aboveNormalCount}</span>
+                  </div>
+
+                  <div className="p-1.5 rounded-lg bg-[var(--surface-2)] text-[var(--text)]">
+                    <span className="text-[10px] text-[var(--text-muted)] block font-sans">
+                      Severe
+                    </span>
+                    <span className="font-medium">{basin.severeCount}</span>
+                  </div>
+
+                  <div className="p-1.5 rounded-lg bg-[var(--surface-2)] text-[var(--text)]">
+                    <span className="text-[10px] text-[var(--text-muted)] block font-sans">
+                      Extreme
+                    </span>
+                    <span className="font-medium">{basin.extremeCount}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between text-[11px] text-[var(--text-muted)] pt-1">
+                  <span>Peak threat station:</span>
+                  <span className="font-medium text-[var(--text)]">
                     {basin.highestRiskStation || 'None'}
                   </span>
                 </div>
               </div>
 
+              {/* View Stations Action Button */}
               <NavLink
                 to={`/?basin=${encodeURIComponent(basin.name)}`}
-                className="w-full py-2 px-3 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 font-semibold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                className="w-full py-2 px-3 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--primary)] hover:text-white text-[var(--text)] font-medium text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-98"
               >
-                <span>View Stations on Map</span>
+                <span>View stations on map</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </NavLink>
-            </div>
+            </motion.div>
           );
         })}
       </div>
     </div>
   );
 };
+
+export default BasinsPage;

@@ -43,7 +43,7 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
         powerPreference: 'high-performance',
       });
       renderer.setSize(width, height);
-      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
       container.appendChild(renderer.domElement);
     } catch (e) {
       console.warn('WebGL init failed in Globe3DView:', e);
@@ -181,30 +181,38 @@ export const Globe3DView: React.FC<Globe3DViewProps> = ({ onZoomComplete }) => {
       const elapsed = currentTime - startTime;
       const rawProgress = Math.min(1, Math.max(0, elapsed / duration));
 
-      // Cubic ease-in-out for smooth camera zoom
-      const t = rawProgress < 0.5
-        ? 4 * rawProgress * rawProgress * rawProgress
-        : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2;
+      if (rawProgress < 1) {
+        // Cubic ease-in-out for smooth cinematic camera zoom into India
+        const t =
+          rawProgress < 0.5
+            ? 4 * rawProgress * rawProgress * rawProgress
+            : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2;
 
-      // Current camera distance
-      const currentDist = startCamDist + (endCamDist - startCamDist) * t;
+        const currentDist = startCamDist + (endCamDist - startCamDist) * t;
+        const currentDir = new THREE.Vector3().copy(startDir).lerp(endDir, t).normalize();
+        camera.position.copy(currentDir.multiplyScalar(currentDist));
+        camera.lookAt(0, 0, 0);
+      } else {
+        // Settled into smooth, majestic orbital drift around India
+        const orbitElapsed = (currentTime - (startTime + duration)) * 0.00035;
+        const orbitLat = 22.8 + Math.sin(orbitElapsed * 0.8) * 1.8;
+        const orbitLng = 79.5 + Math.cos(orbitElapsed * 0.5) * 2.8;
+        const currentDir = latLngToVector3(orbitLat, orbitLng, 1).normalize();
+        camera.position.copy(currentDir.multiplyScalar(endCamDist));
+        camera.lookAt(0, 0, 0);
 
-      // Smooth spherical interpolation of camera direction to India
-      const currentDir = new THREE.Vector3().copy(startDir).lerp(endDir, t).normalize();
-      camera.position.copy(currentDir.multiplyScalar(currentDist));
-      camera.lookAt(0, 0, 0);
+        if (!hasCompleted) {
+          hasCompleted = true;
+          onZoomCompleteRef.current?.();
+        }
+      }
 
       // Radar ring pulse
-      const pulseScale = 1 + Math.sin(elapsed * 0.008) * 0.25;
+      const pulseScale = 1 + Math.sin(elapsed * 0.008) * 0.22;
       reticleRing.scale.set(pulseScale, pulseScale, 1);
 
       if (renderer) {
         renderer.render(scene, camera);
-      }
-
-      if (rawProgress >= 1 && !hasCompleted) {
-        hasCompleted = true;
-        onZoomCompleteRef.current();
       }
     };
 

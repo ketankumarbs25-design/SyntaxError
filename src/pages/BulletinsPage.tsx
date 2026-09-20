@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   Printer,
   Calendar,
   Loader2,
+  Clock,
+  Radio,
 } from 'lucide-react';
 import { getBulletins, getStations } from '../api/adapter';
 import { formatIST } from '../api/status';
@@ -39,8 +42,8 @@ export const BulletinsPage: React.FC = () => {
   if (isLoadingBulletins) {
     return (
       <div className="min-h-[400px] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-sm font-semibold text-slate-500">Loading daily bulletins...</p>
+        <Loader2 className="w-8 h-8 text-[var(--live)] animate-spin" />
+        <p className="text-xs font-medium text-[var(--text-muted)]">Loading daily bulletins...</p>
       </div>
     );
   }
@@ -48,79 +51,98 @@ export const BulletinsPage: React.FC = () => {
   const extremeStations = stations.filter((s) => s.status === 'Extreme');
   const severeStations = stations.filter((s) => s.status === 'Severe');
 
+  const getSeverityColor = (severity: string) => {
+    if (severity === 'Extreme') return 'var(--danger)';
+    if (severity === 'Severe') return 'var(--warning)';
+    return 'var(--watch)';
+  };
+
   return (
     <div className="space-y-6">
-      {/* ─── Screen Header & Action ────────────────────────────────────────── */}
+      {/* ─── Screen Header & Print ─────────────────────────────────────────── */}
       <div className="no-print flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[var(--text)] tracking-tight">
             {t.dailyBulletins}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Official daily flood warning advisories, river reaches in inundation stage, and printable executive bulletins.
+          <p className="text-xs sm:text-sm text-[var(--text-muted)] mt-1">
+            Official daily flood warning advisories, river reaches in inundation stage, and printable executive bulletins
           </p>
         </div>
 
         <button
           onClick={handlePrint}
-          className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs flex items-center gap-2 shadow-sm transition-all cursor-pointer shrink-0"
+          className="px-3.5 py-2 rounded-xl bg-[var(--surface-2)] hover:bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] font-medium text-xs flex items-center gap-2 shadow-xs transition-colors cursor-pointer shrink-0"
         >
-          <Printer className="w-4 h-4" />
+          <Printer className="w-4 h-4 text-[var(--live)]" />
           <span>{t.printReport}</span>
         </button>
       </div>
 
       {/* ─── Filter Pills ─────────────────────────────────────────────────── */}
-      <div className="no-print flex items-center gap-2.5">
+      <div className="no-print flex items-center gap-2 flex-wrap">
         {(['all', 'Extreme', 'Severe', 'Warning', 'Advisory'] as const).map((sev) => (
           <button
             key={sev}
             onClick={() => setSelectedSeverity(sev)}
-            className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+            className={`px-3 py-1 rounded-full text-xs font-medium transition-colors cursor-pointer ${
               selectedSeverity === sev
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                ? 'bg-[var(--primary)] text-white shadow-xs'
+                : 'bg-[var(--surface)] border border-[var(--border)] text-[var(--text-muted)] hover:text-[var(--text)]'
             }`}
           >
-            {sev === 'all' ? 'All Advisories' : sev}
+            {sev === 'all' ? 'All advisories' : sev}
           </button>
         ))}
       </div>
 
-      {/* ─── Bulletins List & Active Preview Layout ────────────────────────── */}
+      {/* ─── Bulletins List & Sticky Active Preview Layout ─────────────────── */}
       <div className="no-print grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
         {/* Left 1 Col: List of Bulletins */}
-        <div className="space-y-3">
+        <div className="space-y-2.5">
           {filteredBulletins.map((b) => {
             const isSelected = activeBulletin?.id === b.id;
-            let badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-            if (b.severity === 'Extreme') badgeColor = 'bg-red-50 text-red-700 border-red-200';
-            else if (b.severity === 'Severe') badgeColor = 'bg-orange-50 text-orange-700 border-orange-200';
-            else if (b.severity === 'Warning') badgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+            const sevColor = getSeverityColor(b.severity);
 
             return (
               <div
                 key={b.id}
                 onClick={() => setSelectedBulletinId(b.id)}
-                className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                className={`p-4 rounded-xl border transition-all cursor-pointer flex flex-col justify-between gap-2 relative overflow-hidden ${
                   isSelected
-                    ? 'bg-white dark:bg-slate-900 border-blue-600 shadow-md ring-2 ring-blue-500/20'
-                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300 shadow-xs'
+                    ? 'bg-[var(--surface)] border-[var(--live)] shadow-sm'
+                    : 'bg-[var(--surface)] border-[var(--border)] hover:border-[var(--border)]/80 hover:translate-y-[-1px]'
                 }`}
               >
+                {/* Active Indicator Left Bar */}
+                {isSelected && (
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1"
+                    style={{ backgroundColor: sevColor }}
+                  />
+                )}
+
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-mono text-[10px] text-slate-400 font-bold">{b.bulletinNo}</span>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full border ${badgeColor}`}>
+                  <span className="font-mono text-[11px] text-[var(--text-muted)]">
+                    {b.bulletinNo}
+                  </span>
+                  <span
+                    className="text-[10px] font-medium px-2 py-0.5 rounded-full"
+                    style={{
+                      backgroundColor: sevColor,
+                      color: b.severity === 'Warning' || b.severity === 'Advisory' ? '#0B1F33' : '#FFFFFF',
+                    }}
+                  >
                     {b.severity}
                   </span>
                 </div>
 
-                <h3 className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white line-clamp-2">
+                <h3 className="font-semibold text-xs sm:text-sm text-[var(--text)] line-clamp-2">
                   {language === 'hi' && b.titleHi ? b.titleHi : b.title}
                 </h3>
 
-                <div className="flex items-center gap-1.5 text-[11px] text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <Calendar className="w-3 h-3 text-slate-400" />
+                <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-muted)] pt-2 border-t border-[var(--border)]">
+                  <Calendar className="w-3 h-3" />
                   <span>{formatIST(b.dateTime)}</span>
                 </div>
               </div>
@@ -128,76 +150,142 @@ export const BulletinsPage: React.FC = () => {
           })}
         </div>
 
-        {/* Right 2 Cols: Active Bulletin Detail View */}
-        <div className="lg:col-span-2">
-          {activeBulletin ? (
-            <div className="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200 dark:border-slate-800 shadow-xs space-y-5">
-              <div className="flex items-start justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-                <div>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="font-mono text-xs font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 px-2.5 py-0.5 rounded-md border border-blue-200 dark:border-blue-900">
-                      {activeBulletin.bulletinNo}
+        {/* Right 2 Cols: Sticky Active Bulletin Detail View with Stripe, Timeline & Chips */}
+        <div className="lg:col-span-2 lg:sticky lg:top-20">
+          <AnimatePresence mode="wait">
+            {activeBulletin && (
+              <motion.div
+                key={activeBulletin.id}
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="bg-[var(--surface)] rounded-xl border border-[var(--border)] shadow-xs overflow-hidden"
+              >
+                {/* Top Severity Color Stripe */}
+                <div
+                  className="w-full h-1.5"
+                  style={{ backgroundColor: getSeverityColor(activeBulletin.severity) }}
+                />
+
+                <div className="p-5 sm:p-6 space-y-5">
+                  {/* Header */}
+                  <div className="flex items-start justify-between gap-4 pb-4 border-b border-[var(--border)]">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1.5">
+                        <span className="font-mono text-xs font-medium text-[var(--live)] bg-[var(--surface-2)] px-2.5 py-0.5 rounded-md border border-[var(--border)]">
+                          {activeBulletin.bulletinNo}
+                        </span>
+                        <span className="text-xs text-[var(--text-muted)]">
+                          Issued: {formatIST(activeBulletin.dateTime)}
+                        </span>
+                      </div>
+                      <h2 className="text-base sm:text-lg font-bold text-[var(--text)]">
+                        {language === 'hi' && activeBulletin.titleHi
+                          ? activeBulletin.titleHi
+                          : activeBulletin.title}
+                      </h2>
+                    </div>
+
+                    <button
+                      onClick={handlePrint}
+                      className="px-3 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface)] text-[var(--text)] text-xs font-medium border border-[var(--border)] flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+                    >
+                      <Printer className="w-3.5 h-3.5" />
+                      <span>Print</span>
+                    </button>
+                  </div>
+
+                  {/* Summary Advisory Paragraph */}
+                  <div className="text-xs sm:text-sm text-[var(--text)] leading-relaxed bg-[var(--surface-2)] p-4 rounded-xl border border-[var(--border)]">
+                    {language === 'hi' && activeBulletin.summaryHi
+                      ? activeBulletin.summaryHi
+                      : activeBulletin.summary}
+                  </div>
+
+                  {/* Affected Stations as Interactive Chips */}
+                  <div>
+                    <span className="text-xs font-medium text-[var(--text-muted)] block mb-2">
+                      Key affected stations
                     </span>
-                    <span className="text-xs text-slate-400">
-                      Issued: {formatIST(activeBulletin.dateTime)}
+                    <div className="flex flex-wrap gap-2">
+                      {activeBulletin.keyStationsAffected.map((stnName) => (
+                        <span
+                          key={stnName}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-[var(--surface-2)] text-[var(--text)] text-xs font-medium border border-[var(--border)]"
+                        >
+                          <span
+                            className="w-1.5 h-1.5 rounded-full"
+                            style={{ backgroundColor: getSeverityColor(activeBulletin.severity) }}
+                          />
+                          <span>{stnName}</span>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Affected Regions Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    <div className="p-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+                      <span className="text-[11px] text-[var(--text-muted)] block mb-1">
+                        {t.affectedBasins}
+                      </span>
+                      <div className="font-semibold text-[var(--text)]">
+                        {activeBulletin.affectedBasins.join(', ')}
+                      </div>
+                    </div>
+
+                    <div className="p-3.5 rounded-xl bg-[var(--surface-2)] border border-[var(--border)]">
+                      <span className="text-[11px] text-[var(--text-muted)] block mb-1">
+                        {t.affectedStates}
+                      </span>
+                      <div className="font-semibold text-[var(--text)]">
+                        {activeBulletin.affectedStates.join(', ')}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Timeline of Issued Updates */}
+                  <div className="pt-3 border-t border-[var(--border)]">
+                    <span className="text-xs font-medium text-[var(--text-muted)] block mb-3">
+                      Advisory timeline & status updates
                     </span>
-                  </div>
-                  <h2 className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white">
-                    {language === 'hi' && activeBulletin.titleHi ? activeBulletin.titleHi : activeBulletin.title}
-                  </h2>
-                </div>
+                    <div className="space-y-3 pl-2 border-l-2 border-[var(--border)]">
+                      <div className="relative pl-4">
+                        <div
+                          className="absolute -left-[13px] top-1 w-2.5 h-2.5 rounded-full border-2 border-[var(--surface)]"
+                          style={{ backgroundColor: getSeverityColor(activeBulletin.severity) }}
+                        />
+                        <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+                          <Clock className="w-3 h-3" />
+                          <span>Current Advisory Active • {formatIST(activeBulletin.dateTime)}</span>
+                        </div>
+                        <p className="text-xs text-[var(--text)] mt-0.5">
+                          High alert maintained across riparians. Evacuation advisories broadcasted to SDMAs.
+                        </p>
+                      </div>
 
-                <button
-                  onClick={handlePrint}
-                  className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print</span>
-                </button>
-              </div>
-
-              {/* Summary Paragraph */}
-              <div className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
-                {language === 'hi' && activeBulletin.summaryHi ? activeBulletin.summaryHi : activeBulletin.summary}
-              </div>
-
-              {/* Affected Entities */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-xs">
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase mb-1">
-                    {t.affectedBasins}
-                  </span>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">
-                    {activeBulletin.affectedBasins.join(', ')}
+                      <div className="relative pl-4">
+                        <div className="absolute -left-[13px] top-1 w-2.5 h-2.5 rounded-full bg-[var(--border)] border-2 border-[var(--surface)]" />
+                        <div className="flex items-center gap-2 text-[11px] text-[var(--text-muted)]">
+                          <Radio className="w-3 h-3" />
+                          <span>Initial Telemetry Ingestion • Automated CWC Alert</span>
+                        </div>
+                        <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                          Water level exceeded warning threshold at upstream gauging stations.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase mb-1">
-                    {t.affectedStates}
-                  </span>
-                  <div className="font-bold text-slate-800 dark:text-slate-200">
-                    {activeBulletin.affectedStates.join(', ')}
-                  </div>
-                </div>
-
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800">
-                  <span className="text-[10px] text-slate-400 font-bold block uppercase mb-1">
-                    {t.keyStations}
-                  </span>
-                  <div className="font-bold text-red-600 dark:text-red-400">
-                    {activeBulletin.keyStationsAffected.join(', ')}
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
 
-      {/* ─── PRINTABLE EXECUTIVE REPORT (@media print template) ─────────────── */}
+      {/* ─── Printable Executive Report (@media print template) ─────────────── */}
       <div className="hidden print:block printable-bulletin-container bg-white text-black p-8 font-serif leading-normal">
-        {/* Official Header */}
         <div className="text-center pb-4 border-b-2 border-black mb-6">
           <h1 className="text-xl font-black uppercase tracking-wider">
             GOVERNMENT OF INDIA • MINISTRY OF JAL SHAKTI
@@ -209,20 +297,18 @@ export const BulletinsPage: React.FC = () => {
           </p>
         </div>
 
-        {/* Executive Summary */}
         <div className="mb-6">
           <h4 className="text-sm font-bold uppercase border-b border-gray-400 pb-1 mb-2">
-            1. Executive Flood Inundation Summary
+            1. Executive flood inundation summary
           </h4>
           <p className="text-xs leading-relaxed text-justify">
             {activeBulletin?.summary}
           </p>
         </div>
 
-        {/* Critical Stations Table */}
         <div className="mb-6">
           <h4 className="text-sm font-bold uppercase border-b border-gray-400 pb-1 mb-2">
-            2. Stations in Extreme / Severe Flood Stage (Surpassing Danger / HFL)
+            2. Stations in extreme / severe flood stage
           </h4>
           <table className="w-full text-xs border border-collapse border-black text-left">
             <thead>
@@ -242,41 +328,18 @@ export const BulletinsPage: React.FC = () => {
                   <td className="p-1.5 border-r border-black font-bold">{s.name}</td>
                   <td className="p-1.5 border-r border-black">{s.river} ({s.basin})</td>
                   <td className="p-1.5 border-r border-black">{s.state}</td>
-                  <td className="p-1.5 border-r border-black font-black">{s.currentLevel.toFixed(2)}</td>
-                  <td className="p-1.5 border-r border-black">{s.dangerLevel.toFixed(2)}</td>
-                  <td className="p-1.5 border-r border-black">{s.hfl.toFixed(2)}</td>
-                  <td className="p-1.5 font-bold">{s.status.toUpperCase()}</td>
+                  <td className="p-1.5 border-r border-black font-mono">{s.currentLevel.toFixed(2)}</td>
+                  <td className="p-1.5 border-r border-black font-mono">{s.dangerLevel.toFixed(2)}</td>
+                  <td className="p-1.5 border-r border-black font-mono">{s.hfl.toFixed(2)}</td>
+                  <td className="p-1.5 font-bold">{s.status}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-
-        {/* Basin Directives */}
-        <div className="mb-6">
-          <h4 className="text-sm font-bold uppercase border-b border-gray-400 pb-1 mb-2">
-            3. Operational Directives &amp; NDRF Preparedness
-          </h4>
-          <ul className="list-disc pl-5 text-xs space-y-1">
-            <li>State Disaster Management Authorities (SDMA) advised to maintain round-the-clock watch along riparian bunds.</li>
-            <li>Regulated gate operations mandated at upstream reservoirs to limit downstream peak flood synchrony.</li>
-            <li>Inundation alerts communicated to low-lying taluks and municipal administrations.</li>
-          </ul>
-        </div>
-
-        {/* Official Sign-off */}
-        <div className="pt-8 border-t border-gray-400 flex justify-between items-end text-xs">
-          <div>
-            <p className="font-semibold">FlowShield Automated Hydrological Telemetry System</p>
-            <p className="text-gray-500">Telemetry feed synchronized via CWC Doppler Radar &amp; Stage Gauges</p>
-          </div>
-          <div className="text-right">
-            <p className="font-bold uppercase">Authorized Signatory</p>
-            <p>Superintending Engineer (Hydrology)</p>
-            <p>Central Flood Forecasting Division</p>
-          </div>
-        </div>
       </div>
     </div>
   );
 };
+
+export default BulletinsPage;

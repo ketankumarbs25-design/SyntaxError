@@ -47,6 +47,9 @@ export const GlobeIntroOverlay: React.FC<GlobeIntroOverlayProps> = ({ onComplete
     return true;
   });
 
+  // Distinguish whether opened via user action or initial auto-intro
+  const [isManualMode, setIsManualMode] = useState(false);
+
   // Check device WebGL support: only fallback to static CSS globe if WebGL is unavailable
   const [isLowPerf] = useState<boolean>(() => {
     if (typeof window === 'undefined') return false;
@@ -60,12 +63,13 @@ export const GlobeIntroOverlay: React.FC<GlobeIntroOverlayProps> = ({ onComplete
     return false;
   });
 
-  // Replay event listener for manual trigger from UI / Menu Drawer
+  // Replay event listener for manual trigger from UI / Menu Drawer / Map
   useEffect(() => {
     const handleReplay = () => {
       try {
         sessionStorage.removeItem(STORAGE_KEY);
       } catch {}
+      setIsManualMode(true);
       setIsFadingOut(false);
       setShouldRender(true);
     };
@@ -84,18 +88,29 @@ export const GlobeIntroOverlay: React.FC<GlobeIntroOverlayProps> = ({ onComplete
 
     setIsFadingOut(true);
 
-    // Crossfade duration: 600ms smooth fade into the 2D view
+    // Crossfade duration: 500ms smooth fade into the 2D view
     setTimeout(() => {
       setShouldRender(false);
+      setIsManualMode(false);
       onComplete?.();
-    }, 600);
+    }, 500);
   }, [onComplete]);
+
+  // When initial zoom finishes: if manual mode, keep orbiting! If auto intro, stay in orbit or let user click
+  const handleZoomComplete = useCallback(() => {
+    if (!isManualMode) {
+      // Allow user 4 seconds of ambient orbit before smooth auto-finish
+      setTimeout(() => {
+        handleFinish();
+      }, 4000);
+    }
+  }, [isManualMode, handleFinish]);
 
   const handleSkip = useCallback(() => {
     handleFinish();
   }, [handleFinish]);
 
-  // Keyboard shortcut: ESC to skip intro
+  // Keyboard shortcut: ESC to skip intro / exit 3D
   useEffect(() => {
     if (!shouldRender) return;
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -113,49 +128,51 @@ export const GlobeIntroOverlay: React.FC<GlobeIntroOverlayProps> = ({ onComplete
 
   return (
     <div
-      className={`fixed inset-0 z-[99999] bg-[#0D0E15] flex items-center justify-center pointer-events-auto transition-opacity duration-600 ease-out select-none ${
+      className={`fixed inset-0 z-[99999] bg-[#0B1F33] flex items-center justify-center pointer-events-auto transition-opacity duration-500 ease-out select-none ${
         isFadingOut ? 'opacity-0 pointer-events-none' : 'opacity-100'
       }`}
-      aria-label="3D Globe Intro Animation"
+      aria-label="3D Satellite Earth Globe View"
       role="dialog"
     >
       {/* 3D or Static Globe Layer */}
       <div className="absolute inset-0 w-full h-full">
         {isLowPerf ? (
-          <GlobeStaticFallback onZoomComplete={handleFinish} />
+          <GlobeStaticFallback onZoomComplete={handleZoomComplete} />
         ) : (
-          <Suspense fallback={<GlobeStaticFallback onZoomComplete={handleFinish} />}>
-            <Globe3DView onZoomComplete={handleFinish} />
+          <Suspense fallback={<GlobeStaticFallback onZoomComplete={handleZoomComplete} />}>
+            <Globe3DView onZoomComplete={handleZoomComplete} />
           </Suspense>
         )}
       </div>
 
-      {/* Top Bar with Brand Badge and Skip Button */}
-      <div className="absolute top-6 left-6 right-6 flex items-center justify-between z-30 pointer-events-auto">
-        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#171924]/85 backdrop-blur-md border border-[#1F2135] text-xs">
-          <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />
-          <span className="font-semibold text-slate-200 tracking-wide text-[11px] uppercase">
-            FlowShield • Satellite View • India
+      {/* Top Bar with Brand Badge and Exit/Skip Button */}
+      <div className="absolute top-5 left-5 right-5 flex items-center justify-between z-30 pointer-events-auto">
+        <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-[#12304A]/90 backdrop-blur-md border border-[#2F4B63] text-xs text-[#F3F7FA] shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-[#22B8CF] animate-pulse" />
+          <span className="font-semibold tracking-wide text-[11px] uppercase">
+            FlowShield • 3D Satellite Earth • India
           </span>
         </div>
 
-        {/* Skip button visible from start of animation */}
+        {/* Exit / Skip button visible from start */}
         <button
           type="button"
           onClick={handleSkip}
-          className="group flex items-center gap-1.5 px-4 py-2 rounded-full bg-slate-900/80 hover:bg-slate-800/90 text-slate-300 hover:text-white text-xs font-semibold backdrop-blur-md border border-slate-700/80 shadow-lg cursor-pointer transition-all active:scale-95"
-          title="Skip intro animation (Esc)"
+          className="group flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#12304A]/90 hover:bg-[#1E3A52] text-[#F3F7FA] text-xs font-semibold backdrop-blur-md border border-[#2F4B63] shadow-lg cursor-pointer transition-all active:scale-95"
+          title="Exit 3D View (Esc)"
         >
-          <span>Skip</span>
-          <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
+          <span>{isManualMode ? 'Exit 3D View' : 'Explore 2D Map'}</span>
+          <ChevronRight className="w-3.5 h-3.5 text-[var(--live)] group-hover:translate-x-0.5 transition-transform" />
         </button>
       </div>
 
-      {/* Bottom Coordinates & Centering Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-30 pointer-events-none text-center">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl bg-[#171924]/80 backdrop-blur-md border border-[#1F2135] text-[11px] font-mono text-slate-300">
-          <span className="text-sky-400 font-bold">ORBIT:</span>
-          <span>Survey of India Boundary (20.59° N, 78.96° E)</span>
+      {/* Bottom Coordinates & Navigation Indicator */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-30 pointer-events-none text-center">
+        <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-xl bg-[#12304A]/90 backdrop-blur-md border border-[#2F4B63] text-[11px] font-mono text-[#B8C7D6] shadow-xl">
+          <span className="text-[#22B8CF] font-bold">ORBIT:</span>
+          <span>Survey of India Boundary (22.8° N, 79.5° E)</span>
+          <span className="hidden sm:inline text-xs text-[#5B7085]">|</span>
+          <span className="hidden sm:inline text-[10px] text-[#B8C7D6]">Press Esc or click Exit to return</span>
         </div>
       </div>
     </div>

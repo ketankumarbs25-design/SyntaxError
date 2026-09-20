@@ -1,17 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useState, useEffect, useRef } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
   RefreshCw,
-  Menu,
-  X,
-  History,
   Calendar,
   Waves,
+  ChevronDown,
+  PhoneCall,
+  FileText,
+  HelpCircle,
+  History,
+  Home,
+  Radio,
+  Bell,
+  MoreHorizontal,
+  X,
+  Eye,
+  AlertTriangle,
+  Globe,
 } from 'lucide-react';
 import { useI18n } from '../../i18n';
 import { SmoothThemeToggle } from '../ui/SmoothThemeToggle';
 import { LanguageSelector } from './LanguageSelector';
-import { LeftFeatureDrawer } from './LeftFeatureDrawer';
 
 interface AppNavbarProps {
   onManualRefresh?: () => void;
@@ -25,9 +35,11 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   onOpenHistorical,
 }) => {
   const { t } = useI18n();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const location = useLocation();
+  const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
+  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
   const [istDateStr, setIstDateStr] = useState('Today');
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Live IST Date
   useEffect(() => {
@@ -49,169 +61,406 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
     return () => clearInterval(interval);
   }, []);
 
-  const navLinks = [
+  // Close desktop dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setMoreDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Close mobile sheet on route change
+  useEffect(() => {
+    setMobileSheetOpen(false);
+    setMoreDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Primary links on desktop (5-6 links)
+  const primaryLinks = [
     { to: '/', label: 'Overview' },
     { to: '/stations', label: t.navStations },
     { to: '/basins', label: t.navBasins },
     { to: '/bulletins', label: t.navBulletins },
     { to: '/disasters', label: t.navDisasters },
     { to: '/watchlist', label: 'Watchlist' },
-    { to: '/report-incident', label: 'Ground Report' },
-    { to: '/contact', label: 'Contact & SOS' },
-    { to: '/help', label: t.navHelp },
   ];
+
+  // Mobile bottom tab bar items (5 items)
+  const mobileTabItems = [
+    { to: '/', label: 'Overview', icon: Home },
+    { to: '/stations', label: 'Stations', icon: Radio },
+    { to: '/basins', label: 'Basins', icon: Waves },
+    { to: '/bulletins', label: 'Bulletins', icon: Bell },
+  ];
+
+  const isMoreActive = ['/report-incident', '/contact', '/help'].includes(location.pathname);
 
   return (
     <>
+      {/* ─── Slim Sticky Top Bar ────────────────────────────────────────── */}
       <header className="w-full bg-[var(--surface)] border-b border-[var(--border)] sticky top-0 z-40 transition-colors shadow-xs">
-        <div className="max-w-[1560px] mx-auto px-4 sm:px-6 py-2.5 flex items-center justify-between gap-4">
-          {/* Left: Top-Left Menu Button + Modern Logo & Wordmark */}
-          <div className="flex items-center gap-3 shrink-0">
-            {/* Three Line Button (Menu) on Top Left */}
-            <button
-              type="button"
-              onClick={() => setIsDrawerOpen(true)}
-              className="flex items-center gap-2 px-2.5 sm:px-3 py-1.5 rounded-lg bg-[var(--bg)] hover:bg-[var(--surface)] text-[var(--text)] font-bold text-xs border border-[var(--border)] shadow-2xs cursor-pointer transition-all active:scale-95 shrink-0"
-              title="Open all features and options (Menu)"
-              aria-label="Open left feature navigation drawer"
-            >
-              <Menu className="w-4 h-4 text-[var(--live)]" />
-              <span className="font-bold text-xs tracking-wide">Menu</span>
-            </button>
+        <div className="max-w-[1560px] mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+          {/* Logo & Wordmark */}
+          <NavLink
+            to="/"
+            className="flex items-center gap-2.5 select-none shrink-0 group"
+          >
+            <div className="w-8 h-8 rounded-xl bg-[var(--primary)] text-white flex items-center justify-center shadow-xs group-hover:brightness-110 transition-all">
+              <Waves className="w-4 h-4" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm tracking-tight text-[var(--text)] leading-none">
+                FlowShield India
+              </span>
+              <span className="text-[11px] text-[var(--text-muted)] font-normal tracking-normal mt-0.5">
+                CWC flood telemetry
+              </span>
+            </div>
+          </NavLink>
 
-            <NavLink
-              to="/"
-              className="flex items-center gap-2.5 select-none shrink-0 group"
-            >
-              <div className="w-8 h-8 rounded-lg bg-[var(--primary)] text-white flex items-center justify-center shadow-xs group-hover:brightness-110 transition-all">
-                <Waves className="w-4 h-4" />
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-base tracking-tight text-[var(--text)] leading-none">
-                  FlowShield
-                </span>
-                <span className="text-[10px] text-[var(--text-muted)] font-medium tracking-wide mt-0.5">
-                  CWC Flood Telemetry
-                </span>
-              </div>
-            </NavLink>
-          </div>
-
-          {/* Center: Clean Pill Navigation */}
-          <nav className="hidden xl:flex items-center gap-1 bg-[var(--bg)] p-1 rounded-lg border border-[var(--border)]">
-            {navLinks.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                className={({ isActive }) =>
-                  `px-3 py-1.5 rounded-md text-xs font-medium transition-all select-none ${
+          {/* Center: Desktop Navigation with Animated Sliding Pill Highlight */}
+          <nav className="hidden lg:flex items-center gap-1 bg-[var(--bg)] p-1 rounded-xl border border-[var(--border)] relative">
+            {primaryLinks.map((item) => {
+              const isActive = location.pathname === item.to;
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={`relative px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors select-none ${
                     isActive
-                      ? 'bg-[var(--primary)] text-white font-bold shadow-2xs'
-                      : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface)]'
-                  }`
-                }
+                      ? 'text-white font-semibold'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                  }`}
+                >
+                  {isActive && (
+                    <motion.div
+                      layoutId="activeNavPill"
+                      className="absolute inset-0 bg-[var(--primary)] rounded-lg -z-10 shadow-xs"
+                      transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                    />
+                  )}
+                  {item.label}
+                </NavLink>
+              );
+            })}
+
+            {/* Desktop "More" Dropdown Trigger */}
+            <div ref={dropdownRef} className="relative">
+              <button
+                type="button"
+                onClick={() => setMoreDropdownOpen(!moreDropdownOpen)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap transition-colors cursor-pointer select-none ${
+                  isMoreActive
+                    ? 'text-[var(--text)] font-semibold bg-[var(--surface-2)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+                }`}
+                aria-expanded={moreDropdownOpen}
+                aria-haspopup="true"
               >
-                {item.label}
-              </NavLink>
-            ))}
+                <span>More</span>
+                <ChevronDown
+                  className={`w-3.5 h-3.5 transition-transform duration-200 ${
+                    moreDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {/* Desktop "More" Dropdown Menu */}
+              <AnimatePresence>
+                {moreDropdownOpen && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 6, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 4, scale: 0.98 }}
+                    transition={{ duration: 0.15, ease: 'easeOut' }}
+                    className="absolute right-0 mt-2 w-56 rounded-xl bg-[var(--surface)] border border-[var(--border)] shadow-xl p-1.5 z-50 flex flex-col gap-0.5"
+                  >
+                    <NavLink
+                      to="/report-incident"
+                      onClick={() => setMoreDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors"
+                    >
+                      <FileText className="w-4 h-4 text-[var(--text-muted)]" />
+                      <span>Ground report</span>
+                    </NavLink>
+
+                    <NavLink
+                      to="/contact"
+                      onClick={() => setMoreDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors"
+                    >
+                      <PhoneCall className="w-4 h-4 text-[var(--danger)]" />
+                      <span>Contact & SOS</span>
+                    </NavLink>
+
+                    <NavLink
+                      to="/help"
+                      onClick={() => setMoreDropdownOpen(false)}
+                      className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors"
+                    >
+                      <HelpCircle className="w-4 h-4 text-[var(--text-muted)]" />
+                      <span>Help & data</span>
+                    </NavLink>
+
+                    {onOpenHistorical && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setMoreDropdownOpen(false);
+                          onOpenHistorical();
+                        }}
+                        className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-[var(--text)] hover:bg-[var(--surface-2)] transition-colors text-left w-full cursor-pointer"
+                      >
+                        <History className="w-4 h-4 text-[var(--live)]" />
+                        <span>Disaster intel</span>
+                      </button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </nav>
 
-          {/* Right Controls: Telemetry Date Pill, Sync, Language, Theme Toggle */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-            {/* Live Telemetry Stream Status Pill */}
-            <div className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[var(--bg)] border border-[var(--border)] text-xs text-[var(--text)] font-medium">
-              <Calendar className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-              <span>{istDateStr} • CWC Stream</span>
+          {/* Right Group: Live Status Chip, Language, Theme, Sync (Icon-Only), Permanent Red SOS */}
+          <div className="flex items-center gap-2 shrink-0">
+            {/* 3D Satellite Earth Globe Trigger */}
+            <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('fs-replay-intro'));
+              }}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--border)] text-[var(--live)] border border-[var(--border)] text-xs font-semibold transition-all cursor-pointer shadow-xs active:scale-95"
+              title="View 3D Satellite Earth Globe"
+              aria-label="3D Satellite Earth Globe"
+            >
+              <Globe className="w-3.5 h-3.5 text-[var(--live)] animate-spin [animation-duration:18s]" />
+              <span className="hidden md:inline">3D Globe</span>
+            </button>
+
+            {/* Live Status Chip */}
+            <div className="hidden xl:flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--surface-2)] border border-[var(--border)] text-xs text-[var(--text-muted)] font-medium">
+              <Calendar className="w-3.5 h-3.5" />
+              <span>{istDateStr} · Live</span>
               <span className="w-2 h-2 rounded-full bg-[var(--live)] animate-pulse" />
             </div>
 
-            {/* 3-Minute Refresh Button */}
+            {/* Permanent Red Icon Button for Contact & SOS */}
+            <NavLink
+              to="/contact"
+              className="p-2 rounded-lg bg-[var(--danger)] text-white hover:brightness-110 active:scale-95 transition-all shadow-xs shrink-0 flex items-center justify-center"
+              title="Emergency Contact & SOS"
+              aria-label="Emergency Contact & SOS"
+            >
+              <PhoneCall className="w-4 h-4" />
+            </NavLink>
+
+            {/* Language Selector */}
+            <div className="hidden sm:block">
+              <LanguageSelector />
+            </div>
+
+            {/* Theme Toggle */}
+            <SmoothThemeToggle size="sm" />
+
+            {/* Sync Button: Icon-Only with Tooltip */}
             <button
               type="button"
               onClick={onManualRefresh}
               disabled={isRefreshing}
-              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[var(--bg)] hover:bg-[var(--surface)] text-[var(--text)] text-xs font-semibold border border-[var(--border)] transition-colors cursor-pointer"
-              title="Auto-refreshes every 3 minutes. Click to refresh telemetry now."
+              className="p-2 rounded-lg bg-[var(--surface-2)] hover:bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] transition-colors cursor-pointer shrink-0"
+              title="Auto-refreshes every 3 minutes. Click to sync telemetry now."
+              aria-label="Sync telemetry data"
             >
               <RefreshCw className={`w-3.5 h-3.5 text-[var(--live)] ${isRefreshing ? 'animate-spin' : ''}`} />
-              <span className="hidden sm:inline text-[11px]">Sync</span>
-            </button>
-
-            {/* Language Selector (10 River Basin Languages) */}
-            <LanguageSelector />
-
-            {/* Single Smooth Animated Theme Capsule Switcher */}
-            <SmoothThemeToggle size="sm" />
-
-            {/* Historical Disaster Intel Trigger */}
-            {onOpenHistorical && (
-              <button
-                type="button"
-                onClick={onOpenHistorical}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--bg)] hover:bg-[var(--surface)] text-[var(--live)] border border-[var(--border)] text-xs font-semibold transition-colors cursor-pointer"
-                title="Open Historical Disaster Intelligence"
-              >
-                <History className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline text-[11px]">Intel</span>
-              </button>
-            )}
-
-            {/* Mobile menu hamburger toggle */}
-            <button
-              type="button"
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="xl:hidden p-2 rounded-xl text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-              aria-label="Toggle navigation menu"
-            >
-              {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
           </div>
         </div>
-
-        {/* Mobile Drawer Menu */}
-        {mobileMenuOpen && (
-          <div className="xl:hidden border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-[#0E101B] px-4 py-3 flex flex-col gap-1.5 shadow-lg">
-            {navLinks.map((item) => (
-              <NavLink
-                key={item.to}
-                to={item.to}
-                onClick={() => setMobileMenuOpen(false)}
-                className={({ isActive }) =>
-                  `px-3 py-2 rounded-xl text-xs font-semibold ${
-                    isActive
-                      ? 'bg-[#151722] dark:bg-white text-white dark:text-slate-950 font-bold'
-                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
-                  }`
-                }
-              >
-                {item.label}
-              </NavLink>
-            ))}
-
-            {/* Mobile Language Selector */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Language</span>
-              <LanguageSelector isMobile={true} />
-            </div>
-
-            {/* Mobile Theme Toggle Button */}
-            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Theme</span>
-              <SmoothThemeToggle size="sm" />
-            </div>
-          </div>
-        )}
       </header>
 
-      {/* Left Feature & Options Navigation Drawer (triggered by top-left 3-line button) */}
-      <LeftFeatureDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        onManualRefresh={onManualRefresh}
-        isRefreshing={isRefreshing}
-        onOpenHistorical={onOpenHistorical}
-        istTimeStr={istDateStr}
-      />
+      {/* ─── Mobile Bottom Tab Bar (Below 1024px) ────────────────────────── */}
+      <nav
+        className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-[var(--surface)] border-t border-[var(--border)] px-2 py-1 flex items-center justify-around shadow-lg"
+        aria-label="Mobile navigation"
+      >
+        {mobileTabItems.map((item) => {
+          const isActive = location.pathname === item.to;
+          const Icon = item.icon;
+          return (
+            <NavLink
+              key={item.to}
+              to={item.to}
+              className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg text-[11px] font-medium transition-colors ${
+                isActive
+                  ? 'text-[var(--live)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+              }`}
+            >
+              <Icon className="w-4 h-4 mb-0.5" />
+              <span>{item.label}</span>
+            </NavLink>
+          );
+        })}
+
+        {/* 5th Item: More Button (Opens Mobile Slide-Up Sheet) */}
+        <button
+          type="button"
+          onClick={() => setMobileSheetOpen(true)}
+          className={`flex flex-col items-center justify-center py-1 px-3 rounded-lg text-[11px] font-medium transition-colors cursor-pointer ${
+            isMoreActive || mobileSheetOpen
+              ? 'text-[var(--live)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text)]'
+          }`}
+          aria-label="More navigation and tools"
+        >
+          <MoreHorizontal className="w-4 h-4 mb-0.5" />
+          <span>More</span>
+        </button>
+      </nav>
+
+      {/* ─── Mobile Slide-Up Sheet (Spring/Ease Backdrop & Sheet) ───────── */}
+      <AnimatePresence>
+        {mobileSheetOpen && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setMobileSheetOpen(false)}
+              className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-50"
+            />
+
+            {/* Slide-Up Panel */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 26, stiffness: 280 }}
+              className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-[var(--surface)] border-t border-[var(--border)] rounded-t-2xl p-4 max-h-[85vh] overflow-y-auto flex flex-col gap-4 shadow-2xl pb-8"
+            >
+              {/* Drag Handle Indicator & Header */}
+              <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-1 rounded-full bg-[var(--border)]" />
+                <div className="w-full flex items-center justify-between pt-1">
+                  <span className="font-semibold text-sm text-[var(--text)]">Navigation & tools</span>
+                  <button
+                    type="button"
+                    onClick={() => setMobileSheetOpen(false)}
+                    className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)]"
+                    aria-label="Close sheet"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Extra Navigation Routes */}
+              <div className="grid grid-cols-2 gap-2">
+                <NavLink
+                  to="/watchlist"
+                  onClick={() => setMobileSheetOpen(false)}
+                  className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-medium transition-colors ${
+                    location.pathname === '/watchlist'
+                      ? 'bg-[var(--primary)] text-white border-transparent'
+                      : 'bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)]'
+                  }`}
+                >
+                  <Eye className="w-4 h-4 text-[var(--live)]" />
+                  <span>Watchlist</span>
+                </NavLink>
+
+                <NavLink
+                  to="/disasters"
+                  onClick={() => setMobileSheetOpen(false)}
+                  className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-medium transition-colors ${
+                    location.pathname === '/disasters'
+                      ? 'bg-[var(--primary)] text-white border-transparent'
+                      : 'bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)]'
+                  }`}
+                >
+                  <AlertTriangle className="w-4 h-4 text-[var(--warning)]" />
+                  <span>Disasters</span>
+                </NavLink>
+
+                <NavLink
+                  to="/report-incident"
+                  onClick={() => setMobileSheetOpen(false)}
+                  className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-medium transition-colors ${
+                    location.pathname === '/report-incident'
+                      ? 'bg-[var(--primary)] text-white border-transparent'
+                      : 'bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)]'
+                  }`}
+                >
+                  <FileText className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span>Ground report</span>
+                </NavLink>
+
+                <NavLink
+                  to="/contact"
+                  onClick={() => setMobileSheetOpen(false)}
+                  className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-medium transition-colors ${
+                    location.pathname === '/contact'
+                      ? 'bg-[var(--danger)] text-white border-transparent'
+                      : 'bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)]'
+                  }`}
+                >
+                  <PhoneCall className="w-4 h-4 text-[var(--danger)]" />
+                  <span>Contact & SOS</span>
+                </NavLink>
+
+                <NavLink
+                  to="/help"
+                  onClick={() => setMobileSheetOpen(false)}
+                  className={`flex items-center gap-2.5 p-3 rounded-xl border text-xs font-medium transition-colors col-span-2 ${
+                    location.pathname === '/help'
+                      ? 'bg-[var(--primary)] text-white border-transparent'
+                      : 'bg-[var(--surface-2)] text-[var(--text)] border-[var(--border)]'
+                  }`}
+                >
+                  <HelpCircle className="w-4 h-4 text-[var(--text-muted)]" />
+                  <span>Help & data</span>
+                </NavLink>
+
+                {onOpenHistorical && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileSheetOpen(false);
+                      onOpenHistorical();
+                    }}
+                    className="flex items-center gap-2.5 p-3 rounded-xl bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)] text-xs font-medium text-left cursor-pointer"
+                  >
+                    <History className="w-4 h-4 text-[var(--live)]" />
+                    <span>Disaster intel</span>
+                  </button>
+                )}
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMobileSheetOpen(false);
+                    window.dispatchEvent(new CustomEvent('fs-replay-intro'));
+                  }}
+                  className="flex items-center gap-2.5 p-3 rounded-xl bg-[var(--surface-2)] text-[var(--live)] border border-[var(--border)] text-xs font-medium text-left cursor-pointer"
+                >
+                  <Globe className="w-4 h-4 text-[var(--live)] animate-spin [animation-duration:18s]" />
+                  <span>3D Satellite Earth</span>
+                </button>
+              </div>
+
+              {/* Controls Bar: Language Selector & Theme */}
+              <div className="pt-2 border-t border-[var(--border)] flex items-center justify-between gap-3">
+                <span className="text-xs text-[var(--text-muted)]">Language</span>
+                <LanguageSelector isMobile={true} />
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </>
   );
 };

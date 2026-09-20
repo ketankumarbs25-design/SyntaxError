@@ -1,4 +1,5 @@
-import { AlertCircle, ArrowRight } from 'lucide-react';
+import React from 'react';
+import { ArrowRight } from 'lucide-react';
 import { NavLink } from 'react-router-dom';
 import type { FloodBulletin, Station } from '../../api/types';
 import { useI18n } from '../../i18n';
@@ -23,7 +24,7 @@ export const AlertTicker: React.FC<AlertTickerProps> = ({ bulletins, severeStati
     ...severeStations.slice(0, 5).map((s) => ({
       id: s.id,
       type: 'station' as const,
-      text: `${s.name} (${s.river}) - ${s.status.toUpperCase()}: ${s.currentLevel.toFixed(2)}m (${s.deltaToDangerM >= 0 ? `+${s.deltaToDangerM}m above danger` : 'approaching danger'})`,
+      text: `${s.name} (${s.river}) - ${s.status}: ${s.currentLevel.toFixed(2)}m (${s.deltaToDangerM >= 0 ? `+${s.deltaToDangerM}m above danger` : 'approaching danger'})`,
       severity: s.status === 'Extreme' ? 'Extreme' : 'Severe',
       link: `/stations/${s.id}`,
     })),
@@ -33,30 +34,41 @@ export const AlertTicker: React.FC<AlertTickerProps> = ({ bulletins, severeStati
 
   return (
     <div
-      className="w-full bg-red-600 text-white overflow-hidden py-1.5 px-3 flex items-center shadow-xs select-none relative z-30"
+      className="w-full bg-[var(--bg)] border-b border-[var(--border)] overflow-hidden py-2 px-3 sm:px-4 flex items-center select-none relative z-30"
       role="region"
-      aria-label="Active Flood Warnings Ticker"
+      aria-label="Active flood warnings ticker"
     >
-      {/* Ticker Fixed Header Label */}
-      <div className="flex items-center gap-1.5 bg-red-700/90 text-white px-2.5 py-0.5 rounded-md text-[11px] font-bold uppercase tracking-wider shrink-0 z-10 shadow-xs mr-3">
-        <AlertCircle className="w-3.5 h-3.5 text-amber-300" />
-        <span>{language === 'hi' ? 'ताज़ा अलर्ट' : 'LIVE ALERTS'}</span>
+      {/* Ticker Fixed Header Label with red Live dot */}
+      <div className="flex items-center gap-2 bg-[var(--surface-2)] border border-[var(--border)] text-[var(--text)] px-2.5 py-1 rounded-full text-xs font-semibold shrink-0 z-10 mr-3 shadow-xs">
+        <span className="w-2 h-2 rounded-full bg-[var(--danger)] animate-pulse inline-block" />
+        <span className="text-xs font-medium text-[var(--text)]">
+          {language === 'hi' ? 'ताज़ा अलर्ट' : 'Live alerts'}
+        </span>
       </div>
 
-      {/* Marquee Track */}
-      <div className="flex-1 overflow-hidden relative flex items-center">
-        <div className="animate-ticker flex items-center gap-8 text-xs font-semibold">
-          {/* Duplicate array for seamless infinite looping */}
+      {/* Marquee Track - pauses on hover, padded so text is never clipped at left edge */}
+      <div className="flex-1 overflow-hidden relative flex items-center pl-3">
+        <div className="animate-ticker flex items-center gap-8 text-xs font-medium hover:[animation-play-state:paused]">
           {[...tickerItems, ...tickerItems].map((item, idx) => (
             <NavLink
               key={`${item.id}-${idx}`}
               to={item.link}
-              className="inline-flex items-center gap-2 text-white hover:text-amber-200 transition-colors shrink-0 group"
+              className="inline-flex items-center gap-2 text-[var(--text-muted)] hover:text-[var(--text)] transition-colors shrink-0 group"
             >
-              <span className="w-2 h-2 rounded-full bg-amber-300 animate-ping inline-block" />
-              <span>{item.text}</span>
-              <ArrowRight className="w-3 h-3 opacity-70 group-hover:translate-x-0.5 transition-transform" />
-              <span className="text-white/40 ml-4">•</span>
+              <span
+                className="w-1.5 h-1.5 rounded-full inline-block"
+                style={{
+                  backgroundColor:
+                    item.severity === 'Extreme'
+                      ? 'var(--danger)'
+                      : item.severity === 'Severe'
+                      ? 'var(--warning)'
+                      : 'var(--watch)',
+                }}
+              />
+              <span className="text-[var(--text)]">{item.text}</span>
+              <ArrowRight className="w-3 h-3 text-[var(--text-muted)] opacity-70 group-hover:translate-x-0.5 transition-transform" />
+              <span className="text-[var(--border)] ml-3 select-none">·</span>
             </NavLink>
           ))}
         </div>
@@ -64,3 +76,5 @@ export const AlertTicker: React.FC<AlertTickerProps> = ({ bulletins, severeStati
     </div>
   );
 };
+
+export default AlertTicker;

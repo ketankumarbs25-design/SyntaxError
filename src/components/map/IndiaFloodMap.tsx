@@ -5,7 +5,7 @@ import type { Station } from '../../api/types';
 import { INDIA_OFFICIAL_GEOJSON } from '../../data/indiaOfficialGeoJSON';
 import { useTheme } from '../../hooks/useTheme';
 import { useI18n } from '../../i18n';
-import { Layers, Compass } from 'lucide-react';
+import { Layers, Compass, Globe } from 'lucide-react';
 
 interface IndiaFloodMapProps {
   stations: Station[];
@@ -27,31 +27,44 @@ interface MapStyleConfig {
 const MAP_STYLES: Record<MapStyleKey, MapStyleConfig> = {
   satellite: {
     id: 'satellite',
-    label: 'Satellite (Earth)',
+    label: 'Satellite',
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution:
-      'Tiles &copy; Esri &mdash; Source: Esri, Maxar, Earthstar Geographics',
+    attribution: 'Tiles &copy; Esri',
     maxZoom: 18,
   },
   osm: {
     id: 'osm',
-    label: 'OpenStreetMap (OSM)',
+    label: 'OSM map',
     url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution:
-      '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noreferrer">OpenStreetMap</a> contributors | Survey of India Boundary',
+    attribution: '&copy; OpenStreetMap contributors | Survey of India Boundary',
     maxZoom: 19,
   },
 };
 
-// India Geographic Center and Bounding Box (inclusive of entire Ladakh, Gilgit-Baltistan/PoK, and Andaman & Nicobar)
-const INDIA_CENTER: [number, number] = [23.5, 78.9629];
+// India geographic bounds (encompassing Jammu & Kashmir, Ladakh, Arunachal, Kutch, and South)
 const INDIA_BOUNDS: L.LatLngBoundsLiteral = [
-  [6.5, 68.1], // South-West (Indira Point / Rann of Kutch)
-  [37.2, 97.45], // North-East (Indira Col, Gilgit-Baltistan / Kibithu, Arunachal Pradesh)
+  [8.0, 68.7],
+  [35.5, 97.4],
 ];
+const INDIA_CENTER: [number, number] = [22.8, 80.0];
+
+const SEVERITY_COLORS = {
+  Normal: '#1E7F4A',
+  'Above normal': '#F2C230',
+  Severe: '#F08A24',
+  Extreme: '#C62828',
+};
+
+const SEVERITY_RANK: Record<string, number> = {
+  Normal: 1,
+  'Above normal': 2,
+  Severe: 3,
+  Extreme: 4,
+};
 
 export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
   stations,
+  selectedStationId,
   onSelectStation,
   heightClass = 'h-[540px] sm:h-[640px]',
 }) => {
@@ -65,14 +78,13 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
   const { language, t } = useI18n();
   const navigate = useNavigate();
 
-  // Active map style: Only Satellite or OSM
   const [activeStyle, setActiveStyle] = useState<MapStyleKey>('satellite');
 
   // Fit map precisely to the official boundaries of India
   const fitToIndia = useCallback(() => {
     if (mapInstanceRef.current) {
       mapInstanceRef.current.fitBounds(INDIA_BOUNDS, {
-        padding: [24, 24],
+        padding: [16, 16],
         maxZoom: 6,
       });
     }
@@ -91,10 +103,8 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
       zoomControl: false,
     });
 
-    // Custom Top-Right Zoom Control
     L.control.zoom({ position: 'topright' }).addTo(map);
 
-    // Initial Base Tile Layer
     const styleConfig = MAP_STYLES[activeStyle];
     const tileLayer = L.tileLayer(styleConfig.url, {
       attribution: styleConfig.attribution,
@@ -104,23 +114,27 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
 
     // Fit India on initial load
     map.fitBounds(INDIA_BOUNDS, {
-      padding: [20, 20],
+      padding: [16, 16],
       maxZoom: 6,
     });
 
-    // Layer group for station markers
     const markersGroup = L.layerGroup().addTo(map);
     markersLayerRef.current = markersGroup;
 
     mapInstanceRef.current = map;
 
-    // Invalidate size after layout stabilization
-    const timer = setTimeout(() => {
+    const timer1 = setTimeout(() => {
       map.invalidateSize();
-    }, 250);
+      map.fitBounds(INDIA_BOUNDS, { padding: [16, 16], maxZoom: 6 });
+    }, 150);
+
+    const timer2 = setTimeout(() => {
+      map.invalidateSize();
+    }, 400);
 
     return () => {
-      clearTimeout(timer);
+      clearTimeout(timer1);
+      clearTimeout(timer2);
       map.remove();
       mapInstanceRef.current = null;
     };
@@ -133,7 +147,7 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     tileLayerRef.current.setUrl(styleConfig.url);
   }, [activeStyle]);
 
-  // Render Official Survey of India Borders (PoK & Ladakh fully included permanently)
+  // Render official Survey of India boundary
   useEffect(() => {
     if (!mapInstanceRef.current) return;
     const map = mapInstanceRef.current;
@@ -142,7 +156,6 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     const borderColor = activeStyle === 'satellite' ? '#60a5fa' : isDark ? '#38bdf8' : '#1d4ed8';
     const fillColor = activeStyle === 'satellite' ? '#3b82f6' : isDark ? '#0284c7' : '#3b82f6';
 
-    // If layer already exists, update style in 0ms without re-parsing thousands of GeoJSON points
     if (geoJsonLayerRef.current) {
       geoJsonLayerRef.current.setStyle({
         color: borderColor,
@@ -154,191 +167,297 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
     const geoJsonLayer = L.geoJSON(INDIA_OFFICIAL_GEOJSON, {
       style: () => ({
         color: borderColor,
-        weight: 1.75,
-        opacity: 0.85,
+        weight: 1.5,
+        opacity: 0.8,
         fillColor: fillColor,
-        fillOpacity: 0.04,
+        fillOpacity: 0.03,
       }),
       onEachFeature: (feature, layer) => {
         const stateName = feature.properties?.st_nm || 'India';
         layer.bindTooltip(
-          `<div class="font-sans text-xs font-bold text-slate-900 dark:text-white">${stateName}</div>`,
+          `<div class="font-sans text-xs font-semibold text-[var(--text)]">${stateName}</div>`,
           {
             sticky: true,
             className:
-              'bg-white/95 dark:bg-slate-900/95 shadow-md rounded-md px-2 py-1 border border-slate-200 dark:border-slate-800',
+              'bg-[var(--surface)] text-[var(--text)] shadow-md rounded-lg px-2 py-1 border border-[var(--border)]',
           }
         );
-
-        layer.on({
-          mouseover: (e) => {
-            const l = e.target;
-            l.setStyle({
-              weight: 2.5,
-              opacity: 1,
-              fillOpacity: 0.12,
-            });
-          },
-          mouseout: (e) => {
-            geoJsonLayer.resetStyle(e.target);
-          },
-        });
       },
     }).addTo(map);
 
     geoJsonLayerRef.current = geoJsonLayer;
   }, [themeMode, activeStyle]);
 
-  // Update Station Markers when stations prop changes
-  useEffect(() => {
+  // Cluster and render markers
+  const renderMarkers = useCallback(() => {
     if (!mapInstanceRef.current || !markersLayerRef.current) return;
+    const map = mapInstanceRef.current;
     const markersGroup = markersLayerRef.current;
     markersGroup.clearLayers();
 
-    stations.forEach((stn) => {
-      // Color by status: Normal (green), Above normal (yellow/amber), Severe (orange), Extreme (red)
-      let color = '#16a34a'; // normal
-      let pulseClass = '';
-      let statusBadgeClass = 'bg-emerald-500 text-white';
+    const currentZoom = map.getZoom();
 
-      if (stn.status === 'Above normal') {
-        color = '#ca8a04';
-        statusBadgeClass = 'bg-yellow-500 text-white';
-      } else if (stn.status === 'Severe') {
-        color = '#ea580c';
-        pulseClass = 'pulse-severe-marker';
-        statusBadgeClass = 'bg-orange-600 text-white';
-      } else if (stn.status === 'Extreme') {
-        color = '#dc2626';
-        pulseClass = 'pulse-extreme-marker';
-        statusBadgeClass = 'bg-red-600 text-white';
-      }
+    // Determine cluster grid cell size based on current zoom
+    let gridSize = 0;
+    if (currentZoom <= 4) gridSize = 2.0;
+    else if (currentZoom === 5) gridSize = 1.3;
+    else if (currentZoom === 6) gridSize = 0.7;
+    else if (currentZoom === 7) gridSize = 0.35;
+    else gridSize = 0; // Zoom >= 8: individual stations
 
-      // Shape: Circle for river-level, Square for reservoir-inflow
-      const isSquare = stn.type === 'reservoir-inflow';
-      const borderRadius = isSquare ? '4px' : '50%';
-      const shapeTitle = isSquare ? 'Reservoir Inflow' : 'River Level';
+    if (gridSize === 0) {
+      // Individual station markers
+      stations.forEach((stn) => {
+        const color = SEVERITY_COLORS[stn.status as keyof typeof SEVERITY_COLORS] || SEVERITY_COLORS.Normal;
+        const isPulse = stn.status === 'Extreme' || stn.status === 'Severe';
+        const isSquare = stn.type === 'reservoir-inflow';
+        const isSelected = selectedStationId === stn.id;
 
-      // Custom Leaflet DivIcon
-      const iconHtml = `
-        <div class="relative flex items-center justify-center cursor-pointer group" style="width: 28px; height: 28px;">
-          <div class="${pulseClass}" style="
-            width: ${isSquare ? '20px' : '22px'};
-            height: ${isSquare ? '20px' : '22px'};
-            background-color: ${color};
-            border-radius: ${borderRadius};
-            border: 2.5px solid #ffffff;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.2s ease;
-          ">
+        const markerHtml = `
+          <div class="relative flex items-center justify-center cursor-pointer" style="width: 22px; height: 22px;">
+            ${
+              isPulse
+                ? `<span class="absolute inset-0 rounded-full animate-ping opacity-75" style="background-color: ${color};"></span>`
+                : ''
+            }
             <div style="
-              width: 5px;
-              height: 5px;
-              background-color: #ffffff;
-              border-radius: ${borderRadius};
+              width: ${isSelected ? '16px' : '12px'};
+              height: ${isSelected ? '16px' : '12px'};
+              background-color: ${color};
+              border-radius: ${isSquare ? '3px' : '50%'};
+              border: 1.5px solid #FFFFFF;
+              box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+              transition: transform 0.2s ease;
             "></div>
           </div>
-        </div>
-      `;
+        `;
 
-      const customIcon = L.divIcon({
-        html: iconHtml,
-        className: 'custom-station-marker',
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
-        popupAnchor: [0, -14],
+        const customIcon = L.divIcon({
+          html: markerHtml,
+          className: 'flood-station-dot',
+          iconSize: [22, 22],
+          iconAnchor: [11, 11],
+          popupAnchor: [0, -11],
+        });
+
+        const marker = L.marker([stn.latitude, stn.longitude], { icon: customIcon });
+
+        const displayName = language === 'hi' && stn.hindiName ? stn.hindiName : stn.name;
+        const popupHtml = `
+          <div class="p-2 min-w-[210px] font-sans text-left bg-[var(--surface)] text-[var(--text)] rounded-xl border border-[var(--border)] shadow-xl">
+            <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-[var(--border)]">
+              <span class="font-semibold text-xs text-[var(--text)]">${displayName}</span>
+              <span class="text-[10px] font-medium px-2 py-0.5 rounded-md text-white whitespace-nowrap" style="background-color: ${color};">
+                ${stn.status}
+              </span>
+            </div>
+
+            <div class="text-[11px] text-[var(--text-muted)] mt-1.5">
+              <span>${stn.type === 'reservoir-inflow' ? 'Reservoir' : 'River gauge'}</span> • <span>${stn.river} (${stn.basin})</span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2 my-2 text-xs bg-[var(--surface-2)] p-2 rounded-lg border border-[var(--border)]">
+              <div>
+                <span class="text-[10px] text-[var(--text-muted)] block">Water level</span>
+                <span class="font-mono font-medium text-[var(--text)] tabular-nums">${stn.currentLevel.toFixed(2)} m</span>
+              </div>
+              <div>
+                <span class="text-[10px] text-[var(--text-muted)] block">Danger level</span>
+                <span class="font-mono font-medium text-[var(--text)] tabular-nums">${stn.dangerLevel.toFixed(2)} m</span>
+              </div>
+            </div>
+
+            <button
+              id="popup-btn-${stn.id}"
+              class="w-full py-1.5 px-3 rounded-lg bg-[var(--primary)] hover:brightness-110 text-white font-medium text-xs transition-all text-center cursor-pointer shadow-xs block"
+            >
+              ${t.viewDetails} →
+            </button>
+          </div>
+        `;
+
+        marker.bindPopup(popupHtml, {
+          maxWidth: 260,
+          className: 'flood-popup-custom',
+        });
+
+        marker.on('click', () => {
+          map.flyTo([stn.latitude, stn.longitude], Math.max(map.getZoom(), 8), { duration: 0.6 });
+          if (onSelectStation) onSelectStation(stn);
+        });
+
+        marker.on('popupopen', () => {
+          const btn = document.getElementById(`popup-btn-${stn.id}`);
+          if (btn) {
+            btn.onclick = () => navigate(`/stations/${stn.id}`);
+          }
+        });
+
+        marker.addTo(markersGroup);
       });
+    } else {
+      // Grid clustering
+      const clusters: Record<
+        string,
+        {
+          stations: Station[];
+          sumLat: number;
+          sumLng: number;
+          highestSeverity: string;
+        }
+      > = {};
 
-      const marker = L.marker([stn.latitude, stn.longitude], { icon: customIcon });
-
-      // Interactive Popup
-      const displayName = language === 'hi' && stn.hindiName ? stn.hindiName : stn.name;
-      const popupHtml = `
-        <div class="p-1 min-w-[220px] font-sans text-left">
-          <div class="flex items-center justify-between gap-2 pb-1.5 border-b border-slate-200">
-            <span class="font-bold text-xs text-slate-900">${displayName}</span>
-            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full ${statusBadgeClass}">${stn.status}</span>
-          </div>
-
-          <div class="text-[11px] text-slate-500 mt-1">
-            <span>${shapeTitle}</span> • <span>${stn.river} (${stn.basin})</span>
-          </div>
-
-          <div class="grid grid-cols-2 gap-2 my-2.5 text-xs bg-slate-50 p-2 rounded-lg border border-slate-100">
-            <div>
-              <span class="text-[10px] text-slate-400 block">Water Level</span>
-              <span class="font-extrabold text-slate-900">${stn.currentLevel.toFixed(2)} m</span>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-400 block">Danger Level</span>
-              <span class="font-bold text-red-600">${stn.dangerLevel.toFixed(2)} m</span>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-400 block">HFL (Peak)</span>
-              <span class="font-semibold text-slate-700">${stn.hfl.toFixed(2)} m</span>
-            </div>
-            <div>
-              <span class="text-[10px] text-slate-400 block">Trend</span>
-              <span class="font-semibold text-slate-800">${stn.trend}</span>
-            </div>
-          </div>
-
-          <button
-            id="popup-btn-${stn.id}"
-            class="w-full py-1.5 px-3 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-colors text-center cursor-pointer shadow-xs block"
-          >
-            ${t.viewDetails} →
-          </button>
-        </div>
-      `;
-
-      marker.bindPopup(popupHtml, { maxWidth: 280 });
-
-      marker.on('popupopen', () => {
-        const btn = document.getElementById(`popup-btn-${stn.id}`);
-        if (btn) {
-          btn.onclick = () => {
-            navigate(`/stations/${stn.id}`);
+      stations.forEach((stn) => {
+        const gridKey = `${Math.floor(stn.latitude / gridSize)}_${Math.floor(stn.longitude / gridSize)}`;
+        if (!clusters[gridKey]) {
+          clusters[gridKey] = {
+            stations: [],
+            sumLat: 0,
+            sumLng: 0,
+            highestSeverity: stn.status,
           };
         }
-        if (onSelectStation) {
-          onSelectStation(stn);
+        const c = clusters[gridKey];
+        c.stations.push(stn);
+        c.sumLat += stn.latitude;
+        c.sumLng += stn.longitude;
+
+        if ((SEVERITY_RANK[stn.status] || 0) > (SEVERITY_RANK[c.highestSeverity] || 0)) {
+          c.highestSeverity = stn.status;
         }
       });
 
-      marker.addTo(markersGroup);
-    });
-  }, [stations, language, t, navigate, onSelectStation]);
+      Object.values(clusters).forEach((c) => {
+        const count = c.stations.length;
+        const avgLat = c.sumLat / count;
+        const avgLng = c.sumLng / count;
+        const color =
+          SEVERITY_COLORS[c.highestSeverity as keyof typeof SEVERITY_COLORS] || SEVERITY_COLORS.Normal;
+
+        if (count === 1) {
+          const stn = c.stations[0];
+          const isPulse = stn.status === 'Extreme' || stn.status === 'Severe';
+          const isSquare = stn.type === 'reservoir-inflow';
+
+          const markerHtml = `
+            <div class="relative flex items-center justify-center cursor-pointer" style="width: 22px; height: 22px;">
+              ${
+                isPulse
+                  ? `<span class="absolute inset-0 rounded-full animate-ping opacity-75" style="background-color: ${color};"></span>`
+                  : ''
+              }
+              <div style="
+                width: 12px;
+                height: 12px;
+                background-color: ${color};
+                border-radius: ${isSquare ? '3px' : '50%'};
+                border: 1.5px solid #FFFFFF;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.35);
+              "></div>
+            </div>
+          `;
+
+          const customIcon = L.divIcon({
+            html: markerHtml,
+            className: 'flood-station-dot',
+            iconSize: [22, 22],
+            iconAnchor: [11, 11],
+            popupAnchor: [0, -11],
+          });
+
+          const marker = L.marker([stn.latitude, stn.longitude], { icon: customIcon });
+
+          marker.on('click', () => {
+            map.flyTo([stn.latitude, stn.longitude], Math.max(map.getZoom(), 8), { duration: 0.6 });
+            if (onSelectStation) onSelectStation(stn);
+          });
+
+          marker.addTo(markersGroup);
+        } else {
+          // Cluster bubble with count
+          const clusterHtml = `
+            <div class="flex items-center justify-center cursor-pointer rounded-full shadow-md" style="
+              width: 28px;
+              height: 28px;
+              background-color: ${color};
+              border: 2px solid rgba(255, 255, 255, 0.9);
+              color: ${c.highestSeverity === 'Above normal' ? '#0B1F33' : '#FFFFFF'};
+              font-family: inherit;
+              font-size: 11px;
+              font-weight: 600;
+              transition: transform 0.2s ease;
+            ">
+              ${count}
+            </div>
+          `;
+
+          const clusterIcon = L.divIcon({
+            html: clusterHtml,
+            className: 'flood-cluster-marker',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+          });
+
+          const marker = L.marker([avgLat, avgLng], { icon: clusterIcon });
+          marker.on('click', () => {
+            map.flyTo([avgLat, avgLng], Math.min(map.getZoom() + 2, 10), { duration: 0.5 });
+          });
+
+          marker.addTo(markersGroup);
+        }
+      });
+    }
+  }, [stations, selectedStationId, language, t, navigate, onSelectStation]);
+
+  // Hook markers render to stations update and zoom changes
+  useEffect(() => {
+    renderMarkers();
+
+    if (mapInstanceRef.current) {
+      const map = mapInstanceRef.current;
+      map.on('zoomend', renderMarkers);
+      return () => {
+        map.off('zoomend', renderMarkers);
+      };
+    }
+  }, [renderMarkers]);
+
+  // Fly-to animation when selectedStationId changes externally
+  useEffect(() => {
+    if (!selectedStationId || !mapInstanceRef.current) return;
+    const target = stations.find((s) => s.id === selectedStationId);
+    if (target) {
+      mapInstanceRef.current.flyTo([target.latitude, target.longitude], 9, {
+        duration: 0.7,
+      });
+    }
+  }, [selectedStationId, stations]);
 
   return (
-    <div className="relative w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800 shadow-sm bg-slate-100 dark:bg-slate-950">
-      {/* Real Cartographic Leaflet Map */}
+    <div className="relative w-full rounded-xl overflow-hidden border border-[var(--border)] shadow-xs bg-[var(--surface)]">
+      {/* Leaflet Map Canvas */}
       <div ref={mapContainerRef} className={`w-full ${heightClass} z-10`} />
 
-      {/* Top-Left Floating Controls: Layer Selector & Fit to India */}
-      <div className="absolute top-4 left-4 z-20 flex items-center gap-2">
-        {/* Fit to India Button */}
+      {/* Top-Left Floating Controls: Fit India & Satellite/OSM */}
+      <div className="absolute top-3 left-3 z-20 flex items-center gap-2">
         <button
+          type="button"
           onClick={fitToIndia}
-          className="flex items-center gap-1.5 px-3 py-2 bg-white/95 dark:bg-slate-900/95 hover:bg-white dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl shadow-md border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md cursor-pointer transition-all active:scale-95"
-          title="Reset View to All India"
+          className="flex items-center gap-1.5 px-3 py-1.5 bg-[var(--surface)] hover:bg-[var(--surface-2)] text-[var(--text)] text-xs font-medium rounded-lg shadow-sm border border-[var(--border)] cursor-pointer transition-all active:scale-95"
+          title="Fit view to India"
         >
-          <Compass className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <Compass className="w-3.5 h-3.5 text-[var(--live)]" />
           <span className="hidden sm:inline">Fit India</span>
         </button>
 
-        {/* Map Layer Switcher: Satellite vs OSM Map */}
-        <div className="flex items-center p-0.5 bg-white/95 dark:bg-slate-900/95 rounded-xl shadow-md border border-slate-200/80 dark:border-slate-700/80 backdrop-blur-md">
+        <div className="flex items-center p-0.5 bg-[var(--surface)] rounded-lg shadow-sm border border-[var(--border)]">
           <button
             type="button"
             onClick={() => setActiveStyle('satellite')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
               activeStyle === 'satellite'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[var(--primary)] text-white shadow-xs'
+                : 'text-[var(--text-muted)] hover:text-[var(--text)]'
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -347,56 +466,69 @@ export const IndiaFloodMap: React.FC<IndiaFloodMapProps> = ({
           <button
             type="button"
             onClick={() => setActiveStyle('osm')}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-all cursor-pointer ${
               activeStyle === 'osm'
-                ? 'bg-blue-600 text-white shadow-xs'
-                : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[var(--primary)] text-white shadow-xs'
+                : 'text-[var(--text-muted)] hover:text-[var(--text)]'
             }`}
           >
             <Compass className="w-3.5 h-3.5" />
-            <span>OSM Map</span>
+            <span>OSM map</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              window.dispatchEvent(new CustomEvent('fs-replay-intro'));
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-[var(--live)] hover:text-[var(--text)] transition-all cursor-pointer"
+            title="Launch 3D Satellite Earth Globe"
+          >
+            <Globe className="w-3.5 h-3.5 text-[var(--live)] animate-spin [animation-duration:18s]" />
+            <span>3D Earth</span>
           </button>
         </div>
       </div>
 
       {/* Floating Map Legend (Bottom-Left) */}
-      <div className="absolute bottom-4 left-4 z-20 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md rounded-xl p-3 shadow-lg border border-slate-200 dark:border-slate-800 text-[11px] select-none">
-        <div className="font-bold text-slate-900 dark:text-white mb-2">
-          {language === 'hi' ? 'मानचित्र संकेतक' : 'Map Legend'}
+      <div className="absolute bottom-3 left-3 z-20 bg-[var(--surface)] rounded-xl p-3 shadow-md border border-[var(--border)] text-[11px] select-none">
+        <div className="font-medium text-xs text-[var(--text)] mb-2">
+          {language === 'hi' ? 'मानचित्र संकेतक' : 'Map legend'}
         </div>
 
         {/* Status Colors */}
         <div className="grid grid-cols-2 gap-x-3 gap-y-1.5">
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-            <span className="text-slate-700 dark:text-slate-300">{t.statusNormal}</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--normal)]" />
+            <span className="text-[var(--text-muted)]">{t.statusNormal}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-yellow-500" />
-            <span className="text-slate-700 dark:text-slate-300">{t.statusAboveNormal}</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--watch)]" />
+            <span className="text-[var(--text-muted)]">{t.statusAboveNormal}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-orange-600 animate-pulse" />
-            <span className="text-slate-700 dark:text-slate-300">{t.statusSevere}</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--warning)]" />
+            <span className="text-[var(--text-muted)]">{t.statusSevere}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-red-600 animate-ping" />
-            <span className="text-slate-700 dark:text-slate-300">{t.statusExtreme}</span>
+            <span className="w-2.5 h-2.5 rounded-full bg-[var(--danger)] animate-pulse" />
+            <span className="text-[var(--text-muted)]">{t.statusExtreme}</span>
           </div>
         </div>
 
         {/* Station Types Shapes */}
-        <div className="border-t border-slate-200 dark:border-slate-800 pt-2 mt-2 flex items-center justify-between gap-3 text-slate-600 dark:text-slate-400">
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-full border-2 border-slate-600 dark:border-slate-300" />
-            <span>River Level</span>
+        <div className="border-t border-[var(--border)] pt-2 mt-2 flex items-center justify-between gap-3 text-[var(--text-muted)] text-[11px]">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full border border-[var(--text-muted)]" />
+            <span>River level</span>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-xs border-2 border-slate-600 dark:border-slate-300" />
-            <span>Reservoir Inflow</span>
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-xs border border-[var(--text-muted)]" />
+            <span>Reservoir inflow</span>
           </div>
         </div>
       </div>
     </div>
   );
 };
+
+export default IndiaFloodMap;

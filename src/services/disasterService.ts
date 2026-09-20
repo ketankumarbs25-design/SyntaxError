@@ -284,6 +284,126 @@ export const HISTORICAL_INDIAN_DISASTERS: DisasterArticle[] = [
     keyRiversAffected: ['Teesta', 'Lachen Chu', 'Lachung Chu'],
   },
   {
+    id: 'dis-2024-vijayawada',
+    title: '2024 Vijayawada & Krishna River Flash Deluge (Budameru Breach)',
+    disasterType: 'Flash Flood',
+    state: 'Andhra Pradesh',
+    year: 2024,
+    date: '2024-09-02',
+    source: 'APSDMA / Central Water Commission',
+    sourceUrl: 'https://apsdma.ap.gov.in',
+    description: 'Unprecedented rainfall exceeding 300 mm in 24 hours caused three breaches along the Budameru diversion channel, submerging large parts of Vijayawada including Ajit Singh Nagar under up to 8 feet of water.',
+    severity: 'Critical',
+    affectedCount: '600,000+ residents impacted',
+    economicLoss: '₹6,800+ Crore',
+    keyRiversAffected: ['Krishna', 'Budameru'],
+  },
+  {
+    id: 'dis-2024-tripura',
+    title: '2024 Tripura Severe Floods & Gumti River Inundation',
+    disasterType: 'Flood',
+    state: 'Tripura',
+    year: 2024,
+    date: '2024-08-22',
+    source: 'Tripura SDMA / ReliefWeb',
+    sourceUrl: 'https://reliefweb.int/report/india/india-floods-tripura-situation-report-august-2024',
+    description: 'Relentless monsoon downpours triggered historic flash floods across Gomati, South Tripura, and West Tripura, causing the Gumti River to exceed extreme flood levels and opening the Dumbur dam spillways.',
+    severity: 'Severe',
+    affectedCount: '1,700,000+ people affected',
+    economicLoss: '₹15,000+ Crore infrastructure damage',
+    keyRiversAffected: ['Gumti', 'Haora', 'Manu', 'Khowai'],
+  },
+  {
+    id: 'dis-2023-michaung',
+    title: '2023 Severe Cyclonic Storm Michaung & Chennai Coastal Floods',
+    disasterType: 'Cyclone',
+    state: 'Tamil Nadu',
+    year: 2023,
+    date: '2023-12-04',
+    source: 'IMD / TNSDMA',
+    sourceUrl: 'https://pib.gov.in/PressReleasePage.aspx?PRID=1982701',
+    description: 'Michaung stalled off the Chennai coast, dumping over 450 mm of rain within 36 hours. The Adyar, Kosasthalaiyar, and Cooum rivers overflowed, inundating Pallikaranai, Velachery, and northern industrial belts.',
+    severity: 'Critical',
+    affectedCount: '3,000,000+ citizens impacted',
+    economicLoss: '₹9,000+ Crore',
+    keyRiversAffected: ['Adyar', 'Kosasthalaiyar', 'Cooum'],
+  },
+  {
+    id: 'dis-2023-biparjoy',
+    title: '2023 Extremely Severe Cyclonic Storm Biparjoy',
+    disasterType: 'Cyclone',
+    state: 'Gujarat',
+    year: 2023,
+    date: '2023-06-15',
+    source: 'IMD / Gujarat SDMA',
+    sourceUrl: 'https://gsdma.org',
+    description: 'Made landfall near Jakhau Port in Kutch with sustained winds of 140 km/h and torrential storm surges, causing widespread flooding across coastal Saurashtra and south Rajasthan river basins.',
+    severity: 'Severe',
+    affectedCount: '108,000+ evacuated safely',
+    economicLoss: '₹1,200+ Crore',
+    keyRiversAffected: ['Bhadar', 'Machchhu'],
+  },
+  {
+    id: 'dis-2021-yaas',
+    title: '2021 Very Severe Cyclonic Storm Yaas & Odisha / Bengal Surge',
+    disasterType: 'Cyclone',
+    state: 'Odisha',
+    year: 2021,
+    date: '2021-05-26',
+    source: 'OSDMA / IMD',
+    sourceUrl: 'https://osdma.org',
+    description: 'Struck south of Balasore near Dhamra Port, generating saline storm surges of 4 meters that broke through 150+ km of sea and river embankments across Bhadrak, Kendrapara, and East Midnapore.',
+    severity: 'Critical',
+    affectedCount: '6,000,000+ people affected',
+    economicLoss: '₹11,000+ Crore',
+    keyRiversAffected: ['Baitarani', 'Subarnarekha', 'Budhabalanga'],
+  },
+  {
+    id: 'dis-2020-hyderabad',
+    title: '2020 Hyderabad Urban Cloudburst & Musi River Inundation',
+    disasterType: 'Flash Flood',
+    state: 'Telangana',
+    year: 2020,
+    date: '2020-10-14',
+    source: 'GHMC / Telangana SDMA',
+    sourceUrl: 'https://pib.gov.in',
+    description: 'Deep depression in the Bay of Bengal caused unprecedented 320 mm downpours in 24 hours in Hyderabad, causing the Musi River to overflow its banks and submerging low-lying residential sectors.',
+    severity: 'Severe',
+    affectedCount: '400,000+ residents affected',
+    economicLoss: '₹5,000+ Crore',
+    keyRiversAffected: ['Musi', 'Esi'],
+  },
+  {
+    id: 'dis-2019-karnataka',
+    title: '2019 Belagavi & North Karnataka Krishna Basin Floods',
+    disasterType: 'Flood',
+    state: 'Karnataka',
+    year: 2019,
+    date: '2019-08-10',
+    source: 'KSDMA / Central Water Commission',
+    sourceUrl: 'https://ksdma.karnataka.gov.in',
+    description: 'Continuous heavy rainfall in Maharashtra catchment basins caused historic discharge of over 800,000 cusecs into the Krishna, Malaprabha, and Ghataprabha rivers, inundating over 100 villages.',
+    severity: 'Critical',
+    affectedCount: '700,000+ evacuated',
+    economicLoss: '₹35,000+ Crore',
+    keyRiversAffected: ['Krishna', 'Malaprabha', 'Ghataprabha'],
+  },
+  {
+    id: 'dis-2004-tsunami',
+    title: '2004 Indian Ocean Tsunami & South Coast Surge Disaster',
+    disasterType: 'Flood',
+    state: 'Tamil Nadu',
+    year: 2004,
+    date: '2004-12-26',
+    source: 'Government of India / National Disaster Management',
+    sourceUrl: 'https://ndma.gov.in',
+    description: 'Magnitude 9.1 megathrust earthquake generated catastrophic 10-meter tsunami waves striking Tamil Nadu (Nagapattinam, Cuddalore, Chennai), Kerala, Andhra Pradesh, and Andaman & Nicobar coastal settlements.',
+    severity: 'Critical',
+    affectedCount: '10,000+ casualties, millions displaced',
+    economicLoss: '₹11,500+ Crore',
+    keyRiversAffected: ['Cauvery', 'Vellar', 'Coleroon', 'Adyar'],
+  },
+  {
     id: 'dis-1999-odisha',
     title: '1999 Odisha Super Cyclone (05B)',
     disasterType: 'Cyclone',
@@ -304,21 +424,20 @@ export const HISTORICAL_INDIAN_DISASTERS: DisasterArticle[] = [
 const BANNED_PATTERNS = [
   /\bbigg?\s*boss\b/i,
   /\b(trump|donald\s*trump|biden|white\s*house|us\s*politics|capitol|congressman|senator|republican|democrat)\b/i,
-  /\b(bollywood|hollywood|cinema|movie|film|trailer|teaser)\b/i,
-  /\b(actor|actress|celebrity|model)\b/i,
-  /\bbox\s*office\b/i,
-  /\b(cricket|ipl|scorecard|t20)\b/i,
-  /\b(entertainment|fashion|gossip|romance)\b/i,
-  /\b(eviction|elimination|reality\s*show)\b/i,
-  /\b(song|album|music\s*video)\b/i,
-  /\b(horoscope|astrology)\b/i,
+  /\b(bollywood|hollywood|cinema|movie|film|trailer|teaser|actor|actress|celebrity|model|box\s*office)\b/i,
+  /\b(cricket|ipl|scorecard|t20|world\s*cup|football|match|batsman|bowler|wicket)\b/i,
+  /\b(entertainment|fashion|gossip|romance|eviction|elimination|reality\s*show|song|album|music\s*video)\b/i,
+  /\b(horoscope|astrology|zodiac)\b/i,
+  /\b(sensex|nifty|stock\s*market|shares|ipo|quarterly\s*results)\b/i,
+  /\b(election|poll\s*survey|campaign\s*rally|seat\s*sharing|bjp\s*vs|congress\s*leader)\b/i,
 ];
 
 const DISASTER_KEYWORDS = [
-  'flood', 'inundat', 'river', 'water level', 'rain', 'monsoon',
-  'cyclone', 'storm', 'landslide', 'cloudburst', 'cwc', 'ndma',
-  'imd', 'deluge', 'waterlog', 'dam', 'barrage', 'breach', 'overflow',
-  'evacuat', 'displaced', 'calamity', 'hazard'
+  'flood', 'flooding', 'inundat', 'cyclone', 'cyclonic', 'landslide',
+  'mudslide', 'cloudburst', 'deluge', 'waterlog', 'breach', 'overflow',
+  'submerg', 'evacuat', 'displaced', 'calamity', 'hazard', 'danger mark',
+  'danger level', 'relief camp', 'fatalit', 'casualties', 'storm surge',
+  'glacial lake', 'glof', 'hfl', 'cwc', 'ndma', 'imd'
 ];
 
 const INDIA_REGIONS = [
@@ -327,8 +446,39 @@ const INDIA_REGIONS = [
   'maharashtra', 'mumbai', 'delhi', 'yamuna', 'ganga', 'ganges', 'brahmaputra',
   'godavari', 'krishna', 'narmada', 'tapi', 'mahanadi', 'cauvery', 'kaveri',
   'jhelum', 'chenab', 'sutlej', 'beas', 'kosi', 'wayanad', 'sikkim', 'teesta',
-  'sundarbans', 'vadodara', 'patna', 'srinagar', 'cwc', 'ndma', 'imd'
+  'sundarbans', 'vadodara', 'patna', 'srinagar', 'andhra', 'vijayawada',
+  'tripura', 'telangana', 'hyderabad', 'karnataka', 'cwc', 'ndma', 'imd'
 ];
+
+export function detectIndianState(text: string): string {
+  const t = text.toLowerCase();
+  const stateMap: Record<string, string[]> = {
+    'Assam': ['assam', 'guwahati', 'brahmaputra', 'kaziranga', 'silchar'],
+    'Kerala': ['kerala', 'wayanad', 'kochi', 'periyar', 'idukki', 'munnar'],
+    'Bihar': ['bihar', 'patna', 'kosi', 'bhagalpur', 'gandak'],
+    'Uttarakhand': ['uttarakhand', 'kedarnath', 'chamoli', 'rishiganga', 'dehradun', 'haridwar'],
+    'Himachal Pradesh': ['himachal', 'kullu', 'mandi', 'shimla', 'beas'],
+    'Odisha': ['odisha', 'orissa', 'bhubaneswar', 'puri', 'cuttack', 'paradip', 'mahanadi'],
+    'West Bengal': ['west bengal', 'bengal', 'kolkata', 'sundarbans', 'hooghly'],
+    'Tamil Nadu': ['tamil nadu', 'chennai', 'adyar', 'cooum', 'cauvery', 'kaveri'],
+    'Gujarat': ['gujarat', 'vadodara', 'ahmedabad', 'kutch', 'saurashtra', 'narmada'],
+    'Maharashtra': ['maharashtra', 'mumbai', 'mithi', 'thane', 'pune'],
+    'Andhra Pradesh': ['andhra', 'vijayawada', 'krishna', 'budameru', 'godavari'],
+    'Telangana': ['telangana', 'hyderabad', 'musi'],
+    'Tripura': ['tripura', 'agartala', 'gumti'],
+    'Sikkim': ['sikkim', 'gangtok', 'teesta', 'lhonak'],
+    'Delhi': ['delhi', 'yamuna'],
+    'Jammu and Kashmir': ['jammu', 'kashmir', 'srinagar', 'jhelum'],
+    'Karnataka': ['karnataka', 'bengaluru', 'bangalore', 'belagavi'],
+  };
+
+  for (const [stateName, keywords] of Object.entries(stateMap)) {
+    if (keywords.some((kw) => t.includes(kw))) {
+      return stateName;
+    }
+  }
+  return 'India';
+}
 
 export function isGenuineDisasterArticle(title: string, desc: string = ''): boolean {
   const text = `${title} ${desc}`.toLowerCase();
@@ -405,7 +555,8 @@ export async function fetchNASAEONETEvents(): Promise<DisasterArticle[]> {
     const geo = ev.geometry?.[0]?.coordinates;
     if (!geo || geo.length < 2) return false;
     const [lon, lat] = geo;
-    return lat >= 6 && lat <= 38 && lon >= 67 && lon <= 99;
+    const inIndia = lat >= 7 && lat <= 36 && lon >= 68 && lon <= 97;
+    return inIndia && isGenuineDisasterArticle(ev.title, '');
   });
 
   return indiaEvents.map((ev) => {
@@ -413,17 +564,18 @@ export async function fetchNASAEONETEvents(): Promise<DisasterArticle[]> {
     const dateStr = geom?.date || new Date().toISOString();
     const year = new Date(dateStr).getFullYear();
     const catTitle = ev.categories?.[0]?.title || 'Flood';
+    const state = detectIndianState(ev.title);
 
     return {
       id: `eonet-${ev.id}`,
       title: ev.title,
       disasterType: catTitle.toLowerCase().includes('storm') ? 'Cyclone' : 'Flood',
-      state: 'India Hydrographic Basin',
+      state,
       year,
       date: dateStr.split('T')[0],
       source: 'NASA Earth Observatory (EONET)',
       sourceUrl: ev.sources?.[0]?.url || 'https://eonet.gsfc.nasa.gov/',
-      description: `NASA satellite and earth observation system event record capturing geospatial flood or severe meteorological disturbance.`,
+      description: `Official NASA satellite observation capturing extreme hydrological inundation or storm surge activity in ${state}.`,
       severity: 'Severe',
     };
   });
@@ -444,19 +596,28 @@ export async function fetchLiveNewsArticles(): Promise<DisasterArticle[]> {
     const data = await res.json();
     if (!data || !Array.isArray(data.articles)) return [];
 
-    return data.articles.map((art: any, idx: number) => ({
-      id: `news-${idx}-${Date.now()}`,
-      title: art.title,
-      disasterType: art.title?.toLowerCase().includes('cyclone') ? 'Cyclone' : 'Flood',
-      state: 'India',
-      year: new Date(art.publishedAt || Date.now()).getFullYear(),
-      date: (art.publishedAt || '').split('T')[0] || new Date().toISOString().split('T')[0],
-      source: art.source?.name || 'Live News',
-      sourceUrl: art.url,
-      description: art.description || 'Latest news coverage on natural disaster events in India.',
-      severity: 'Moderate',
-      imageUrl: art.urlToImage,
-    }));
+    return data.articles
+      .filter((art: any) => isGenuineDisasterArticle(art.title || '', art.description || ''))
+      .map((art: any, idx: number) => {
+        const fullText = `${art.title || ''} ${art.description || ''}`;
+        const state = detectIndianState(fullText);
+        const isCyclone = fullText.toLowerCase().includes('cyclon');
+        const isLandslide = fullText.toLowerCase().includes('landslide');
+
+        return {
+          id: `news-${idx}-${Date.now()}`,
+          title: art.title,
+          disasterType: isCyclone ? 'Cyclone' : isLandslide ? 'Landslide' : 'Flood',
+          state,
+          year: new Date(art.publishedAt || Date.now()).getFullYear(),
+          date: (art.publishedAt || '').split('T')[0] || new Date().toISOString().split('T')[0],
+          source: art.source?.name || 'Live News',
+          sourceUrl: art.url,
+          description: art.description || 'Verified news reporting on active natural disaster conditions in India.',
+          severity: 'Moderate',
+          imageUrl: art.urlToImage,
+        };
+      });
   } catch {
     return [];
   }

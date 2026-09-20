@@ -4,14 +4,15 @@ import {
   Search,
   RotateCcw,
   AlertTriangle,
-  Loader2,
   Radio,
 } from 'lucide-react';
 import { getStations, getBulletins } from '../api/adapter';
 import { IndiaFloodMap } from '../components/map/IndiaFloodMap';
 import { NeedsAttentionList } from '../components/home/NeedsAttentionList';
 import { AlertTicker } from '../components/common/AlertTicker';
+import { CountUp } from '../components/common/CountUp';
 import { useI18n } from '../i18n';
+import { Loader } from '../components/ui/Loader';
 
 export const HomePage: React.FC = () => {
   const { t } = useI18n();
@@ -106,9 +107,12 @@ export const HomePage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-[500px] flex flex-col items-center justify-center gap-3">
-        <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
-        <p className="text-sm font-semibold text-slate-500">Loading live India flood telemetry...</p>
+      <div className="min-h-[520px] flex items-center justify-center py-12">
+        <Loader
+          size="md"
+          title="Loading National Hydrographic Telemetry..."
+          subtitle="Connecting to 1,500 Central Water Commission stations across India..."
+        />
       </div>
     );
   }
@@ -159,62 +163,70 @@ export const HomePage: React.FC = () => {
         </div>
       </div>
 
-      {/* ─── 4 Clean Real KPI Metric Cards (Themed with Exact Tokens) ────── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
-          <span className="text-xs font-medium text-[var(--text-muted)] block">
-            {t.totalStations}
-          </span>
-          <div className="text-2xl sm:text-3xl font-bold text-[var(--text)] mt-1">
-            {counts.total.toLocaleString()}
+      {/* ─── 4 Clean Real KPI Metric Cards (Equal Height with Count-Up Numbers) ── */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+        <div className="bg-[var(--surface)] rounded-xl p-4 sm:p-5 border border-[var(--border)] shadow-xs flex flex-col justify-between h-full">
+          <div>
+            <span className="text-xs font-medium text-[var(--text-muted)] block">
+              {t.totalStations}
+            </span>
+            <div className="text-2xl sm:text-3xl font-semibold text-[var(--text)] mt-1.5">
+              <CountUp value={counts.total} />
+            </div>
           </div>
-          <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
+          <span className="text-[11px] text-[var(--text-muted)] mt-2 block">
             Across {basins.length} river basins
           </span>
         </div>
 
-        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--text-muted)]">
-              {t.statusNormal}
-            </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--level-normal)] shadow-xs" />
+        <div className="bg-[var(--surface)] rounded-xl p-4 sm:p-5 border border-[var(--border)] shadow-xs flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[var(--text-muted)]">
+                {t.statusNormal}
+              </span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--normal)] shadow-xs" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-semibold text-[var(--normal)] mt-1.5">
+              <CountUp value={counts.normal} />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-[var(--level-normal)] mt-1">
-            {counts.normal.toLocaleString()}
-          </div>
-          <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
+          <span className="text-[11px] text-[var(--text-muted)] mt-2 block">
             Below warning thresholds
           </span>
         </div>
 
-        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--text-muted)]">
-              {t.statusAboveNormal}
-            </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--level-watch)] shadow-xs" />
+        <div className="bg-[var(--surface)] rounded-xl p-4 sm:p-5 border border-[var(--border)] shadow-xs flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[var(--text-muted)]">
+                {t.statusAboveNormal}
+              </span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--watch)] shadow-xs" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-semibold text-[var(--watch)] mt-1.5">
+              <CountUp value={counts.above} />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-[var(--level-watch)] mt-1">
-            {counts.above.toLocaleString()}
-          </div>
-          <span className="text-[11px] text-[var(--text-muted)] mt-1 block">
+          <span className="text-[11px] text-[var(--text-muted)] mt-2 block">
             Approaching warning stage
           </span>
         </div>
 
-        <div className="bg-[var(--surface)] rounded-xl p-4.5 border border-[var(--border)] shadow-xs">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-medium text-[var(--text-muted)]">
-              High Flood Threat
-            </span>
-            <span className="w-2.5 h-2.5 rounded-full bg-[var(--level-danger)] animate-pulse shadow-xs" />
+        <div className="bg-[var(--surface)] rounded-xl p-4 sm:p-5 border border-[var(--border)] shadow-xs flex flex-col justify-between h-full">
+          <div>
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-[var(--text-muted)]">
+                High flood threat
+              </span>
+              <span className="w-2.5 h-2.5 rounded-full bg-[var(--danger)] animate-pulse shadow-xs" />
+            </div>
+            <div className="text-2xl sm:text-3xl font-semibold text-[var(--danger)] mt-1.5">
+              <CountUp value={counts.severe + counts.extreme} />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-[var(--level-danger)] mt-1">
-            {(counts.severe + counts.extreme).toLocaleString()}
-          </div>
-          <span className="text-[11px] text-[var(--level-warning)] mt-1 block font-medium">
-            {counts.severe} Severe · {counts.extreme} Extreme
+          <span className="text-[11px] text-[var(--warning)] mt-2 block font-medium">
+            {counts.severe} severe · {counts.extreme} extreme
           </span>
         </div>
       </div>
