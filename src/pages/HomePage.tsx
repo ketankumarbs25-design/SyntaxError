@@ -12,6 +12,7 @@ import { IndiaFloodMap } from '../components/map/IndiaFloodMap';
 import { NeedsAttentionList } from '../components/home/NeedsAttentionList';
 import { AlertTicker } from '../components/common/AlertTicker';
 import { useI18n } from '../i18n';
+import { FloodSafetyAdvisorySection } from '../components/safety/FloodSafetyAdvisorySection';
 
 export const HomePage: React.FC = () => {
   const { t } = useI18n();
@@ -339,6 +340,9 @@ export const HomePage: React.FC = () => {
           <NeedsAttentionList stations={stations} />
         </div>
       </div>
+
+      {/* ─── Official Flood Safety Advisories & Life-Saving Precautions ─── */}
+      <FloodSafetyAdvisorySection />
     </div>
   );
 };

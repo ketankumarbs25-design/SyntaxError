@@ -8,6 +8,7 @@ import {
 import { getBulletins, getStations } from '../api/adapter';
 import { formatIST } from '../api/status';
 import { useI18n } from '../i18n';
+import { FloodSafetyAdvisorySection } from '../components/safety/FloodSafetyAdvisorySection';
 
 export const BulletinsPage: React.FC = () => {
   const { language, t } = useI18n();
@@ -193,6 +194,11 @@ export const BulletinsPage: React.FC = () => {
             </div>
           ) : null}
         </div>
+      </div>
+
+      {/* ─── Official Flood Safety Advisories & Precautions ────────────── */}
+      <div className="no-print pt-2">
+        <FloodSafetyAdvisorySection />
       </div>
 
       {/* ─── PRINTABLE EXECUTIVE REPORT (@media print template) ─────────────── */}
