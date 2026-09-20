@@ -26,5 +26,11 @@ dist-ssr
 *.sln
 *.sw?
 powershell.cmd
+
+# Python virtual environment and cache
+.venv
+venv
 __pycache__/
 *.pyc
+numpy
+pyrefly.toml

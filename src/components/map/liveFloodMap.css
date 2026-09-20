@@ -1,0 +1,202 @@
+/* ─── FLOWSHIELD Live Flood Risk Map Styles ───────────────────────────────── */
+
+.flood-map-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 1rem;
+  overflow: hidden;
+  background-color: #0b111e;
+  border: 1px solid rgba(51, 65, 85, 0.5);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 8px 10px -6px rgba(0, 0, 0, 0.5);
+  transition: all 0.3s ease;
+}
+
+.flood-map-wrapper.is-fullscreen {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  border-radius: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.flood-map-container {
+  width: 100%;
+  height: 480px;
+  background-color: #080d1a;
+  z-index: 1;
+}
+
+@media (max-width: 640px) {
+  .flood-map-container {
+    height: 380px;
+  }
+}
+
+.is-fullscreen .flood-map-container {
+  height: 100vh !important;
+}
+
+/* ─── Leaflet Dark Popup Customization ────────────────────────────────────── */
+.flood-map-wrapper .leaflet-popup-content-wrapper {
+  background: rgba(11, 17, 30, 0.95);
+  color: #f1f5f9;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  border-radius: 0.75rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.7), 0 0 15px rgba(0, 229, 255, 0.2);
+  backdrop-filter: blur(12px);
+  padding: 4px;
+}
+
+.flood-map-wrapper .leaflet-popup-tip {
+  background: rgba(11, 17, 30, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+}
+
+.flood-map-wrapper .leaflet-popup-content {
+  margin: 8px 12px;
+  line-height: 1.4;
+  font-family: inherit;
+}
+
+.flood-map-wrapper .leaflet-container {
+  font-family: inherit;
+}
+
+/* ─── Marker Pulse Animation ─────────────────────────────────────────────── */
+.location-marker-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.location-marker-core {
+  width: 18px;
+  height: 18px;
+  background: #00e5ff;
+  border: 3px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 0 12px rgba(0, 229, 255, 0.9);
+  z-index: 3;
+  transition: all 0.3s ease;
+}
+
+.location-marker-pulse {
+  position: absolute;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: rgba(0, 229, 255, 0.35);
+  border: 2px solid rgba(0, 229, 255, 0.75);
+  animation: marker-wave 2s infinite ease-out;
+  z-index: 2;
+  transition: all 0.3s ease;
+}
+
+/* ─── Risk Level Marker Modifiers ────────────────────────────────────────── */
+.location-marker-pin.is-low .location-marker-core {
+  background: #10b981;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.9);
+}
+.location-marker-pin.is-low .location-marker-pulse {
+  background: rgba(16, 185, 129, 0.3);
+  border-color: rgba(16, 185, 129, 0.75);
+}
+
+.location-marker-pin.is-moderate .location-marker-core {
+  background: #eab308;
+  box-shadow: 0 0 14px rgba(234, 179, 8, 0.9);
+}
+.location-marker-pin.is-moderate .location-marker-pulse {
+  background: rgba(234, 179, 8, 0.3);
+  border-color: rgba(234, 179, 8, 0.75);
+}
+
+.location-marker-pin.is-high .location-marker-core {
+  background: #f97316;
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.9);
+}
+.location-marker-pin.is-high .location-marker-pulse {
+  background: rgba(249, 115, 22, 0.3);
+  border-color: rgba(249, 115, 22, 0.75);
+}
+
+.location-marker-pin.is-critical .location-marker-core {
+  background: #ef4444;
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.95);
+}
+.location-marker-pin.is-critical .location-marker-pulse {
+  background: rgba(239, 68, 68, 0.35);
+  border-color: rgba(239, 68, 68, 0.85);
+}
+
+@keyframes marker-wave {
+  0% {
+    transform: scale(0.35);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* ─── Smooth SVG Polygon Transition for Animated Flood Propagation ───────── */
+.flood-map-wrapper path.leaflet-interactive {
+  transition: fill 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              fill-opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 0.4s ease,
+              stroke-width 0.3s ease !important;
+}
+
+/* ─── Active Zone Highlight Pulse ────────────────────────────────────────── */
+.highlight-zone-pulse {
+  animation: zone-glow 1.5s infinite ease-in-out alternate;
+}
+
+@keyframes zone-glow {
+  0% {
+    filter: drop-shadow(0 0 4px #00e5ff);
+  }
+  100% {
+    filter: drop-shadow(0 0 12px #38bdf8);
+  }
+}
+
+/* ─── Leaflet Controls Positioning and Dark Aesthetic ─────────────────────── */
+.flood-map-wrapper .leaflet-control-zoom {
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5) !important;
+}
+
+.flood-map-wrapper .leaflet-control-zoom a {
+  background-color: rgba(15, 23, 42, 0.85) !important;
+  color: #e2e8f0 !important;
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6) !important;
+  transition: all 0.15s ease;
+}
+
+.flood-map-wrapper .leaflet-control-zoom a:hover {
+  background-color: #1e293b !important;
+  color: #00e5ff !important;
+}
+
+.flood-map-wrapper .leaflet-control-attribution {
+  background: rgba(11, 17, 30, 0.75) !important;
+  color: #94a3b8 !important;
+  font-size: 10px !important;
+  backdrop-filter: blur(4px);
+  border-top-left-radius: 6px;
+  padding: 2px 6px !important;
+}
+
+.flood-map-wrapper .leaflet-control-attribution a {
+  color: #38bdf8 !important;
+}

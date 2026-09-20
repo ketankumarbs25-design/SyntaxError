@@ -7,6 +7,7 @@
 
 import React from 'react';
 import { motion } from 'motion/react';
+import { MapPin } from 'lucide-react';
 import type { CellState } from '../../sim/types';
 
 interface CellDetailModalProps {
@@ -14,6 +15,7 @@ interface CellDetailModalProps {
   isBlocked: boolean;
   onToggleBlock: (row: number, col: number) => void;
   onClose: () => void;
+  onViewOnMap?: (cellId: string) => void;
 }
 
 function getZoneName(row: number, col: number): string {
@@ -25,6 +27,7 @@ export const CellDetailModal: React.FC<CellDetailModalProps> = ({
   isBlocked,
   onToggleBlock,
   onClose,
+  onViewOnMap,
 }) => {
   if (!cell) return null;
 
@@ -156,6 +159,18 @@ export const CellDetailModal: React.FC<CellDetailModalProps> = ({
             }
           </p>
         </div>
+
+        {/* View on Map Action */}
+        <button
+          onClick={() => {
+            onViewOnMap?.(cell.id);
+            onClose();
+          }}
+          className="w-full py-3 px-4 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600/30 to-blue-600/30 hover:from-cyan-600/50 hover:to-blue-600/50 border border-cyan-500/50 hover:border-cyan-400 text-cyan-200 transition-all shadow-lg shadow-cyan-950/30 cursor-pointer"
+        >
+          <MapPin className="w-4 h-4 text-cyan-400" />
+          <span>View on Map (Zone {zoneName})</span>
+        </button>
 
         {/* Block/Unblock Action */}
         <button

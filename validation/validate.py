@@ -5,10 +5,22 @@ Runs both the TypeScript and Python engines with identical seeds and configurati
 diffs every cell at every timestep, and verifies maximum absolute divergence < 1e-9.
 """
 
+import io
 import sys
 import os
 import json
 import subprocess
+from typing import Any, Dict, List
+
+# Ensure UTF-8 stdout on Windows console
+if isinstance(sys.stdout, io.TextIOWrapper):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+# Ensure nodejs is in PATH for npx execution
+nodejs_path = r"C:\Program Files\nodejs"
+if os.path.exists(nodejs_path) and nodejs_path not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = nodejs_path + os.pathsep + os.environ.get("PATH", "")
+
 import numpy as np
 
 # Add validation directory to sys.path
@@ -22,7 +34,7 @@ def main():
     print("=" * 60)
 
     # Test configurations to validate across multiple seeds and conditions
-    test_configs = [
+    test_configs: List[Dict[str, Any]] = [
         {
             "name": "Standard Heavy Rain (Default)",
             "config": {
@@ -79,8 +91,8 @@ def main():
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     for test in test_configs:
-        name = test["name"]
-        cfg = test["config"]
+        name: str = test["name"]
+        cfg: Dict[str, Any] = test["config"]
         print(f"\n[TEST] {name}")
         print(f"       Grid: {cfg['rows']}x{cfg['cols']}, Seed: {cfg['seed']}, Rain: {cfg['rainfallIntensity']}mm/hr, Steps: {int(cfg['rainfallDuration'] * 1.5)}")
 

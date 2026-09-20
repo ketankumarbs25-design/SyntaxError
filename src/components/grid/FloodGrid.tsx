@@ -16,6 +16,7 @@ interface FloodGridProps {
   selectedCellId?: string | null;
   emergencyMode?: boolean;
   onCellClick?: (cell: CellState) => void;
+  onViewOnMap?: (cell: CellState) => void;
 }
 
 export const FloodGrid: React.FC<FloodGridProps> = ({
@@ -26,6 +27,7 @@ export const FloodGrid: React.FC<FloodGridProps> = ({
   selectedCellId = null,
   emergencyMode = false,
   onCellClick,
+  onViewOnMap,
 }) => {
   return (
     <div className="w-full flex flex-col items-center">
@@ -51,6 +53,7 @@ export const FloodGrid: React.FC<FloodGridProps> = ({
               isSelected={selectedCellId === cell.id}
               emergencyMode={emergencyMode}
               onCellClick={onCellClick}
+              onViewOnMap={onViewOnMap}
             />
           ))}
         </div>

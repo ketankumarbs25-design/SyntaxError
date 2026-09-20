@@ -7,6 +7,7 @@
  */
 
 import React, { memo } from 'react';
+import { MapPin } from 'lucide-react';
 import type { CellState } from '../../sim/types';
 
 interface FloodCellProps {
@@ -15,6 +16,7 @@ interface FloodCellProps {
   isSelected?: boolean;
   emergencyMode?: boolean;
   onCellClick?: (cell: CellState) => void;
+  onViewOnMap?: (cell: CellState) => void;
 }
 
 /** Convert row,col to friendly zone name: A1, A2, B1... */
@@ -29,6 +31,7 @@ export const FloodCell: React.FC<FloodCellProps> = memo(({
   isSelected = false,
   emergencyMode = false,
   onCellClick,
+  onViewOnMap,
 }) => {
   const { row, col, elevation, water, criticalDepth, risk, eta, population } = cell;
 
@@ -97,11 +100,27 @@ export const FloodCell: React.FC<FloodCellProps> = memo(({
         ['--risk-hue' as any]: isCritical ? '0' : isWarning ? '38' : '190',
       }}
     >
-      {/* Top: Zone Name + Status */}
-      <div className="flex items-center justify-between pointer-events-none">
-        <span className="text-[11px] font-semibold tracking-tight text-white/90">
-          {zoneName}
-        </span>
+      {/* Top: Zone Name + Map Action + Status */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1">
+          <span className="text-[11px] font-semibold tracking-tight text-white/90 pointer-events-none">
+            {zoneName}
+          </span>
+          {onViewOnMap && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onViewOnMap(cell);
+              }}
+              title={`View ${zoneName} on Live Flood Risk Map`}
+              className="px-1.5 py-0.5 rounded bg-cyan-950/70 hover:bg-cyan-900 border border-cyan-500/40 hover:border-cyan-400 text-[8px] font-semibold text-cyan-300 hover:text-white transition-all cursor-pointer shadow-sm pointer-events-auto flex items-center gap-0.5"
+            >
+              <MapPin className="w-2.5 h-2.5" />
+              <span>Map</span>
+            </button>
+          )}
+        </div>
 
         {isBlocked && (
           <span
