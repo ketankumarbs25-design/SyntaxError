@@ -3,7 +3,6 @@ import { NavLink } from 'react-router-dom';
 import {
   Waves,
   RefreshCw,
-  Languages,
   Menu,
   X,
   Clock,
@@ -15,6 +14,7 @@ import { useI18n } from '../../i18n';
 import { useAuth } from '../../context/AuthContext';
 import { UserMenu } from '../auth/UserMenu';
 import { SmoothThemeToggle } from '../ui/SmoothThemeToggle';
+import { LanguageSelector } from './LanguageSelector';
 import { AuthComponent } from '../ui/sign-up';
 
 interface AppNavbarProps {
@@ -28,7 +28,7 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
   isRefreshing = false,
   onOpenHistorical,
 }) => {
-  const { language, setLanguage, t } = useI18n();
+  const { t } = useI18n();
   const { isAuthenticated, isAuthModalOpen, openAuthModal, closeAuthModal } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [istTimeStr, setIstTimeStr] = useState('');
@@ -136,15 +136,8 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
               <span className="hidden sm:inline text-[11px]">3m Sync</span>
             </button>
 
-            {/* Language Switcher (EN / हिन्दी) */}
-            <button
-              onClick={() => setLanguage(language === 'en' ? 'hi' : 'en')}
-              className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/40 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-300 text-xs font-bold border border-blue-200 dark:border-blue-900/50 transition-colors cursor-pointer"
-              title="Switch Language / भाषा बदलें"
-            >
-              <Languages className="w-3.5 h-3.5" />
-              <span>{language === 'en' ? 'हिन्दी' : 'EN'}</span>
-            </button>
+            {/* Language Selector (10 River Basin Languages) */}
+            <LanguageSelector />
 
             {/* Smooth Animated Theme Capsule Switcher */}
             <SmoothThemeToggle size="sm" />
@@ -217,6 +210,12 @@ export const AppNavbar: React.FC<AppNavbarProps> = ({
                 <span>Historical Disaster Intel</span>
               </button>
             )}
+
+            {/* Mobile Language Selector */}
+            <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">Language</span>
+              <LanguageSelector isMobile={true} />
+            </div>
 
             {/* Mobile Theme Toggle Button */}
             <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
